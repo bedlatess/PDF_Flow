@@ -2,12 +2,10 @@
 WebSocket endpoint for real-time task progress updates
 为任务进度提供实时WebSocket推送，替代轮询机制
 """
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Dict, Set
 import asyncio
 import logging
-from app.core.security import get_current_user_ws
-from app.models.user import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
