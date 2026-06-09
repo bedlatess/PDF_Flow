@@ -48,6 +48,7 @@ google-generativeai==0.3.2
 # Monitoring & Logging
 sentry-sdk==1.40.0
 posthog==3.1.0
+psutil==5.9.8
 
 # File Type Detection
 python-magic==0.4.27

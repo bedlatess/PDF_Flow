@@ -571,6 +571,7 @@ python -m pytest tests/ -q      # 35 通过
 - **2026-06-09 服务器部署兼容性修复（第 2 轮）**：真实服务器启动迁移阶段暴露 `pydantic-settings` 与 `.env` 兼容问题：`ALLOWED_ORIGINS` / `ALLOWED_HOSTS` 在 Pydantic v2 下会优先按 JSON 解析，导致 `.env.example` 中原本的逗号分隔格式在服务器上触发 `SettingsError`。现已将 `backend/app/core/config.py` 调整为兼容两种写法：逗号分隔字符串和 JSON 数组，避免迁移与启动阶段因 CORS 配置格式失败。
 - **2026-06-09 服务器部署兼容性修复（第 3 轮）**：真实服务器执行 Alembic 迁移时暴露数据库迁移链分叉：`backend/alembic/versions/001_initial.py` 与 `add_webhook_model.py` 同时作为 head，导致 `alembic upgrade head` 失败。现已将 `add_webhook_model.py` 的 `down_revision` 正确指向 `001_initial`，恢复单链迁移顺序。
 - **2026-06-09 服务器部署兼容性修复（第 4 轮）**：真实服务器启动后端时暴露 `EmailStr` 依赖缺失：`app/schemas/user.py` 使用 Pydantic `EmailStr`，但 `backend/requirements.txt` 缺少 `email-validator`，导致 Uvicorn 子进程导入失败、`/health` 连接被重置。现已补充 `email-validator==2.1.0.post1` 依赖。另修正根 `docker-compose.yml` 中 `celery-worker` 的健康检查，避免继承 backend 镜像的 HTTP `/health` 检查后被误标记为 unhealthy，并移除 Compose 过时 `version` 字段以减少服务器告警噪音。
+- **2026-06-09 服务器部署兼容性修复（第 5 轮）**：真实服务器继续启动后端时，导入健康检查端点 `app/api/v1/endpoints/health.py` 暴露 `psutil` 依赖缺失，导致 Uvicorn 在载入 API 路由阶段崩溃、`/health` 与 `/api/docs` 持续连接重置。现已补充 `psutil==5.9.8` 到 `backend/requirements.txt`。同时根 `docker-compose.yml` 中 `celery-worker` 健康检查变量转义已修正为 `$$HOSTNAME`，避免 Compose 在解析时发出 `"HOSTNAME" variable is not set` 告警。
 - **2026-06-09 后端**：FastAPI 架构、JWT 认证、文件处理 API、Celery 任务、Redis 限流、STRIDE 安全。
 - **2026-06-08 MVP**：6 工具 + 20 组件 + 108 单测 + 三语，前端生产就绪。
 

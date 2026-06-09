@@ -94,7 +94,7 @@ services:
       - temp_files:/tmp/pdf-flow
     command: celery -A app.celery_worker worker --loglevel=info --concurrency=4
     healthcheck:
-      test: ["CMD-SHELL", "celery -A app.celery_worker inspect ping -d celery@$HOSTNAME || exit 1"]
+      test: ["CMD-SHELL", "celery -A app.celery_worker inspect ping -d celery@$$HOSTNAME || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
