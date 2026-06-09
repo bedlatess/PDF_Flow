@@ -575,6 +575,7 @@ python -m pytest tests/ -q      # 35 通过
 - **2026-06-09 服务器部署兼容性修复（第 6 轮）**：真实服务器完成依赖补齐后，后端仍在 API 路由加载阶段崩溃。日志定位到 `app/api/v1/endpoints/websocket.py` 顶部导入了不存在的 `get_current_user_ws`，但实际代码路径并未使用该函数，属于无效遗留导入。现已移除该导入及未使用依赖，避免 FastAPI 在启动时因 `ImportError` 中断整个应用加载。
 - **2026-06-09 服务器部署兼容性修复（第 7 轮）**：切换到容器内 `python -c "import app.main"` 快速验导入链后，继续暴露启动期代码错误：`app/api/v1/endpoints/oauth.py` 在路由参数中使用 `Depends(get_current_user)`，但把 `get_current_user` 放在文件尾部才导入，导致模块加载阶段直接 `NameError`。现已将导入前移到文件头部，并删除尾部延迟导入。同步额外清理两处同类潜在问题：`ai.py` 改为从 `app.utils.pdf_text_extractor` 正确导入 `extract_text_from_pdf`；`file_utils.py` 增加顶层 `save_upload_file()` 兼容包装，避免 `files.py` 的 Office 转换路径在运行时因符号缺失失败。
 - **2026-06-09 业务验收脚本与缓存清理**：修复 `auth.py` 中“可选认证实际被强制 401”的问题，恢复匿名上传与混合端点行为；新增 `scripts/business-smoke-test.sh`，覆盖 注册→登录→上传→合并→轮询→下载 的真实链路，并补齐更清晰的 HTTP 错误输出；`.gitignore` 补充 `__pycache__/` 与 `*.py[cod]`，同时将仓库内已被错误跟踪的 `__pycache__/*.pyc` 从 Git 索引移除，避免后续提交持续被缓存文件污染。
+- **2026-06-09 服务器部署兼容性修复（第 8 轮）**：业务验收脚本首次触发真实注册时，PostgreSQL 报 `invalid input value for enum userrole: "FREE"`。根因是 `backend/app/models/user.py` 使用 `Enum(UserRole)` 时，SQLAlchemy 默认按枚举名写库（`FREE/PRO/...`），而 Alembic 初始迁移 `001_initial.py` 创建的 `userrole` 枚举值为小写（`free/pro/...`）。现已将模型枚举列改为显式持久化 `UserRole.value`，并补充注册后 role 落库值回归测试，避免后续在真实 PG 环境再次踩中。
 - **2026-06-09 后端**：FastAPI 架构、JWT 认证、文件处理 API、Celery 任务、Redis 限流、STRIDE 安全。
 - **2026-06-08 MVP**：6 工具 + 20 组件 + 108 单测 + 三语，前端生产就绪。
 

@@ -39,6 +39,21 @@ class TestRegister:
         assert body["role"] == "free"
         assert "hashed_password" not in body  # 不泄露密码哈希
 
+    def test_register_persists_lowercase_role_value(self, client):
+        from app.core.database import get_db
+        from app.models.user import User
+
+        r = _register(client, email="rolecheck@example.com")
+        assert r.status_code == 201
+
+        db = next(client.app.dependency_overrides[get_db]())
+        try:
+            user = db.query(User).filter(User.email == "rolecheck@example.com").first()
+            assert user is not None
+            assert user.role.value == "free"
+        finally:
+            db.close()
+
     def test_register_duplicate_email(self, client):
         _register(client)
         r = _register(client)

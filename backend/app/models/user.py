@@ -19,6 +19,13 @@ class UserRole(str, enum.Enum):
     ADMIN = "admin"
 
 
+user_role_enum = Enum(
+    UserRole,
+    values_callable=lambda enum_cls: [member.value for member in enum_cls],
+    name="userrole",
+)
+
+
 class User(Base):
     """
     User model
@@ -30,7 +37,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String, nullable=True)
-    role = Column(Enum(UserRole), default=UserRole.FREE, nullable=False)
+    role = Column(user_role_enum, default=UserRole.FREE, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
 
