@@ -96,3 +96,35 @@ class TestFileValidator:
     def test_allowed_mime_includes_pdf(self):
         from app.utils.file_utils import FileValidator
         assert "application/pdf" in FileValidator.ALLOWED_MIME_TYPES
+
+
+class TestUploadEndpoint:
+    def test_upload_allows_anonymous_user(self, client):
+        files = {"file": ("sample.pdf", b"%PDF-1.4\n%test\n", "application/pdf")}
+        r = client.post("/api/v1/files/upload", files=files)
+        assert r.status_code == 201
+        body = r.json()
+        assert body["filename"] == "sample.pdf"
+        assert body["mime_type"] == "application/pdf"
+        assert body["file_id"].startswith("file_")
+
+    def test_upload_allows_authenticated_user(self, client):
+        client.post("/api/v1/auth/register", json={
+            "email": "user@example.com",
+            "password": "SecurePass123!",
+            "full_name": "Test User",
+        })
+        login = client.post("/api/v1/auth/login", data={
+            "username": "user@example.com",
+            "password": "SecurePass123!",
+        })
+        token = login.json()["access_token"]
+
+        files = {"file": ("sample.pdf", b"%PDF-1.4\n%test\n", "application/pdf")}
+        r = client.post(
+            "/api/v1/files/upload",
+            files=files,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert r.status_code == 201
+        assert r.json()["file_id"].startswith("file_")

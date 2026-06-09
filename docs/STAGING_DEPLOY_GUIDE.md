@@ -103,6 +103,7 @@ cp backend/.env.example backend/.env
 chmod +x scripts/deploy-staging.sh
 chmod +x scripts/rollback-staging.sh
 chmod +x scripts/smoke-test.sh
+chmod +x scripts/business-smoke-test.sh
 ```
 
 ### 3.6 首次部署
@@ -167,6 +168,33 @@ bash scripts/deploy-staging.sh
 3. 上传 PDF -> 合并 -> 下载
 4. OCR
 5. Office 转 PDF
+
+推荐按两层执行：
+
+```bash
+bash scripts/smoke-test.sh
+bash scripts/business-smoke-test.sh
+```
+
+说明：
+
+- `smoke-test.sh` 只检查基础可达性，适合部署后快速确认服务是否活着
+- `business-smoke-test.sh` 会复用仓库里的 `tests/fixtures/sample1.pdf` 和 `tests/fixtures/sample2.pdf`
+- 业务脚本会自动执行：注册测试账号 -> 登录 -> 上传两个 PDF -> 发起合并 -> 轮询任务 -> 下载结果
+- 默认测试账号为 `smoke@example.com`，重复执行可复用；如需隔离可临时覆盖：
+
+```bash
+BUSINESS_SMOKE_EMAIL="smoke-$(date +%s)@example.com" bash scripts/business-smoke-test.sh
+```
+
+如果只是改了 Python 代码，优先走快速反馈链路，避免每次都整套重建：
+
+```bash
+git pull --ff-only origin staging
+docker compose restart backend
+docker compose exec backend python -c "import app.main; print('app import ok')"
+bash scripts/smoke-test.sh
+```
 
 如果这次改动涉及认证、支付、AI，再额外测：
 

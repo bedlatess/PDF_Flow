@@ -87,6 +87,16 @@ class TestProtectedEndpoints:
         r = client.get("/api/v1/auth/me", headers={"Authorization": "Bearer garbage"})
         assert r.status_code == 401
 
+    def test_optional_auth_returns_none_without_token(self, client):
+        from app.api.v1.endpoints.auth import get_current_user_optional
+        from app.core.database import get_db
+
+        db = next(client.app.dependency_overrides[get_db]())
+        try:
+            assert get_current_user_optional(token=None, db=db) is None
+        finally:
+            db.close()
+
     def test_stats_after_login(self, client):
         _register(client)
         token = _login(client).json()["access_token"]

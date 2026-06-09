@@ -17,7 +17,7 @@
 | **Phase 2（云端+用户）** | ✅ **100%**（所有功能完成，待真实环境测试） |
 | **Phase 3（AI+企业）** | 🚧 **78%**（企业API+AI+监控+高级PDF完整实现） |
 
-**完成度口径说明**：前端经 `vite build` + 108 单测验证 + 企业控制台 + AI 分析器完成；后端**核心逻辑层（认证/文件处理/OCR/OAuth/企业API/AI集成）已完成**并通过构建验证，但**尚未在真实环境中完整测试**。
+**完成度口径说明**：前端经 `vite build` + 108 单测验证 + 企业控制台 + AI 分析器完成；后端**核心逻辑层（认证/文件处理/OCR/OAuth/企业API/AI集成）已完成**并通过构建验证，且已在单服务器 Docker 环境完成**启动、迁移、健康检查、API docs**验证；当前进入**业务链路验收阶段**（上传/合并/OCR/Office/认证联调）。
 
 ---
 
@@ -117,7 +117,7 @@
 | `src/router/guards.ts` | authGuard / guestGuard / proGuard / enterpriseGuard |
 | `src/components/layout/Header.vue` | 登录态头像下拉菜单 / 未登录登录按钮 |
 
-### 3.4 后端架构（✅ 代码完成，❌ 未运行验证）
+### 3.4 后端架构（✅ 代码完成，⚠️ 已完成基础运行验证，业务链路联调中）
 
 ```
 backend/app/
@@ -166,16 +166,16 @@ backend/app/
 
 - **前端单元测试**：108/108 通过（Vitest，14 文件）
 - **前端 E2E**：24/28 通过（85.7%，Playwright）— 等待策略见 §8
-- **后端测试**：✅ 35 个 pytest 用例通过（基于 SQLite + stub 的逻辑层测试）
+- **后端测试**：✅ 35+ 个 pytest 用例通过（基于 SQLite + stub 的逻辑层测试，已补匿名/登录上传回归）
 - **i18n**：en / zh / es 三语，结构统一为 `app/nav/tools/common/auth/account`
 
 ---
 
 ## 4. 待办事项（按真实优先级，开发即在此勾选）
 
-### 🔴 P0 — 让现有代码真正跑起来（本周）
+### 🔴 P0 — 完成真实业务链路验收（本周）
 
-- [ ] **后端真实环境端到端联调**：需 Docker（PG+Redis+Celery）跑通 上传→任务执行→下载。本机无 Docker，已用 SQLite+stub 完成**逻辑层** pytest 验证（35 通过），剩真实基础设施联调
+- [ ] **后端真实环境端到端联调**：单服务器 Docker 环境已跑通启动、迁移、`/health`、`/api/docs`、基础 smoke test；当前剩余 上传→任务执行→下载、OCR、Office、认证业务链路验收
 - [x] **文件下载端点**：`GET /files/download/{job_id}` 已实现（单文件直传 / 多文件 zip / OCR txt；425 未完成、422 失败、404 不存在），前端 `fileAPI.downloadResult` + `pollJobUntilDone` 已配套
 - [x] **后端单元测试**：新增 `tests/`（conftest + security/auth/files），35 用例通过，覆盖密码哈希、JWT、API Key、魔术数字、注册/登录/鉴权流程、下载分支
 - [x] **前端 OAuth 按钮**：加 "Soon" 角标 + tooltip，诚实标记未实现（后端 OAuth 属 P2）
