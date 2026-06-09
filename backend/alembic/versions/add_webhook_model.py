@@ -1,17 +1,16 @@
 """Add webhook model
 
 Revision ID: add_webhook_model
-Revises:
+Revises: 001_initial
 Create Date: 2026-06-09
 
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'add_webhook_model'
-down_revision = None  # Update this to the latest migration
+down_revision = '001_initial'
 branch_labels = None
 depends_on = None
 
