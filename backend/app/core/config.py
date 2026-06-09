@@ -2,13 +2,19 @@
 Core configuration settings for PDF-Flow backend
 Based on v4.0 specification: Enterprise-grade architecture with STRIDE security model
 """
-from typing import List, Optional
-from pydantic import Field, validator
-from pydantic_settings import BaseSettings
+import json
+from typing import Annotated, List, Optional
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings"""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+    )
 
     # Project Info
     PROJECT_NAME: str = "PDF-Flow API"
@@ -26,11 +32,11 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS
-    ALLOWED_ORIGINS: List[str] = Field(
+    ALLOWED_ORIGINS: Annotated[List[str], NoDecode] = Field(
         default=["http://localhost:5173", "http://localhost:3000"],
         env="ALLOWED_ORIGINS"
     )
-    ALLOWED_HOSTS: List[str] = Field(
+    ALLOWED_HOSTS: Annotated[List[str], NoDecode] = Field(
         default=["localhost", "127.0.0.1"],
         env="ALLOWED_HOSTS"
     )
@@ -98,21 +104,29 @@ class Settings(BaseSettings):
     # D (Denial of Service): Cloudflare + Redis rate limiting
     # E (Elevation of Privilege): Non-root containers, minimum permissions
 
-    @validator("ALLOWED_ORIGINS", pre=True)
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
     def parse_origins(cls, v):
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
+            value = v.strip()
+            if not value:
+                return []
+            if value.startswith("["):
+                return json.loads(value)
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
         return v
 
-    @validator("ALLOWED_HOSTS", pre=True)
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
     def parse_hosts(cls, v):
         if isinstance(v, str):
-            return [host.strip() for host in v.split(",")]
+            value = v.strip()
+            if not value:
+                return []
+            if value.startswith("["):
+                return json.loads(value)
+            return [host.strip() for host in value.split(",") if host.strip()]
         return v
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
 
 # Create settings instance
