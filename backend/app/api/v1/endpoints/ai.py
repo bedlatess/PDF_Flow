@@ -16,7 +16,7 @@ from app.schemas.ai import (
 )
 from app.api.v1.endpoints.auth import get_current_user
 from app.services.ai_service import get_gemini_service
-from app.utils.file_utils import extract_text_from_pdf
+from app.utils.pdf_text_extractor import extract_text_from_pdf
 import tempfile
 import os
 

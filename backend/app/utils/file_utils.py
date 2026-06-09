@@ -210,3 +210,18 @@ class FileManager:
 
 # 全局文件管理器实例
 file_manager = FileManager()
+
+
+async def save_upload_file(file: UploadFile, destination: Optional[Path] = None) -> str:
+    """
+    Compatibility wrapper for legacy call sites.
+
+    If destination is omitted, create a temp directory and preserve the original filename.
+    Returns the saved file path as a string.
+    """
+    if destination is None:
+        temp_dir = file_manager.create_temp_dir(prefix="office_")
+        destination = temp_dir / file.filename
+
+    saved_path = await file_manager.save_upload_file(file, destination)
+    return str(saved_path)
