@@ -70,6 +70,16 @@ compose_run() {
   "${COMPOSE_CMD[@]}" "$@"
 }
 
+get_backend_container_id() {
+  local container_id
+  container_id="$(compose_run ps -q backend | tr -d '\r')"
+  if [[ -z "$container_id" ]]; then
+    log "Could not determine backend container id"
+    exit 1
+  fi
+  printf '%s' "$container_id"
+}
+
 extract_json_value() {
   local json_input="$1"
   local key="$2"
@@ -126,6 +136,33 @@ post_form_urlencoded() {
     -H "Content-Type: application/x-www-form-urlencoded" \
     "$@" \
     "$url")"
+  HTTP_BODY="$(cat "$body_file")"
+  rm -f "$body_file"
+}
+
+post_file_multipart() {
+  local url="$1"
+  local file_path="$2"
+  local auth_token="${3:-}"
+  local body_file
+  local -a curl_args
+
+  body_file="$(mktemp)"
+  curl_args=(
+    --silent
+    --show-error
+    --retry 2
+    --retry-connrefused
+    --retry-delay 1
+    -o "$body_file"
+    -w "%{http_code}"
+    -F "file=@${file_path}"
+  )
+  if [[ -n "$auth_token" ]]; then
+    curl_args+=(-H "Authorization: Bearer $auth_token")
+  fi
+
+  HTTP_STATUS="$(curl "${curl_args[@]}" "$url")"
   HTTP_BODY="$(cat "$body_file")"
   rm -f "$body_file"
 }
@@ -230,17 +267,21 @@ PY
 
 generate_ocr_sample_image() {
   local target="$1"
+  local container_target="/tmp/ocr-smoke-sample.png"
+  local container_id
   mkdir -p "$(dirname "$target")"
 
   log "Generating OCR sample image"
+  container_id="$(get_backend_container_id)"
   compose_run exec -T \
     -e OCR_TEXT="$OCR_EXPECTED_TEXT" \
-    backend python - <<'PY' > "$target"
+    -e OCR_OUTPUT_PATH="$container_target" \
+    backend python - <<'PY'
 import os
-import sys
 from PIL import Image, ImageDraw, ImageFont
 
 text = os.environ["OCR_TEXT"]
+output_path = os.environ["OCR_OUTPUT_PATH"]
 img = Image.new("RGB", (1400, 420), "white")
 draw = ImageDraw.Draw(img)
 
@@ -259,8 +300,11 @@ if font is None:
     font = ImageFont.load_default()
 
 draw.text((80, 140), text, fill="black", font=font)
-img.save(sys.stdout.buffer, format="PNG")
+img.save(output_path, format="PNG")
 PY
+
+  docker cp "${container_id}:${container_target}" "$target" >/dev/null
+  compose_run exec -T backend rm -f "$container_target" >/dev/null 2>&1 || true
 
   if [[ ! -s "$target" ]]; then
     log "Failed to generate OCR sample image"
@@ -294,10 +338,15 @@ main() {
   generate_ocr_sample_image "$sample_image"
 
   log "Uploading OCR sample image"
-  upload_json="$(curl --fail --silent --show-error \
-    -H "Authorization: Bearer $token" \
-    -F "file=@$sample_image" \
-    "${BASE_URL%/}/api/v1/files/upload")"
+  post_file_multipart \
+    "${BASE_URL%/}/api/v1/files/upload" \
+    "$sample_image" \
+    "$token"
+  upload_json="$HTTP_BODY"
+  if [[ "$HTTP_STATUS" != "201" ]]; then
+    log "OCR upload failed (HTTP $HTTP_STATUS): $upload_json"
+    exit 1
+  fi
   file_id="$(extract_json_value "$upload_json" "file_id")"
 
   log "Submitting OCR job"

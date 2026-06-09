@@ -5,9 +5,12 @@
 import json
 import os
 import time
+import asyncio
+from io import BytesIO
 
 import pytest
 from fastapi import HTTPException
+from fastapi import UploadFile
 
 from app.services.file_service import file_processing_service
 
@@ -96,6 +99,32 @@ class TestFileValidator:
     def test_allowed_mime_includes_pdf(self):
         from app.utils.file_utils import FileValidator
         assert "application/pdf" in FileValidator.ALLOWED_MIME_TYPES
+
+    def test_allows_ooxml_when_magic_reports_zip(self, monkeypatch):
+        from app.utils import file_utils
+
+        monkeypatch.setattr(file_utils.magic, "from_buffer", lambda *_args, **_kwargs: "application/zip")
+        upload = UploadFile(filename="sample.docx", file=BytesIO(b"PK\x03\x04valid-docx-content"))
+
+        is_valid, error = asyncio.run(
+            file_utils.FileValidator.validate_file(upload, file_utils.FileValidator.MAX_FILE_SIZE["free"])
+        )
+
+        assert is_valid is True
+        assert error is None
+
+    def test_rejects_generic_zip_upload(self, monkeypatch):
+        from app.utils import file_utils
+
+        monkeypatch.setattr(file_utils.magic, "from_buffer", lambda *_args, **_kwargs: "application/zip")
+        upload = UploadFile(filename="sample.zip", file=BytesIO(b"PK\x03\x04generic-zip-content"))
+
+        is_valid, error = asyncio.run(
+            file_utils.FileValidator.validate_file(upload, file_utils.FileValidator.MAX_FILE_SIZE["free"])
+        )
+
+        assert is_valid is False
+        assert error == "File type not allowed: application/zip"
 
 
 class TestFileManager:

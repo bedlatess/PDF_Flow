@@ -37,6 +37,11 @@ class FileValidator:
         "application/vnd.ms-excel",  # .xls
         "application/msword",  # .doc
     }
+    OOXML_EXTENSIONS = {".docx", ".xlsx", ".pptx"}
+    OOXML_FALLBACK_MIME_TYPES = {
+        "application/zip",
+        "application/octet-stream",
+    }
 
     # 文件大小限制（字节）
     MAX_FILE_SIZE = {
@@ -77,7 +82,7 @@ class FileValidator:
             return False, "Failed to detect file type"
 
         # 2. 验证文件类型
-        if mime_type not in allowed_types:
+        if mime_type not in allowed_types and not FileValidator._is_allowed_ooxml_fallback(file.filename, mime_type, header):
             return False, f"File type not allowed: {mime_type}"
 
         # 3. 验证文件大小
@@ -92,6 +97,20 @@ class FileValidator:
             return False, "Empty file"
 
         return True, None
+
+    @staticmethod
+    def _is_allowed_ooxml_fallback(filename: Optional[str], mime_type: str, header: bytes) -> bool:
+        if not filename:
+            return False
+
+        extension = Path(filename).suffix.lower()
+        if extension not in FileValidator.OOXML_EXTENSIONS:
+            return False
+
+        if mime_type not in FileValidator.OOXML_FALLBACK_MIME_TYPES:
+            return False
+
+        return header.startswith(b"PK\x03\x04")
 
     @staticmethod
     def get_file_hash(file_path: str, algorithm: str = "sha256") -> str:

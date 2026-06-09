@@ -177,6 +177,7 @@ backend/app/
 
 - [ ] **后端真实环境端到端联调**：单服务器 Docker 环境已跑通启动、迁移、`/health`、`/api/docs`、基础 smoke test；当前剩余 上传→任务执行→下载、OCR、Office、认证业务链路验收
 - [ ] **上线前脚本化业务验收**：已落地 `business-smoke-test.sh`（上传/合并/下载），并补充 `ocr-smoke-test.sh`、`office-smoke-test.sh`；下一步是在真实服务器逐条跑通 OCR 与 Office 转 PDF
+- [ ] **OCR / Office 真实服务器验收收尾**：已补强 `ocr-smoke-test.sh` / `office-smoke-test.sh` 的样本生成与错误输出；下一步是在服务器复跑两条脚本，确认 OCR 上传与 Office 转 PDF 全链路通过
 - [x] **文件下载端点**：`GET /files/download/{job_id}` 已实现（单文件直传 / 多文件 zip / OCR txt；425 未完成、422 失败、404 不存在），前端 `fileAPI.downloadResult` + `pollJobUntilDone` 已配套
 - [x] **后端单元测试**：新增 `tests/`（conftest + security/auth/files），35 用例通过，覆盖密码哈希、JWT、API Key、魔术数字、注册/登录/鉴权流程、下载分支
 - [x] **前端 OAuth 按钮**：加 "Soon" 角标 + tooltip，诚实标记未实现（后端 OAuth 属 P2）
@@ -582,6 +583,7 @@ python -m pytest tests/ -q      # 35 通过
 - **2026-06-09 业务验收脚本就绪等待补强**：在 `docker compose up -d --build backend celery-worker` 后立即执行业务脚本时，注册请求可能撞上 Uvicorn reload/容器启动窗口，表现为 `curl: (56) Recv failure: Connection reset by peer`。现已让 `scripts/business-smoke-test.sh` 在执行注册前自动等待 `/health` 与 `/api/docs` 就绪，并为核心 `curl` 请求补充轻量连接重试，减少“服务刚拉起时的假失败”。
 - **2026-06-09 服务器部署兼容性修复（第 10 轮）**：Celery worker 开始消费合并任务后，任务状态从 `pending` 进入 `processing`，但长时间不结束。进一步排查发现，上传文件默认被保存到容器内 `tempfile.gettempdir()/pdf_flow`，即 `/tmp/pdf_flow/...`；而 Docker 共享卷挂载的是 `/tmp/pdf-flow/...`。两端路径只差下划线/短横线，导致 backend 与 worker 不一定看到同一份文件。现已将 `FileManager` 默认根目录统一改为 `settings.UPLOAD_DIR`（`/tmp/pdf-flow/uploads`），并补充回归测试，确保异步任务读取的是共享卷中的真实文件。
 - **2026-06-09 OCR / Office 验收脚本落地**：新增 `scripts/ocr-smoke-test.sh` 与 `scripts/office-smoke-test.sh`，用于上线前真实环境验收。`ocr-smoke-test.sh` 会自动注册并登录测试用户、将其提升为 `pro`、生成带固定文本的 PNG、提交 OCR 任务并校验结果文本；`office-smoke-test.sh` 会自动生成最小 DOCX、提交 Office 转 PDF 任务并验证下载结果为有效 PDF。两条脚本都内置 readiness 等待和任务轮询，目标是把“真实服务器上的功能验收”从手工点测收敛成稳定脚本。
+- **2026-06-09 OCR / Office 验收脚本加固 + OOXML 上传兼容补强**：针对真实服务器上 OCR 上传与 Office 转换首轮 `HTTP 400` 难定位的问题，现已把 `ocr-smoke-test.sh` / `office-smoke-test.sh` 改为“在 backend 容器内生成样本文件，再 `docker cp` 回宿主机上传”，避免二进制内容经过终端管道输出时被污染；同时脚本在上传或提交失败时会直接打印后端响应体，减少盲查成本。后端 `FileValidator` 也补充了 OOXML 兼容逻辑：当 `python-magic` 将 `.docx/.xlsx/.pptx` 识别为 `application/zip` 或 `application/octet-stream` 时，只要文件头是标准 ZIP/OOXML 签名仍允许通过，并新增回归测试覆盖“OOXML 允许、普通 zip 拒绝”两条分支。
 - **2026-06-09 后端**：FastAPI 架构、JWT 认证、文件处理 API、Celery 任务、Redis 限流、STRIDE 安全。
 - **2026-06-08 MVP**：6 工具 + 20 组件 + 108 单测 + 三语，前端生产就绪。
 

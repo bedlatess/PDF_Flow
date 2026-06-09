@@ -211,6 +211,8 @@ OFFICE_SMOKE_EMAIL="office-$(date +%s)@example.com" bash scripts/office-smoke-te
 - `ocr-smoke-test.sh` 会自动把测试用户提升为 `pro`，生成一张带文字的 PNG，走 上传 -> OCR -> 下载文本 的真实链路
 - `office-smoke-test.sh` 会自动生成一个最小 DOCX，走 Office -> PDF -> 下载结果 的真实链路
 - 这两条脚本都会自己等待服务就绪，不需要额外先手工跑健康检查
+- 两条脚本现在改为在 `backend` 容器内生成样本，再通过 `docker cp` 拷回宿主机上传，避免二进制文件经过终端管道输出时损坏
+- 如果 OCR 上传或 Office 提交返回 `400/401/403/500`，脚本会直接打印后端响应体，便于第一时间定位是业务校验失败还是环境问题
 
 如果这次改动涉及认证、支付、AI，再额外测：
 

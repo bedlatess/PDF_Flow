@@ -136,6 +136,34 @@ def _install_stubs():
     result_mod.AsyncResult = AsyncResult
     sys.modules["celery.result"] = result_mod
 
+    # kombu
+    kombu_mod = types.ModuleType("kombu")
+
+    class Queue:
+        def __init__(self, *a, **k):
+            self.args = a
+            self.kwargs = k
+
+    kombu_mod.Queue = Queue
+    sys.modules["kombu"] = kombu_mod
+
+    # authlib
+    authlib_mod = types.ModuleType("authlib")
+    integrations_mod = types.ModuleType("authlib.integrations")
+    starlette_client_mod = types.ModuleType("authlib.integrations.starlette_client")
+
+    class OAuth:
+        def __init__(self, *a, **k):
+            pass
+
+        def register(self, *a, **k):
+            return None
+
+    starlette_client_mod.OAuth = OAuth
+    sys.modules["authlib"] = authlib_mod
+    sys.modules["authlib.integrations"] = integrations_mod
+    sys.modules["authlib.integrations.starlette_client"] = starlette_client_mod
+
     # PIL + PIL.Image
     pil_mod = types.ModuleType("PIL")
     image_mod = types.ModuleType("PIL.Image")

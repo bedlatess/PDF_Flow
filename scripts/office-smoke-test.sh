@@ -69,6 +69,16 @@ compose_run() {
   "${COMPOSE_CMD[@]}" "$@"
 }
 
+get_backend_container_id() {
+  local container_id
+  container_id="$(compose_run ps -q backend | tr -d '\r')"
+  if [[ -z "$container_id" ]]; then
+    log "Could not determine backend container id"
+    exit 1
+  fi
+  printf '%s' "$container_id"
+}
+
 extract_json_value() {
   local json_input="$1"
   local key="$2"
@@ -125,6 +135,33 @@ post_form_urlencoded() {
     -H "Content-Type: application/x-www-form-urlencoded" \
     "$@" \
     "$url")"
+  HTTP_BODY="$(cat "$body_file")"
+  rm -f "$body_file"
+}
+
+post_file_multipart() {
+  local url="$1"
+  local file_path="$2"
+  local auth_token="${3:-}"
+  local body_file
+  local -a curl_args
+
+  body_file="$(mktemp)"
+  curl_args=(
+    --silent
+    --show-error
+    --retry 2
+    --retry-connrefused
+    --retry-delay 1
+    -o "$body_file"
+    -w "%{http_code}"
+    -F "file=@${file_path}"
+  )
+  if [[ -n "$auth_token" ]]; then
+    curl_args+=(-H "Authorization: Bearer $auth_token")
+  fi
+
+  HTTP_STATUS="$(curl "${curl_args[@]}" "$url")"
   HTTP_BODY="$(cat "$body_file")"
   rm -f "$body_file"
 }
@@ -200,69 +237,29 @@ login_user() {
 
 generate_office_sample_docx() {
   local target="$1"
+  local container_target="/tmp/office-smoke-sample.docx"
+  local container_id
   mkdir -p "$(dirname "$target")"
 
   log "Generating DOCX sample file"
+  container_id="$(get_backend_container_id)"
   compose_run exec -T \
     -e OFFICE_SAMPLE_TEXT="$OFFICE_SAMPLE_TEXT" \
-    backend python - <<'PY' > "$target"
-import io
+    -e OFFICE_OUTPUT_PATH="$container_target" \
+    backend python - <<'PY'
 import os
-import sys
-import zipfile
+from docx import Document
 
 text = os.environ["OFFICE_SAMPLE_TEXT"]
-content_types = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>
-"""
-rels = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>
-"""
-document = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
- xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
- xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
- xmlns:v="urn:schemas-microsoft-com:vml"
- xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing"
- xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
- xmlns:w10="urn:schemas-microsoft-com:office:word"
- xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
- xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
- xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup"
- xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk"
- xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml"
- xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
- mc:Ignorable="w14 wp14">
-  <w:body>
-    <w:p>
-      <w:r>
-        <w:t>{text}</w:t>
-      </w:r>
-    </w:p>
-    <w:sectPr>
-      <w:pgSz w:w="12240" w:h="15840"/>
-      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/>
-    </w:sectPr>
-  </w:body>
-</w:document>
-"""
-
-buffer = io.BytesIO()
-with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-    archive.writestr("[Content_Types].xml", content_types)
-    archive.writestr("_rels/.rels", rels)
-    archive.writestr("word/document.xml", document)
-
-sys.stdout.buffer.write(buffer.getvalue())
+output_path = os.environ["OFFICE_OUTPUT_PATH"]
+document = Document()
+document.add_heading("PDF Flow Office Smoke Test", level=1)
+document.add_paragraph(text)
+document.save(output_path)
 PY
+
+  docker cp "${container_id}:${container_target}" "$target" >/dev/null
+  compose_run exec -T backend rm -f "$container_target" >/dev/null 2>&1 || true
 
   if [[ ! -s "$target" ]]; then
     log "Failed to generate DOCX sample"
@@ -292,10 +289,15 @@ main() {
   generate_office_sample_docx "$sample_docx"
 
   log "Submitting Office to PDF job"
-  office_json="$(curl --fail --silent --show-error \
-    -H "Authorization: Bearer $token" \
-    -F "file=@$sample_docx" \
-    "${BASE_URL%/}/api/v1/files/office-to-pdf")"
+  post_file_multipart \
+    "${BASE_URL%/}/api/v1/files/office-to-pdf" \
+    "$sample_docx" \
+    "$token"
+  office_json="$HTTP_BODY"
+  if [[ "$HTTP_STATUS" != "200" ]]; then
+    log "Office submission failed (HTTP $HTTP_STATUS): $office_json"
+    exit 1
+  fi
   job_id="$(extract_json_value "$office_json" "job_id")"
   log "Office job created: $job_id"
 
