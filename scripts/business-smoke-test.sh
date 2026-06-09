@@ -16,6 +16,9 @@ log() {
   printf '[%s] %s\n' "$(date '+%F %T')" "$*"
 }
 
+HTTP_BODY=""
+HTTP_STATUS=""
+
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     log "Missing required command: $1"
@@ -46,16 +49,31 @@ extract_json_value() {
 post_json() {
   local url="$1"
   local payload="$2"
-  curl --silent --show-error \
+  local body_file
+  body_file="$(mktemp)"
+  HTTP_STATUS="$(curl --silent --show-error \
+    -o "$body_file" \
+    -w "%{http_code}" \
     -H "Content-Type: application/json" \
     -d "$payload" \
-    "$url"
+    "$url")"
+  HTTP_BODY="$(cat "$body_file")"
+  rm -f "$body_file"
 }
 
 post_form_urlencoded() {
   local url="$1"
   shift
-  curl --fail --silent --show-error "$url" "$@"
+  local body_file
+  body_file="$(mktemp)"
+  HTTP_STATUS="$(curl --silent --show-error \
+    -o "$body_file" \
+    -w "%{http_code}" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    "$@" \
+    "$url")"
+  HTTP_BODY="$(cat "$body_file")"
+  rm -f "$body_file"
 }
 
 poll_job_completed() {
@@ -68,7 +86,7 @@ poll_job_completed() {
     status_json="$(curl --fail --silent --show-error \
       -H "Authorization: Bearer $token" \
       "${BASE_URL%/}/api/v1/files/jobs/$job_id")"
-    status_value="$(extract_json_value "$status_json" "data['status']")"
+    status_value="$(extract_json_value "$status_json" "status")"
 
     if [[ "$status_value" == "completed" ]]; then
       log "Job $job_id completed"
@@ -111,20 +129,30 @@ main() {
   download_target="$WORK_DIR/merged.pdf"
 
   log "Registering smoke-test user: $EMAIL"
-  register_json="$(post_json \
+  post_json \
     "${BASE_URL%/}/api/v1/auth/register" \
-    "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"full_name\":\"$FULL_NAME\"}")"
-  if printf '%s' "$register_json" | grep -q '"detail":"Email already registered"'; then
+    "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"full_name\":\"$FULL_NAME\"}"
+  register_json="$HTTP_BODY"
+  if [[ "$HTTP_STATUS" == "400" ]] && printf '%s' "$register_json" | grep -q '"detail":"Email already registered"'; then
     log "Smoke-test user already exists, reusing it"
-  else
+  elif [[ "$HTTP_STATUS" == "201" ]]; then
     log "Register response received"
+  else
+    log "Register failed (HTTP $HTTP_STATUS): $register_json"
+    exit 1
   fi
 
   log "Logging in"
-  login_json="$(post_form_urlencoded \
+  post_form_urlencoded \
     "${BASE_URL%/}/api/v1/auth/login" \
+    --data-urlencode "grant_type=password" \
     --data-urlencode "username=$EMAIL" \
-    --data-urlencode "password=$PASSWORD")"
+    --data-urlencode "password=$PASSWORD"
+  login_json="$HTTP_BODY"
+  if [[ "$HTTP_STATUS" != "200" ]]; then
+    log "Login failed (HTTP $HTTP_STATUS): $login_json"
+    exit 1
+  fi
   token="$(extract_json_value "$login_json" "access_token")"
 
   log "Uploading sample1.pdf"
@@ -142,9 +170,14 @@ main() {
   file2_id="$(extract_json_value "$upload2_json" "file_id")"
 
   log "Submitting merge job"
-  merge_json="$(post_json \
+  post_json \
     "${BASE_URL%/}/api/v1/files/merge" \
-    "{\"file_ids\":[\"$file1_id\",\"$file2_id\"],\"output_filename\":\"business-smoke-merged.pdf\"}")"
+    "{\"file_ids\":[\"$file1_id\",\"$file2_id\"],\"output_filename\":\"business-smoke-merged.pdf\"}"
+  if [[ "$HTTP_STATUS" != "200" ]]; then
+    log "Merge submission failed (HTTP $HTTP_STATUS): $HTTP_BODY"
+    exit 1
+  fi
+  merge_json="$HTTP_BODY"
   job_id="$(extract_json_value "$merge_json" "job_id")"
 
   poll_job_completed "$job_id" "$token" >/dev/null
