@@ -567,6 +567,7 @@ python -m pytest tests/ -q      # 35 通过
 - **2026-06-09 联调阻塞清理**：修复后端真实联调前置问题：`files.py` 增加 `import os` 以恢复 Office 转换端点；`api/v1/__init__.py` 去除 `enterprise/ai/advanced` 的重复 `/api/v1` 前缀；`celery_worker.py` 纳入 `office_tasks` 与 `office_processing` 队列；`backend/Dockerfile` 补 `libreoffice` / `libmagic1` 并将健康检查改为 `urllib`，避免依赖未安装的 `requests`；确认当前剩余硬阻塞为“本机无 Docker”。
 - **2026-06-09 单服务器 staging 发布流程落地**：新增 `scripts/deploy-staging.sh`、`scripts/rollback-staging.sh`、`scripts/smoke-test.sh`，用于单服务器真实测试、备份容错和代码回滚；`.gitignore` 新增 `.deploy_state/` 与 `.deploy_backups/`；README / backend README / 主文档同步增加 staging→main 的脚本化发布说明。
 - **2026-06-09 staging 操作手册补齐**：新增 `docs/STAGING_DEPLOY_GUIDE.md`，明确服务器首次部署 checklist、日常 `staging -> main` Git 流程、回滚流程、数据库备份钩子和文档同步规则，避免后续重复摸索。
+- **2026-06-09 服务器部署兼容性修复（第 1 轮）**：真实服务器构建暴露两项跨环境问题：① `.gitignore` 的全局 `*.txt` 误排除了 `backend/requirements.txt`，导致服务器构建上下文缺少依赖文件；现已通过 `!backend/requirements.txt` 例外规则修复。② `backend/requirements.txt` 中 `python-magic-bin==0.4.14` 在 Linux ARM64 环境不可安装；现改为仅在 Windows 安装：`python-magic-bin==0.4.14; sys_platform == "win32"`。后续服务器部署继续以 `staging` 为准验证。
 - **2026-06-09 后端**：FastAPI 架构、JWT 认证、文件处理 API、Celery 任务、Redis 限流、STRIDE 安全。
 - **2026-06-08 MVP**：6 工具 + 20 组件 + 108 单测 + 三语，前端生产就绪。
 
