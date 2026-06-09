@@ -11,6 +11,10 @@ PASSWORD="${BUSINESS_SMOKE_PASSWORD:-SecurePass123!}"
 FULL_NAME="${BUSINESS_SMOKE_FULL_NAME:-Smoke Test User}"
 POLL_ATTEMPTS="${BUSINESS_SMOKE_POLL_ATTEMPTS:-30}"
 POLL_SLEEP_SECONDS="${BUSINESS_SMOKE_POLL_SLEEP_SECONDS:-2}"
+READY_ATTEMPTS="${BUSINESS_SMOKE_READY_ATTEMPTS:-20}"
+READY_SLEEP_SECONDS="${BUSINESS_SMOKE_READY_SLEEP_SECONDS:-3}"
+HEALTH_URL="${BASE_URL%/}/health"
+DOCS_URL="${BASE_URL%/}/api/docs"
 
 log() {
   printf '[%s] %s\n' "$(date '+%F %T')" "$*"
@@ -31,6 +35,30 @@ require_file() {
     log "Missing required file: $1"
     exit 1
   fi
+}
+
+wait_for_url() {
+  local url="$1"
+  local label="$2"
+  local attempt=1
+
+  while (( attempt <= READY_ATTEMPTS )); do
+    if curl --fail --silent --show-error \
+      --retry 2 \
+      --retry-connrefused \
+      --retry-delay 1 \
+      "$url" >/dev/null; then
+      log "$label is reachable"
+      return 0
+    fi
+
+    log "Waiting for $label ($attempt/$READY_ATTEMPTS)"
+    sleep "$READY_SLEEP_SECONDS"
+    ((attempt++))
+  done
+
+  log "$label did not become reachable in time"
+  return 1
 }
 
 extract_json_value() {
@@ -56,6 +84,9 @@ post_json() {
   curl_args=(
     --silent
     --show-error
+    --retry 2
+    --retry-connrefused
+    --retry-delay 1
     -o "$body_file"
     -w "%{http_code}"
     -H "Content-Type: application/json"
@@ -75,6 +106,9 @@ post_form_urlencoded() {
   local body_file
   body_file="$(mktemp)"
   HTTP_STATUS="$(curl --silent --show-error \
+    --retry 2 \
+    --retry-connrefused \
+    --retry-delay 1 \
     -o "$body_file" \
     -w "%{http_code}" \
     -H "Content-Type: application/x-www-form-urlencoded" \
@@ -132,6 +166,9 @@ main() {
   require_cmd curl
   require_file "$sample1"
   require_file "$sample2"
+
+  wait_for_url "$HEALTH_URL" "health endpoint"
+  wait_for_url "$DOCS_URL" "API docs"
 
   mkdir -p "$WORK_DIR"
   download_target="$WORK_DIR/merged.pdf"
