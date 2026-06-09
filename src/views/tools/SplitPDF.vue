@@ -33,7 +33,7 @@ const resultUrl = ref('')
 const errorMessage = ref('')
 
 const { submitTask, getTask, waitForTask, destroyWorker } = usePDFWorker()
-const { cloudProgress, cloudPhase, processInCloud } = useCloudProcessing()
+const { processInCloud } = useCloudProcessing()
 
 const handleFilesSelected = async (files: File[]) => {
   try {

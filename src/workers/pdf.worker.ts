@@ -3,8 +3,8 @@
  * 在后台线程处理 PDF 操作，避免阻塞主线程
  */
 
-import { mergePDFs, getPDFPageCount } from '../utils/pdf/merge'
-import { splitPDF, extractPDFPages } from '../utils/pdf/split'
+import { mergePDFs } from '../utils/pdf/merge'
+import { splitPDF } from '../utils/pdf/split'
 import { rotatePDF } from '../utils/pdf/rotate'
 import { imagesToPDF, pdfToImages } from '../utils/pdf/convert'
 

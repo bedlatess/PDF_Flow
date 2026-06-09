@@ -23,7 +23,7 @@ const showSuccessModal = ref(false)
 const resultUrl = ref('')
 const errorMessage = ref('')
 
-const { cloudProgress, cloudPhase, processInCloud } = useCloudProcessing()
+const { processInCloud } = useCloudProcessing()
 
 const handleFilesSelected = (files: File[]) => {
   selectedFiles.value.push(...files)

@@ -17,7 +17,7 @@ async function generateTestPDF(filename: string, pageCount: number, title: strin
 
   for (let i = 0; i < pageCount; i++) {
     const page = pdfDoc.addPage([595, 842]) // A4 size
-    const { width, height } = page.getSize()
+    const { height } = page.getSize()
 
     // 添加标题
     page.drawText(title, {

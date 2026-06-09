@@ -37,7 +37,7 @@ const errorMessage = ref('')
 const { items: sortedFiles, setItems, handleDragStart, handleDragEnter, handleDragOver, handleDrop, handleDragEnd, isDragOver } = useDragSort<FileWithPages>()
 const { generateMultipleThumbnails, clearThumbnails } = usePDFThumbnail()
 const { submitTask, getTask, waitForTask, destroyWorker } = usePDFWorker()
-const { cloudProgress, cloudPhase, processInCloud } = useCloudProcessing()
+const { processInCloud } = useCloudProcessing()
 
 // 监听 selectedFiles 变化，同步到 sortedFiles
 watch(selectedFiles, (newFiles) => {

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { waitForPageReady, uploadFile, inputPageRange } from '../helpers/test-utils'
+import { waitForPageReady, uploadFile } from '../helpers/test-utils'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

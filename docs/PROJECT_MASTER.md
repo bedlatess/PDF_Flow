@@ -179,7 +179,7 @@ backend/app/
 - [x] **上线前脚本化业务验收**：`smoke-test.sh`、`business-smoke-test.sh`、`ocr-smoke-test.sh`、`office-smoke-test.sh` 已在真实服务器连续通过，当前可作为 `staging -> main` 的发布门禁
 - [x] **OCR / Office 真实服务器验收收尾**：OCR 上传与 Office 转 PDF 已在真实服务器复跑通过，相关 smoke 脚本、任务状态链路和上传兼容性修复已闭环
 - [x] **本地自动化补稳（第一轮）**：已补齐 `backend/tests/conftest.py` 的关键第三方 stub（含 `stripe`、`google.generativeai`、`sentry_sdk`、`posthog` 等），并把 GitHub Actions 收敛到当前 `main/staging` 的最小可用门禁：后端核心 pytest、前端 unit test、前端 build；暂不把现有大规模历史 lint 债务设为强制阻塞
-- [ ] **前端 lint 债务分批清理**：当前 ESLint 仍存在较多历史问题，且一部分来自生成物目录；现阶段先通过 `.gitignore` 排除 `.tmp/`、`playwright-report/`、`test-results/` 等噪音，后续再按目录分批清理真实源码告警并恢复 lint 门禁
+- [ ] **前端 lint 债务分批清理**：第一轮已清掉 `src/` / `tests/` 中会导致 ESLint 失败的硬错误（未使用变量、无效 try/catch、模板语法错误等），当前已收敛到“仅剩 warning、不再有 error”；下一步继续按目录分批处理格式类 warning 与 `any` 类型，再评估把 lint 以非阻塞或分目录方式接回 CI
 - [x] **文件下载端点**：`GET /files/download/{job_id}` 已实现（单文件直传 / 多文件 zip / OCR txt；425 未完成、422 失败、404 不存在），前端 `fileAPI.downloadResult` + `pollJobUntilDone` 已配套
 - [x] **后端单元测试**：新增 `tests/`（conftest + security/auth/files），35 用例通过，覆盖密码哈希、JWT、API Key、魔术数字、注册/登录/鉴权流程、下载分支
 - [x] **前端 OAuth 按钮**：加 "Soon" 角标 + tooltip，诚实标记未实现（后端 OAuth 属 P2）
@@ -591,6 +591,7 @@ python -m pytest tests/ -q      # 35 通过
 - **2026-06-09 staging 全链路验收通过**：在真实服务器 `/root/data/docker_data/PDF/pdf-flow` 上连续执行 `bash scripts/smoke-test.sh`、`BUSINESS_SMOKE_EMAIL=... bash scripts/business-smoke-test.sh`、`OCR_SMOKE_EMAIL=... bash scripts/ocr-smoke-test.sh`、`OFFICE_SMOKE_EMAIL=... bash scripts/office-smoke-test.sh`，四条脚本全部通过，说明当前 `staging` 已具备一轮发布到 `main` 前的基础验收信心。
 - **2026-06-09 本地自动化补稳（第 1 轮）**：为 `backend/tests/conftest.py` 补齐本地/CI 所需的第三方 stub，并将 `UPLOAD_DIR` 固定到仓库内 `.tmp/uploads`，避免 Windows 本地因默认临时目录权限或路径差异导致 pytest 失败。当前后端核心测试 `backend/tests/test_security.py`、`test_auth.py`、`test_files.py` 已可在本地直接跑通。
 - **2026-06-09 CI 门禁收敛**：`.github/workflows/ci-cd.yml` 已收敛为当前真实可维护的最小 CI，只对 `main/staging` 执行前端 unit test + build，以及后端核心 pytest。前端 lint 暂不作为强制阻塞项，避免被历史存量问题和生成物目录噪音卡住发布；`.gitignore` 同步补充 `.tmp/`、`playwright-report/`、`test-results/`、`test_pdfflow.db` 忽略规则。
+- **2026-06-09 前端 lint 去硬错误（第 1 轮）**：已在 `src/` 与 `tests/` 范围内清理一批低风险但会让 ESLint 直接失败的问题，包括未使用变量、无意义 `try/catch`、测试脚本未声明 Node 环境、少量模板语法错误等；当前 `npx eslint src tests ...` 已无 `Error`，只剩 warning。同步复验 `npm run test:unit:ci` 与 `npm run build` 仍通过，说明这轮清理没有破坏现有前端交付门禁。
 - **2026-06-09 后端**：FastAPI 架构、JWT 认证、文件处理 API、Celery 任务、Redis 限流、STRIDE 安全。
 - **2026-06-08 MVP**：6 工具 + 20 组件 + 108 单测 + 三语，前端生产就绪。
 

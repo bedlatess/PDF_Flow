@@ -110,8 +110,6 @@ test.describe('合并 PDF 功能', () => {
     await mergeButton.click()
 
     // 检查进度条显示（可能很快消失）
-    const progressBar = page.locator('[data-testid="progress-bar"]')
-
     // 使用 or 逻辑：要么看到进度条，要么直接看到成功提示
     const progressOrSuccess = page.locator('[data-testid="progress-bar"], text=/成功|完成/i').first()
     await expect(progressOrSuccess).toBeVisible({ timeout: 15000 })

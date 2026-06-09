@@ -28,7 +28,7 @@ const resultUrl = ref('')
 const errorMessage = ref('')
 
 const { submitTask, getTask, waitForTask, destroyWorker } = usePDFWorker()
-const { cloudProgress, cloudPhase, processInCloud } = useCloudProcessing()
+const { processInCloud } = useCloudProcessing()
 
 const angleOptions: { value: 90 | 180 | 270; label: string }[] = [
   { value: 90, label: '90° 顺时针' },

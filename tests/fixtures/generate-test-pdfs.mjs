@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 /**
  * 生成测试用 PDF 文件
  * 使用 pdf-lib 创建简单的测试 PDF
@@ -17,7 +19,7 @@ async function generateTestPDF(filename, pageCount, title) {
 
   for (let i = 0; i < pageCount; i++) {
     const page = pdfDoc.addPage([595, 842]); // A4 size
-    const { width, height } = page.getSize();
+    const { height } = page.getSize();
 
     // 添加标题
     page.drawText(title, {

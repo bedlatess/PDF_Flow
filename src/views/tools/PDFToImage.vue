@@ -19,7 +19,7 @@ const isProcessing = ref(false)
 const resultImages = ref<{ url: string; blob: Blob }[]>([])
 const errorMessage = ref('')
 
-const { cloudProgress, cloudPhase, processInCloud } = useCloudProcessing()
+const { processInCloud } = useCloudProcessing()
 
 const handleFilesSelected = (files: File[]) => {
   selectedFile.value = files[0]

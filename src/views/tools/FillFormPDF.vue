@@ -219,7 +219,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useUserStore } from '@/stores/user'
 import { advancedAPI } from '@/services/api'
 import Card from '@/components/common/Card.vue'
 import Button from '@/components/common/Button.vue'
@@ -238,8 +237,6 @@ import {
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
-const userStore = useUserStore()
-
 // State
 const step = ref(1)
 const uploadedFile = ref<File | null>(null)

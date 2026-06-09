@@ -13,20 +13,16 @@ import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Loader2 } from 'lucide-vue-next'
 import { useUserStore } from '@/stores/user'
-import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
-const { t } = useI18n()
 
 onMounted(async () => {
   try {
     // Extract tokens from URL query params
     const accessToken = route.query.access_token as string
     const refreshToken = route.query.refresh_token as string
-    const tokenType = route.query.token_type as string
-
     if (!accessToken || !refreshToken) {
       throw new Error('Missing tokens in callback')
     }

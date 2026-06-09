@@ -46,7 +46,6 @@ const scaleOptions = [
 // 计算属性
 const canGoPrevious = computed(() => currentPage.value > 1)
 const canGoNext = computed(() => currentPage.value < totalPages.value)
-const pageInfo = computed(() => `${currentPage.value} / ${totalPages.value}`)
 
 // 加载 PDF 文档
 const loadPDF = async () => {
@@ -130,11 +129,6 @@ const zoomOut = () => {
     scale.value = Math.max(scale.value - 0.25, 0.25)
     renderPage(currentPage.value)
   }
-}
-
-const setScale = (newScale: number) => {
-  scale.value = newScale
-  renderPage(currentPage.value)
 }
 
 // 旋转

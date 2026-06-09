@@ -11,7 +11,7 @@ import { fileAPI } from '@/services/api'
 import { useUserStore } from '@/stores/user'
 import { historyManager } from '@/utils/history-manager'
 
-const { t } = useI18n()
+useI18n()
 const userStore = useUserStore()
 
 const selectedFile = ref<File | null>(null)
@@ -24,7 +24,7 @@ const extractedText = ref('')
 const ocrResult = ref<any>(null)
 const errorMessage = ref('')
 
-const { cloudProgress, cloudPhase, processInCloud } = useCloudProcessing()
+useCloudProcessing()
 
 // 支持的OCR语言
 const languageOptions = [

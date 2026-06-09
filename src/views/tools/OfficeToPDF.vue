@@ -211,39 +211,34 @@ const convertFile = async () => {
 const convertWithCloud = async () => {
   if (!uploadedFile.value) return
 
-  try {
-    // Upload file and get job
-    progress.value = 20
-    status.value = 'Uploading to server...'
+  // Upload file and get job
+  progress.value = 20
+  status.value = 'Uploading to server...'
 
-    const formData = new FormData()
-    formData.append('file', uploadedFile.value)
+  const formData = new FormData()
+  formData.append('file', uploadedFile.value)
 
-    const response = await fileAPI.officeToPDF(formData)
-    const jobId = response.job_id
+  const response = await fileAPI.officeToPDF(formData)
+  const jobId = response.job_id
 
-    // Poll for completion
-    progress.value = 50
-    status.value = 'Converting on server...'
+  // Poll for completion
+  progress.value = 50
+  status.value = 'Converting on server...'
 
-    const result = await fileAPI.pollJobUntilDone(jobId, (p) => {
-      progress.value = 50 + (p * 0.4) // 50-90%
-    })
+  await fileAPI.pollJobUntilDone(jobId, (p) => {
+    progress.value = 50 + (p * 0.4) // 50-90%
+  })
 
-    // Download result
-    progress.value = 90
-    status.value = 'Preparing download...'
+  // Download result
+  progress.value = 90
+  status.value = 'Preparing download...'
 
-    const blob = await fileAPI.downloadResult(jobId)
-    resultUrl.value = URL.createObjectURL(blob)
+  const blob = await fileAPI.downloadResult(jobId)
+  resultUrl.value = URL.createObjectURL(blob)
 
-    progress.value = 100
-    status.value = 'Completed!'
-    converting.value = false
-
-  } catch (error: any) {
-    throw error
-  }
+  progress.value = 100
+  status.value = 'Completed!'
+  converting.value = false
 }
 
 const downloadResult = () => {

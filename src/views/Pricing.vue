@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { computed } from 'vue'
 import Button from '@/components/common/Button.vue'
 import Card from '@/components/common/Card.vue'
 
-const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -336,7 +334,7 @@ const handleCTA = async (tier: PricingTier) => {
             <div class="text-sm text-gray-600">用户评分</div>
           </div>
           <div class="text-center">
-            <div class="text-3xl font-bold text-warning">< 2s</div>
+            <div class="text-3xl font-bold text-warning">&lt; 2s</div>
             <div class="text-sm text-gray-600">平均处理时间</div>
           </div>
         </div>

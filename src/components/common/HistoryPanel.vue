@@ -33,7 +33,6 @@ const groupedHistory = computed(() => {
   const yesterday: HistoryItem[] = []
   const older: HistoryItem[] = []
 
-  const now = Date.now()
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
   const yesterdayStart = new Date(todayStart)
