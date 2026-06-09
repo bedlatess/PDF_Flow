@@ -104,6 +104,8 @@ chmod +x scripts/deploy-staging.sh
 chmod +x scripts/rollback-staging.sh
 chmod +x scripts/smoke-test.sh
 chmod +x scripts/business-smoke-test.sh
+chmod +x scripts/ocr-smoke-test.sh
+chmod +x scripts/office-smoke-test.sh
 ```
 
 ### 3.6 首次部署
@@ -195,6 +197,20 @@ docker compose restart backend
 docker compose exec backend python -c "import app.main; print('app import ok')"
 bash scripts/smoke-test.sh
 ```
+
+如果要做上线前的三条核心业务验收，按这个顺序跑：
+
+```bash
+BUSINESS_SMOKE_EMAIL="smoke-$(date +%s)@example.com" bash scripts/business-smoke-test.sh
+OCR_SMOKE_EMAIL="ocr-$(date +%s)@example.com" bash scripts/ocr-smoke-test.sh
+OFFICE_SMOKE_EMAIL="office-$(date +%s)@example.com" bash scripts/office-smoke-test.sh
+```
+
+说明：
+
+- `ocr-smoke-test.sh` 会自动把测试用户提升为 `pro`，生成一张带文字的 PNG，走 上传 -> OCR -> 下载文本 的真实链路
+- `office-smoke-test.sh` 会自动生成一个最小 DOCX，走 Office -> PDF -> 下载结果 的真实链路
+- 这两条脚本都会自己等待服务就绪，不需要额外先手工跑健康检查
 
 如果这次改动涉及认证、支付、AI，再额外测：
 

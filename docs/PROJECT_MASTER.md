@@ -176,6 +176,7 @@ backend/app/
 ### 🔴 P0 — 完成真实业务链路验收（本周）
 
 - [ ] **后端真实环境端到端联调**：单服务器 Docker 环境已跑通启动、迁移、`/health`、`/api/docs`、基础 smoke test；当前剩余 上传→任务执行→下载、OCR、Office、认证业务链路验收
+- [ ] **上线前脚本化业务验收**：已落地 `business-smoke-test.sh`（上传/合并/下载），并补充 `ocr-smoke-test.sh`、`office-smoke-test.sh`；下一步是在真实服务器逐条跑通 OCR 与 Office 转 PDF
 - [x] **文件下载端点**：`GET /files/download/{job_id}` 已实现（单文件直传 / 多文件 zip / OCR txt；425 未完成、422 失败、404 不存在），前端 `fileAPI.downloadResult` + `pollJobUntilDone` 已配套
 - [x] **后端单元测试**：新增 `tests/`（conftest + security/auth/files），35 用例通过，覆盖密码哈希、JWT、API Key、魔术数字、注册/登录/鉴权流程、下载分支
 - [x] **前端 OAuth 按钮**：加 "Soon" 角标 + tooltip，诚实标记未实现（后端 OAuth 属 P2）
@@ -580,6 +581,7 @@ python -m pytest tests/ -q      # 35 通过
 - **2026-06-09 服务器部署兼容性修复（第 9 轮）**：真实服务器业务验收中，合并任务可成功提交并生成 `job_id`，但 `GET /files/jobs/{job_id}` 持续返回 `pending`，30 次轮询均无进展。根因定位到 Celery worker：任务已被路由到 `pdf_processing / ocr_processing / office_processing / email` 自定义队列，但 worker 启动命令未显式声明消费这些队列，导致任务留在 broker 中无人执行。现已在 `backend/app/celery_worker.py` 中显式声明 `task_default_queue` 与 `task_queues`，并统一改用 `CELERY_BROKER_URL` / `CELERY_RESULT_BACKEND` 作为 broker/backend 配置来源，避免与 `REDIS_URL` 混用。
 - **2026-06-09 业务验收脚本就绪等待补强**：在 `docker compose up -d --build backend celery-worker` 后立即执行业务脚本时，注册请求可能撞上 Uvicorn reload/容器启动窗口，表现为 `curl: (56) Recv failure: Connection reset by peer`。现已让 `scripts/business-smoke-test.sh` 在执行注册前自动等待 `/health` 与 `/api/docs` 就绪，并为核心 `curl` 请求补充轻量连接重试，减少“服务刚拉起时的假失败”。
 - **2026-06-09 服务器部署兼容性修复（第 10 轮）**：Celery worker 开始消费合并任务后，任务状态从 `pending` 进入 `processing`，但长时间不结束。进一步排查发现，上传文件默认被保存到容器内 `tempfile.gettempdir()/pdf_flow`，即 `/tmp/pdf_flow/...`；而 Docker 共享卷挂载的是 `/tmp/pdf-flow/...`。两端路径只差下划线/短横线，导致 backend 与 worker 不一定看到同一份文件。现已将 `FileManager` 默认根目录统一改为 `settings.UPLOAD_DIR`（`/tmp/pdf-flow/uploads`），并补充回归测试，确保异步任务读取的是共享卷中的真实文件。
+- **2026-06-09 OCR / Office 验收脚本落地**：新增 `scripts/ocr-smoke-test.sh` 与 `scripts/office-smoke-test.sh`，用于上线前真实环境验收。`ocr-smoke-test.sh` 会自动注册并登录测试用户、将其提升为 `pro`、生成带固定文本的 PNG、提交 OCR 任务并校验结果文本；`office-smoke-test.sh` 会自动生成最小 DOCX、提交 Office 转 PDF 任务并验证下载结果为有效 PDF。两条脚本都内置 readiness 等待和任务轮询，目标是把“真实服务器上的功能验收”从手工点测收敛成稳定脚本。
 - **2026-06-09 后端**：FastAPI 架构、JWT 认证、文件处理 API、Celery 任务、Redis 限流、STRIDE 安全。
 - **2026-06-08 MVP**：6 工具 + 20 组件 + 108 单测 + 三语，前端生产就绪。
 
