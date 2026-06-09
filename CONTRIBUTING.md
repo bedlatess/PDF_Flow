@@ -117,7 +117,7 @@ pytest --cov=app            # With coverage
 ## Documentation
 
 - Update README.md for user-facing changes
-- Update docs/PROJECT_MASTER.md for architecture changes
+- Update docs/PROJECT_MASTER.md for architecture or status changes
 - Add inline comments for complex logic
 - Update API documentation in code docstrings
 

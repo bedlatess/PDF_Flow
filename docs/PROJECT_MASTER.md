@@ -33,8 +33,8 @@
 ### 渐进式三阶段路线
 
 - **Phase 1（已完成）**：纯前端 MVP，6 大工具，免登录、免费、本地处理。
-- **Phase 2（进行中）**：后端 API + 用户系统 + 云端处理（OCR/Office）+ Pro 订阅。
-- **Phase 3（规划）**：企业 API + 计费 + AI 集成（Gemini 文档智能）。
+- **Phase 2（已完成，待联调验收）**：后端 API + 用户系统 + 云端处理（OCR/Office）+ Pro 订阅。
+- **Phase 3（进行中）**：企业 API + 计费 + AI 集成（Gemini 文档智能）。
 
 ### 定价模型（v4.0 规划）
 
@@ -166,7 +166,7 @@ backend/app/
 
 - **前端单元测试**：108/108 通过（Vitest，14 文件）
 - **前端 E2E**：24/28 通过（85.7%，Playwright）— 等待策略见 §8
-- **后端测试**：❌ 0（仅占位文件，最高优先技术债）
+- **后端测试**：✅ 35 个 pytest 用例通过（基于 SQLite + stub 的逻辑层测试）
 - **i18n**：en / zh / es 三语，结构统一为 `app/nav/tools/common/auth/account`
 
 ---
@@ -181,6 +181,28 @@ backend/app/
 - [x] **前端 OAuth 按钮**：加 "Soon" 角标 + tooltip，诚实标记未实现（后端 OAuth 属 P2）
 - [x] **修复 3 个生产级 bug**（测试发现）：① bcrypt 4.x 与 passlib 不兼容 → 锁 `bcrypt==4.0.1`；② JWT `sub` 必须为字符串 → 编码转 str、解码转回 int；③ `files.py` 误用 `subscription_tier` → 改 `role`
 
+#### 当前已确认的联调阻塞点（2026-06-09 核查）
+
+- [x] `files.py` 的 `subscription_tier` 字段误用已修复
+- [x] `files.py` 的 `office-to-pdf` 端点缺少 `import os` 已修复
+- [x] `api/v1/__init__.py` 中 `enterprise / ai / advanced` 路由重复拼接 `/api/v1` 已修复
+- [x] `celery_worker.py` 未纳入 `office_tasks` 导致 Office 转换任务无法被 worker 消费，已修复
+- [x] `backend/Dockerfile` 缺 `libreoffice` / `libmagic1` 且健康检查依赖未安装的 `requests`，已修复
+- [ ] 本机未安装 Docker，当前仍无法执行真实基础设施联调
+
+#### 联调执行清单（拿到 Docker 环境后按顺序执行）
+
+1. `docker-compose up -d postgres redis backend celery-worker`
+2. 访问 `/health` 与 `/api/docs`，确认 API 容器可用
+3. 执行数据库迁移并确认表已创建
+4. 验证基础闭环：
+   上传 PDF → 合并任务 → 轮询状态 → 下载结果
+5. 验证 OCR 闭环：
+   上传 PDF/图片 → OCR 任务 → 下载文本
+6. 验证 Office 闭环：
+   上传 `.docx/.xlsx/.pptx` → 转 PDF → 下载结果
+7. 最后验证 WebSocket 进度推送是否正常
+
 ### 🟡 P1 — 核心云端能力（1–2 周）
 
 - [x] **工具页接入云端开关**：6 个工具页（MergePDF, SplitPDF, RotatePDF, CompressPDF, ImageToPDF, PDFToImage）已集成 `CloudToggle` 组件 + `useCloudProcessing` composable，支持本地/云端切换，云端路径：上传→提交任务→轮询→下载，Pro/Enterprise 用户专享
@@ -194,7 +216,7 @@ backend/app/
 - [x] **OAuth 社交登录**：后端 `oauth.py` 完成（Google/GitHub OAuth 流程、用户创建和关联、JWT 返回）；前端 `Login.vue` OAuth 按钮激活、`OAuthCallback.vue` 回调处理；三语国际化；依赖 authlib==1.3.0；已移除"Soon"标记。**需配置真实 OAuth 凭据测试**（见 `docs/OAUTH_SETUP.md`）
 - [x] **Office 转换**：后端 `office_tasks.py` 完成（Word/Excel/PPT → PDF，使用 LibreOffice）；前端 `OfficeToPDF.vue` 完成（文件上传、云端转换、进度显示、下载）；API 端点 `/files/office-to-pdf`；三语国际化；首页工具卡片已添加。**需系统安装 LibreOffice 验证**
 - [x] **Stripe 支付集成**：后端 `payment.py` 完成（订阅创建、Webhook处理、订阅管理）；前端 `PaymentSuccess.vue`/`PaymentCancel.vue` 完成；Pricing页面集成真实支付流程；依赖 stripe==7.0.0；支持订阅升级、取消、重新激活。**需配置 Stripe 凭据测试**
-- [x] **邮件系统（Resend）**：后端 `email_service.py`（4种邮件模板：欢迎/密码重置/订阅确认/流失预警）+ `email_tasks.py`（定时任务：每日流失预警/每12h订阅提醒）+ 密码重置端点（`/auth/forgot-password`, `/auth/reset-password`）；集成注册欢迎邮件、支付确认邮件；Celery Beat 定时任务配置；依赖 httpx==0.26.0；完整文档 `docs/EMAIL_SERVICE.md`。**需配置 Resend API Key 测试**
+- [x] **邮件系统（Resend）**：后端 `email_service.py`（4种邮件模板：欢迎/密码重置/订阅确认/流失预警）+ `email_tasks.py`（定时任务：每日流失预警/每12h订阅提醒）+ 密码重置端点（`/auth/forgot-password`, `/auth/reset-password`）；集成注册欢迎邮件、支付确认邮件；Celery Beat 定时任务配置；依赖 httpx==0.26.0；完整文档 `backend/docs/EMAIL_SERVICE.md`。**需配置 Resend API Key 测试**
 
 ### ⚪ P3 — 企业与 AI（1–3 月）
 
@@ -238,6 +260,47 @@ backend/app/
   - 国际化：en/zh 两语完整 ✅ 已完成
   - 验证：前端构建通过（6.27s）✅
 - [ ] 部署：K8s HPA、双活容灾、Cloudflare CDN
+
+### 4.1 建议执行顺序（从现在开始怎么做）
+
+#### 第 1 阶段：先把“已写完的功能”跑通
+
+1. 使用 Docker 跑通 `PostgreSQL + Redis + FastAPI + Celery`
+2. 完成一条最小闭环验证：
+   上传文件 → 创建任务 → 查询/推送进度 → 下载结果
+3. 优先验证 3 条高价值链路：
+   合并 PDF、OCR、Office 转 PDF
+
+#### 第 2 阶段：逐个验证外部依赖能力
+
+1. OAuth 真实凭据联调（Google / GitHub）
+2. Stripe 沙箱支付与 Webhook 联调
+3. Resend 邮件发送验证
+4. Gemini API Key 验证 AI 摘要 / 问答 / 提取
+
+#### 第 3 阶段：补上线前质量收口
+
+1. 修复并稳定 Playwright E2E
+2. 增加真实基础设施下的后端集成测试
+3. 清理 `vue-tsc` 严格模式遗留问题
+4. 补 Celery 结果回写 Redis，避免任务状态过期丢失
+
+#### 第 4 阶段：最后做部署与运维增强
+
+1. 验证 Sentry / PostHog 凭据与事件上报
+2. 准备生产部署配置
+3. 再推进 K8s / HPA / CDN / 双活容灾
+
+---
+
+## 4.2 文档治理规则
+
+- `docs/PROJECT_MASTER.md`：唯一状态文档，记录当前进度、待办、技术债、变更日志
+- `docs/OAUTH_SETUP.md`：保留为专项操作手册
+- `docs/STAGING_DEPLOY_GUIDE.md`：保留为单服务器 staging 发布与回滚手册
+- `开发文档/`：保留为原始需求材料，只读，不维护状态
+- 其余阶段性总结、简报、完成报告不再保留；后续统一删除或不再新增
+- 若新增文档，必须满足“操作手册 / 部署指南 / 外部服务配置说明”之一，且不能重复记录项目状态
 
 ---
 
@@ -292,6 +355,89 @@ celery -A app.celery_worker worker --loglevel=info   # 另开终端
 
 ---
 
+## 6.1 单服务器 staging 发布流程
+
+适用场景：本地不装 Docker，只在服务器上做真实环境测试；当前仅有 1 台服务器。
+
+### 分支策略
+
+- `staging`：服务器真实测试分支
+- `main`：正式稳定分支
+
+规则：
+
+1. 本地开发完成后，先提交并推送到 `staging`
+2. 服务器只拉取并部署 `staging`
+3. 真实测试通过后，再将 `staging` 合并到 `main`
+
+### 脚本
+
+- `scripts/deploy-staging.sh`
+  - 备份当前 commit 与环境文件
+  - `git fetch / checkout / pull staging`
+  - `docker compose up -d --build`
+  - `alembic upgrade head`
+  - 冒烟测试 `/health` 与 `/api/docs`
+- `scripts/rollback-staging.sh`
+  - 回滚到上一次成功部署的 commit
+  - 重建容器并重新执行冒烟测试
+- `scripts/smoke-test.sh`
+  - 默认校验 `/health` 和 `/api/docs`
+
+### 服务器准备
+
+```bash
+chmod +x scripts/deploy-staging.sh scripts/rollback-staging.sh scripts/smoke-test.sh
+```
+
+服务器必须具备：
+
+- `git`
+- `docker`
+- `docker compose` 或 `docker-compose`
+- `curl`
+
+服务器本地维护：
+
+- 根目录 `.env`（如需要）
+- `backend/.env`
+
+### 日常部署命令
+
+```bash
+bash scripts/deploy-staging.sh
+```
+
+### 回滚命令
+
+```bash
+bash scripts/rollback-staging.sh
+```
+
+### 数据备份策略
+
+- 默认备份：
+  - 当前 commit
+  - 根目录 `.env`
+  - `backend/.env`
+  - 可选 compose override 文件
+- 可选数据库备份：
+  - 通过 `DEPLOY_BACKUP_COMMAND` 注入服务器自定义备份命令
+
+示例：
+
+```bash
+DEPLOY_BACKUP_COMMAND='docker compose exec -T postgres pg_dump -U pdfflow_user pdfflow > "$BACKUP_PATH/postgres.sql"' \
+bash scripts/deploy-staging.sh
+```
+
+### 容错说明
+
+- 当前脚本保证“代码版本 + 容器部署”可回滚
+- 数据库回滚不自动处理，需确保迁移具备向后兼容性，或自行维护数据库备份/恢复流程
+
+---
+
 ## 7. 项目结构
 
 ```
@@ -299,7 +445,10 @@ PDF_Flow/
 ├── 开发文档/              # 原始需求规格 v1.0–v4.0（只读源材料）
 ├── README.md             # 项目门面，指向本文档
 ├── docs/
-│   └── PROJECT_MASTER.md # ← 本文件，唯一开发文档
+│   ├── PROJECT_MASTER.md # ← 本文件，唯一状态文档
+│   ├── OAUTH_SETUP.md    # OAuth 配置操作手册
+│   └── STAGING_DEPLOY_GUIDE.md # 单服务器 staging 部署手册
+├── scripts/              # staging 部署 / 回滚 / 冒烟测试脚本
 ├── src/                  # 前端（见 §3.2 / §3.3）
 │   ├── components/{common,layout,pdf}/
 │   ├── views/{,tools,auth}/
@@ -397,7 +546,7 @@ python -m pytest tests/ -q      # 35 通过
 - 🟢 i18n 缺 OCR/Office/Pricing 等未来模块文案
 
 ### Changelog
-- **2026-06-09 P2 邮件系统完成**：创建 `email_service.py`（400+行，4种邮件模板：欢迎/密码重置/订阅确认/流失预警，使用 Resend API，HTML+纯文本双格式，响应式设计）。创建 `email_tasks.py`（180+行，3个定时任务：每日流失预警/12h订阅提醒/每周摘要）。更新 `auth.py` 添加密码重置端点（`/auth/forgot-password`, `/auth/reset-password`，1小时过期Token，防邮箱枚举），注册集成欢迎邮件（BackgroundTasks 非阻塞）。更新 `payment.py` 集成订阅确认邮件（checkout.session.completed webhook）。更新 `config.py` 添加 `EMAIL_FROM`, `FRONTEND_URL`, `PASSWORD_RESET_TOKEN_EXPIRE_HOURS`。更新 `user.py` schemas 添加 `PasswordResetRequest`/`PasswordResetConfirm`。更新 `celery_worker.py` 添加邮件任务队列路由、Celery Beat 定时任务（24h流失预警/12h订阅提醒）。更新 `.env.example` 添加邮件配置。创建完整文档 `docs/EMAIL_SERVICE.md`（配置/端点/任务/测试/安全/前端集成/故障排查）。Python 语法验证 ✅（7个文件 AST 通过）。邮件系统完成度：5% → 95%（需 Resend API Key 真实测试）。**Phase 2 完成度：99% → 100%**（所有功能已实现）。
+- **2026-06-09 P2 邮件系统完成**：创建 `email_service.py`（400+行，4种邮件模板：欢迎/密码重置/订阅确认/流失预警，使用 Resend API，HTML+纯文本双格式，响应式设计）。创建 `email_tasks.py`（180+行，3个定时任务：每日流失预警/12h订阅提醒/每周摘要）。更新 `auth.py` 添加密码重置端点（`/auth/forgot-password`, `/auth/reset-password`，1小时过期Token，防邮箱枚举），注册集成欢迎邮件（BackgroundTasks 非阻塞）。更新 `payment.py` 集成订阅确认邮件（checkout.session.completed webhook）。更新 `config.py` 添加 `EMAIL_FROM`, `FRONTEND_URL`, `PASSWORD_RESET_TOKEN_EXPIRE_HOURS`。更新 `user.py` schemas 添加 `PasswordResetRequest`/`PasswordResetConfirm`。更新 `celery_worker.py` 添加邮件任务队列路由、Celery Beat 定时任务（24h流失预警/12h订阅提醒）。更新 `.env.example` 添加邮件配置。创建完整文档 `backend/docs/EMAIL_SERVICE.md`（配置/端点/任务/测试/安全/前端集成/故障排查）。Python 语法验证 ✅（7个文件 AST 通过）。邮件系统完成度：5% → 95%（需 Resend API Key 真实测试）。**Phase 2 完成度：99% → 100%**（所有功能已实现）。
 - **2026-06-09 构建验证通过**：前端 `npm run build` ✅（6.23s，WatermarkPDF-LHFuZaEg.js 8.26 kB），后端 AST 语法验证 ✅（advanced.py/files.py/__init__.py）。水印工具完成度：90% → 95%。**Phase 3 完成度保持 72%**（待前端表单/注释 UI 推升）。
 - **2026-06-09 修复 `subscription_tier` bug**：`files.py:72` 上传端点误用 `current_user.subscription_tier`（User 模型无此字段），登录用户上传会抛 `AttributeError`。修复为基于 `current_user.role.value` 映射 user_tier（admin → enterprise 级配额），与 `file_service.upload_file` 期望的 `"free"/"pro"/"enterprise"` 字符串对齐。技术债清零。
 - **2026-06-09 P3 高级PDF后端端点完成**：为已有的 `advanced_pdf_service.py`（水印/表单/注释/高亮/签名字段）补齐 REST 端点。创建 `endpoints/advanced.py`（300+行），实现 6 个端点：`POST /advanced/watermark`（服务端水印）、`POST /advanced/form/fields`（读取表单字段名/类型）、`POST /advanced/form/fill`（填写表单）、`POST /advanced/annotate/text`（文本注释）、`POST /advanced/annotate/highlight`（高亮注释）、`POST /advanced/signature/field`（签名字段），全部 Pro/Enterprise 权限保护（`require_pro_user` 复用 ai.py 模式），统一 tempfile 处理 + FileResponse 返回 + 临时文件清理。复用已存在的 `schemas/advanced_pdf.py`。注册路由 `/api/v1/advanced/*`（`api/v1/__init__.py`）。endpoint 参数名与服务方法签名逐一核对一致。高级PDF后端完成度：50% → 75%。**Phase 3 完成度：70% → 72%**。
@@ -411,9 +560,13 @@ python -m pytest tests/ -q      # 35 通过
 - **2026-06-09 P2 Pricing定价页面完成**：创建 `Pricing.vue` 定价页面（350+行），展示 Free/Pro/Enterprise 三档套餐完整对比（价格/功能/限制/FAQ/信任指标），集成用户状态判断（当前套餐高亮/CTA按钮智能路由），包含7天退款/随时取消/数据安全等信任要素，FAQ常见问题4条，添加到Header导航栏（💎Pricing入口）。前端 build✓（6.01s）。Stripe支付完成度：5% → 25%。
 - **2026-06-09 P1 WebSocket实时进度完成**：后端 `endpoints/websocket.py` 实现完整 WebSocket 端点（任务订阅/进度广播/心跳机制/连接管理器），支持多客户端订阅同一任务，自动清理死连接。前端创建 `useWebSocket.ts` composable（连接/断开/消息处理/自动重连）+ `useTaskProgress.ts` 统一进度追踪（WebSocket优先，3秒超时自动回退轮询）。WebSocket 路由已注册到 API。前端 build✓（6.05s）。**P1任务全部完成（4/4）**，Phase 2 完成度：90% → 95%。
 - **2026-06-09 P1 OCR功能完成**：新建 `OCRPDF.vue` 前端页面，支持 10 种语言识别（英语/简繁中文/日韩/法德西俄阿拉伯语），集成 `useCloudProcessing` 云端处理流程，Pro/Enterprise 专享。功能包括：文件上传→语言选择→OCR识别→结果展示（置信度+页数）→文本复制/下载。添加到首页工具列表（粉色卡片）+路由注册。前端 build✓（5.88s）。后端 `ocr_tasks.py` 完整（extract_text_task + batch_ocr_task），使用 Tesseract + pdf2image + PIL，需 Docker 环境真实验证。OCR 完成度：30% → 85%。
-- **2026-06-09 P1 云端集成完成**：为 6 个工具页（MergePDF, SplitPDF, RotatePDF, CompressPDF, ImageToPDF, PDFToImage）集成云端处理开关，每个页面添加 `CloudToggle` 组件 + `useCloudProcessing` composable 调用，实现本地/云端双路径处理。云端路径：文件上传→任务提交→进度轮询（1.5s间隔）→结果下载，Pro/Enterprise 用户专享。前端 build✓（5.92s）。创建项目简报 `JIANBAO.md` 作为崩溃恢复点。
+- **2026-06-09 P1 云端集成完成**：为 6 个工具页（MergePDF, SplitPDF, RotatePDF, CompressPDF, ImageToPDF, PDFToImage）集成云端处理开关，每个页面添加 `CloudToggle` 组件 + `useCloudProcessing` composable 调用，实现本地/云端双路径处理。云端路径：文件上传→任务提交→进度轮询（1.5s间隔）→结果下载，Pro/Enterprise 用户专享。前端 build✓（5.92s）。当时曾创建项目简报作为崩溃恢复点，现已归档删除并统一收口到主文档。
 - **2026-06-09 P0 推进 + 测试**：实现文件下载端点（`GET /files/download/{job_id}`，单文件/zip/txt 三态）+ 前端 `downloadResult`/`pollJobUntilDone`；改进 `get_job_status` 结合 Celery `AsyncResult`；新增后端 pytest 套件（35 通过：security/auth/files，SQLite+stub）；OAuth 按钮加 "Soon" 标记。**测试发现并修复 3 个生产级 bug**：bcrypt 版本锁定、JWT sub 字符串化、files.py role 字段。前端 build✓ + 108 单测✓。
 - **2026-06-09 文档整合**：所有分散文档归并为本文件；i18n 三语结构统一；前后端字段对齐(`role`)；新增 Login/Register/Profile + Header 用户菜单 + 路由守卫 + API 服务层；新增 `vite-env.d.ts`。
+- **2026-06-09 文档归档清理**：删除重复的阶段性总结、简报、完成报告，仅保留 `PROJECT_MASTER.md` 作为唯一状态文档，保留 `OAUTH_SETUP.md` 作为操作手册；同步补充后续文档治理规则与执行顺序。
+- **2026-06-09 联调阻塞清理**：修复后端真实联调前置问题：`files.py` 增加 `import os` 以恢复 Office 转换端点；`api/v1/__init__.py` 去除 `enterprise/ai/advanced` 的重复 `/api/v1` 前缀；`celery_worker.py` 纳入 `office_tasks` 与 `office_processing` 队列；`backend/Dockerfile` 补 `libreoffice` / `libmagic1` 并将健康检查改为 `urllib`，避免依赖未安装的 `requests`；确认当前剩余硬阻塞为“本机无 Docker”。
+- **2026-06-09 单服务器 staging 发布流程落地**：新增 `scripts/deploy-staging.sh`、`scripts/rollback-staging.sh`、`scripts/smoke-test.sh`，用于单服务器真实测试、备份容错和代码回滚；`.gitignore` 新增 `.deploy_state/` 与 `.deploy_backups/`；README / backend README / 主文档同步增加 staging→main 的脚本化发布说明。
+- **2026-06-09 staging 操作手册补齐**：新增 `docs/STAGING_DEPLOY_GUIDE.md`，明确服务器首次部署 checklist、日常 `staging -> main` Git 流程、回滚流程、数据库备份钩子和文档同步规则，避免后续重复摸索。
 - **2026-06-09 后端**：FastAPI 架构、JWT 认证、文件处理 API、Celery 任务、Redis 限流、STRIDE 安全。
 - **2026-06-08 MVP**：6 工具 + 20 组件 + 108 单测 + 三语，前端生产就绪。
 

@@ -10,7 +10,12 @@ celery_app = Celery(
     "pdf_flow_worker",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.tasks.pdf_tasks", "app.tasks.ocr_tasks", "app.tasks.email_tasks"]
+    include=[
+        "app.tasks.pdf_tasks",
+        "app.tasks.ocr_tasks",
+        "app.tasks.office_tasks",
+        "app.tasks.email_tasks",
+    ]
 )
 
 # Celery 配置
@@ -31,6 +36,7 @@ celery_app.conf.update(
     task_routes={
         "app.tasks.pdf_tasks.*": {"queue": "pdf_processing"},
         "app.tasks.ocr_tasks.*": {"queue": "ocr_processing"},
+        "app.tasks.office_tasks.*": {"queue": "office_processing"},
         "app.tasks.email_tasks.*": {"queue": "email"},
     },
 

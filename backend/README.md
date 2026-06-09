@@ -146,7 +146,7 @@ backend/
 
 ### 待开发 📋
 - [ ] 监控集成（Sentry, PostHog）真实凭据测试
-- [ ] 前端表单填写/注释 UI
+- [ ] 外部服务真实凭据验证（OAuth / Stripe / Resend / Gemini）
 
 ## 🧪 测试
 
@@ -186,13 +186,36 @@ docker stack deploy -c docker-compose.yml pdfflow
 ### Kubernetes（企业级）
 参考 v4.0 文档的 K8s 配置
 
+### 单服务器 staging 部署
+
+推荐在单服务器上只部署 `staging` 分支做真实验证，不直接在服务器上跑 `main`。
+
+```bash
+chmod +x ../scripts/deploy-staging.sh ../scripts/rollback-staging.sh ../scripts/smoke-test.sh
+bash ../scripts/deploy-staging.sh
+```
+
+回滚：
+
+```bash
+bash ../scripts/rollback-staging.sh
+```
+
+说明：
+
+- 服务器本地 `.env` / `backend/.env` 不提交到仓库
+- 部署脚本会自动备份本地环境文件和当前 commit
+- 冒烟测试默认检查 `/health` 和 `/api/docs`
+- 如需数据库备份，可通过 `DEPLOY_BACKUP_COMMAND` 注入自定义命令
+
 ## 📖 相关文档
 
-- [开发主文档](../docs/PROJECT_MASTER.md) — 项目唯一开发文档
+- [开发主文档](../docs/PROJECT_MASTER.md) — 项目唯一状态文档
+- [Staging 部署手册](../docs/STAGING_DEPLOY_GUIDE.md) — 单服务器 staging 部署、冒烟测试与回滚
 - [原始需求规格 v1.0–v4.0](../开发文档/) — 只读源材料
 - [API 文档](http://localhost:8000/api/docs) — 服务启动后访问
 - [OAuth 配置指南](../docs/OAUTH_SETUP.md) — Google/GitHub OAuth 凭据配置
-- [邮件服务文档](docs/EMAIL_SERVICE.md) — Resend 邮件系统完整指南
+- [邮件服务文档](./docs/EMAIL_SERVICE.md) — Resend 邮件系统完整指南
 
 ## 📄 许可证
 

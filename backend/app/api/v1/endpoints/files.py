@@ -2,6 +2,7 @@
 File Processing Endpoints
 文件处理相关的 API 端点
 """
+import os
 from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, Request, Depends, HTTPException, status, Query
 from fastapi.responses import FileResponse
@@ -422,4 +423,3 @@ async def office_to_pdf(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to convert Office file: {str(e)}"
         )
-

@@ -35,3 +35,7 @@ coverage
 *.txt
 extract.log
 pdf_content.txt
+
+# Server-side deployment state
+.deploy_state/
+.deploy_backups/

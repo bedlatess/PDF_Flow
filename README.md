@@ -171,6 +171,7 @@ PDF_Flow/
 > 本项目只有**一份**开发文档，所有状态、计划、规范、指南都在其中。
 
 - **[docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md)** — 📘 唯一开发主文档（Single Source of Truth）
+- **[docs/STAGING_DEPLOY_GUIDE.md](./docs/STAGING_DEPLOY_GUIDE.md)** — 🚢 单服务器 staging 部署与回滚手册
 - **[开发文档/](./开发文档/)** — 📋 原始需求规格 v1.0–v4.0（只读源材料）
 - **[backend/README.md](./backend/README.md)** — ⚙️ 后端运行说明
 
@@ -198,6 +199,66 @@ netlify deploy --prod --dir=dist
 连接 Git 仓库，设置：
 - 构建命令: `npm run build`
 - 输出目录: `dist`
+
+### 单服务器真实测试流程
+
+推荐使用：
+
+- `staging`：服务器真实测试分支
+- `main`：正式稳定分支
+
+服务器只部署 `staging`，测试通过后再合并到 `main`。
+
+#### 首次准备
+
+1. 在服务器克隆仓库
+2. 在服务器本地创建并维护：
+   - 根目录 `.env`（如需要）
+   - `backend/.env`
+3. 确认服务器安装：
+   - `git`
+   - `docker`
+   - `docker compose` 或 `docker-compose`
+   - `curl`
+4. 给脚本执行权限：
+
+```bash
+chmod +x scripts/deploy-staging.sh scripts/rollback-staging.sh scripts/smoke-test.sh
+```
+
+#### 部署 `staging`
+
+```bash
+git fetch origin
+git checkout staging
+git pull --ff-only origin staging
+bash scripts/deploy-staging.sh
+```
+
+脚本会自动执行：
+
+- 备份当前代码状态和本地 `.env`
+- 拉取并切换到 `staging`
+- `docker compose up -d --build`
+- 运行 `alembic upgrade head`
+- 检查 `/health` 和 `/api/docs`
+
+#### 回滚
+
+```bash
+bash scripts/rollback-staging.sh
+```
+
+#### 可选数据库备份钩子
+
+如果你想在部署前自动执行数据库备份，可以在服务器上这样运行：
+
+```bash
+DEPLOY_BACKUP_COMMAND='docker compose exec -T postgres pg_dump -U pdfflow_user pdfflow > "$BACKUP_PATH/postgres.sql"' \
+bash scripts/deploy-staging.sh
+```
+
+> 注意：数据库回滚策略需要你自己确认兼容性；当前脚本默认提供的是“代码与容器版本回滚”。
 
 ---
 
