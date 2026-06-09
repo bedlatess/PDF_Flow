@@ -1,8 +1,6 @@
 # Docker Compose for local development and testing
 # Use this for local development before deploying to K8s
 
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -95,6 +93,11 @@ services:
       - ./backend:/app
       - temp_files:/tmp/pdf-flow
     command: celery -A app.celery_worker worker --loglevel=info --concurrency=4
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_worker inspect ping -d celery@$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Frontend (optional - can be run separately with npm)
   frontend:
