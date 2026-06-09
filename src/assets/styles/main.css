@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 全局样式重置与优化 */
+@layer base {
+  body {
+    @apply bg-background-light text-gray-900 font-sans antialiased;
+    @apply dark:bg-background-dark dark:text-gray-100;
+  }
+
+  /* 平滑滚动 */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* 隐藏滚动条但保持功能 (可选) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+}
+
+/* 毛玻璃效果工具类 */
+@layer components {
+  .glass {
+    @apply bg-white/70 backdrop-blur-glass border border-white/20;
+    @apply dark:bg-gray-900/70 dark:border-gray-700/20;
+  }
+
+  .glass-shadow {
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  }
+}
+
+/* 拖拽波纹动画 */
+@layer utilities {
+  .drag-ripple {
+    @apply relative overflow-hidden;
+  }
+
+  .drag-ripple::before {
+    content: '';
+    @apply absolute inset-0 bg-primary/10 opacity-0 transition-opacity duration-300;
+  }
+
+  .drag-ripple.drag-active::before {
+    @apply opacity-100;
+  }
+}

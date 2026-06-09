@@ -1,0 +1,478 @@
+"""
+File Processing Service
+文件处理业务逻辑层
+"""
+import os
+import time
+import uuid
+from typing import Optional, List, Dict
+from pathlib import Path
+from fastapi import UploadFile, HTTPException, status
+from redis import Redis
+import json
+import logging
+
+from app.core.config import settings
+from app.utils.file_utils import FileManager, FileValidator
+from app.tasks.pdf_tasks import (
+    merge_pdfs_task,
+    split_pdf_task,
+    compress_pdf_task,
+    rotate_pdf_task,
+    convert_images_to_pdf_task,
+    convert_pdf_to_images_task,
+)
+from app.tasks.ocr_tasks import extract_text_task
+
+logger = logging.getLogger(__name__)
+
+
+class FileProcessingService:
+    """文件处理服务"""
+
+    def __init__(self):
+        self.file_manager = FileManager()
+        self.redis_client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+        self.file_ttl = 3600  # 文件在 Redis 中的 TTL（1小时）
+
+    def _generate_file_id(self) -> str:
+        """生成唯一的文件 ID"""
+        return f"file_{uuid.uuid4().hex[:12]}"
+
+    def _generate_job_id(self) -> str:
+        """生成唯一的任务 ID"""
+        return f"job_{uuid.uuid4().hex[:12]}"
+
+    async def upload_file(
+        self,
+        file: UploadFile,
+        user_tier: str = "free"
+    ) -> Dict:
+        """
+        上传文件
+
+        Args:
+            file: 上传的文件
+            user_tier: 用户等级 (free, pro, enterprise)
+
+        Returns:
+            文件信息字典
+        """
+        # 验证文件
+        max_size = FileValidator.MAX_FILE_SIZE.get(user_tier, FileValidator.MAX_FILE_SIZE["free"])
+        is_valid, error_msg = await FileValidator.validate_file(file, max_size)
+
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg
+            )
+
+        # 生成文件 ID
+        file_id = self._generate_file_id()
+
+        # 创建临时目录
+        temp_dir = self.file_manager.create_temp_dir(prefix=f"{file_id}_")
+
+        # 保存文件
+        file_path = temp_dir / file.filename
+        await self.file_manager.save_upload_file(file, file_path)
+
+        # 获取文件信息
+        file_info = self.file_manager.get_file_info(file_path)
+
+        # 存储文件元数据到 Redis
+        file_metadata = {
+            "file_id": file_id,
+            "filename": file.filename,
+            "filepath": str(file_path),
+            "size": file_info["size"],
+            "mime_type": file.content_type,
+            "upload_time": time.time(),
+            "user_tier": user_tier
+        }
+
+        # 保存到 Redis（带 TTL）
+        self.redis_client.setex(
+            f"file:{file_id}",
+            self.file_ttl,
+            json.dumps(file_metadata)
+        )
+
+        logger.info(f"File uploaded: {file_id} - {file.filename}")
+
+        return {
+            "file_id": file_id,
+            "filename": file.filename,
+            "size": file_info["size"],
+            "mime_type": file.content_type,
+            "upload_time": file_metadata["upload_time"]
+        }
+
+    def _get_file_path(self, file_id: str) -> Path:
+        """从 Redis 获取文件路径"""
+        file_data = self.redis_client.get(f"file:{file_id}")
+
+        if not file_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"File not found: {file_id}"
+            )
+
+        metadata = json.loads(file_data)
+        file_path = Path(metadata["filepath"])
+
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"File no longer exists: {file_id}"
+            )
+
+        return file_path
+
+    def _save_job_status(self, job_id: str, status_data: Dict):
+        """保存任务状态到 Redis"""
+        self.redis_client.setex(
+            f"job:{job_id}",
+            3600,  # 1 hour TTL
+            json.dumps(status_data)
+        )
+
+    def get_job_status(self, job_id: str) -> Optional[Dict]:
+        """获取任务状态
+
+        优先读取 Redis 中的初始记录，再用 Celery AsyncResult 补充真实执行状态。
+        Celery 完成后会把 task 返回值（含 output_path / output_files）写入结果后端，
+        据此把状态更新为 completed 并回填结果，前端轮询才能看到完成。
+        """
+        job_data = self.redis_client.get(f"job:{job_id}")
+        if not job_data:
+            return None
+
+        status_data = json.loads(job_data)
+
+        # 若 Redis 中已是终态（completed/failed），直接信任，不再被 Celery 覆盖
+        # （Celery 结果可能已过期，AsyncResult 会退回 PENDING，不能据此降级）
+        if status_data.get("status") in ("completed", "failed"):
+            return status_data
+
+        # 否则结合 Celery 执行状态
+        try:
+            from celery.result import AsyncResult
+            from app.celery_worker import celery_app
+
+            async_result = AsyncResult(job_id, app=celery_app)
+            celery_state = async_result.state  # PENDING / STARTED / SUCCESS / FAILURE / RETRY
+
+            state_map = {
+                "PENDING": "pending",
+                "STARTED": "processing",
+                "RETRY": "processing",
+                "SUCCESS": "completed",
+                "FAILURE": "failed",
+            }
+            mapped = state_map.get(celery_state)
+            if mapped:
+                status_data["status"] = mapped
+                status_data["updated_at"] = time.time()
+
+            if celery_state == "SUCCESS":
+                result = async_result.result
+                status_data["progress"] = 100
+                status_data["result"] = result
+            elif celery_state == "FAILURE":
+                status_data["error"] = str(async_result.result)
+        except Exception as e:  # Celery 不可用时降级为 Redis 原始记录
+            logger.warning(f"Celery status lookup failed for {job_id}: {e}")
+
+        return status_data
+
+    def get_download_path(self, job_id: str) -> Path:
+        """获取已完成任务的可下载文件路径
+
+        - 单文件结果（merge/compress/rotate/images-to-pdf）：直接返回 output_path
+        - 多文件结果（split/pdf-to-images）：打包为 zip 返回
+        - OCR：将提取文本写入 .txt 返回
+
+        Raises:
+            HTTPException: 任务不存在 / 未完成 / 无可下载产物
+        """
+        status_data = self.get_job_status(job_id)
+        if not status_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Job not found: {job_id}"
+            )
+
+        job_status = status_data.get("status")
+        if job_status == "failed":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=status_data.get("error", "Job failed")
+            )
+        if job_status != "completed":
+            # 425 Too Early：任务仍在处理中
+            raise HTTPException(
+                status_code=425,
+                detail=f"Job not completed yet (status: {job_status})"
+            )
+
+        result = status_data.get("result") or {}
+
+        # 单文件
+        output_path = result.get("output_path")
+        if output_path and os.path.exists(output_path):
+            return Path(output_path)
+
+        # 多文件 -> 打包 zip
+        output_files = result.get("output_files")
+        if output_files:
+            existing = [f for f in output_files if os.path.exists(f)]
+            if existing:
+                import zipfile
+                zip_dir = self.file_manager.create_temp_dir(prefix="download_")
+                zip_path = zip_dir / f"{job_id}.zip"
+                with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                    for f in existing:
+                        zf.write(f, arcname=os.path.basename(f))
+                return zip_path
+
+        # OCR 文本结果
+        if "text" in result:
+            txt_dir = self.file_manager.create_temp_dir(prefix="download_")
+            txt_path = txt_dir / f"{job_id}.txt"
+            with open(txt_path, "w", encoding="utf-8") as f:
+                f.write(result.get("text", ""))
+            return txt_path
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No downloadable output for this job"
+        )
+
+    async def merge_pdfs(self, file_ids: List[str], output_filename: Optional[str] = None) -> Dict:
+        """合并 PDF 文件"""
+        # 获取所有文件路径
+        file_paths = [str(self._get_file_path(fid)) for fid in file_ids]
+
+        # 创建输出目录
+        output_dir = self.file_manager.create_temp_dir(prefix="merge_")
+        output_path = output_dir / (output_filename or "merged.pdf")
+
+        # 创建任务 ID
+        job_id = self._generate_job_id()
+
+        # 保存初始任务状态
+        self._save_job_status(job_id, {
+            "job_id": job_id,
+            "status": "pending",
+            "created_at": time.time(),
+            "updated_at": time.time()
+        })
+
+        # 提交 Celery 任务
+        task = merge_pdfs_task.apply_async(
+            args=[file_paths, str(output_path)],
+            task_id=job_id
+        )
+
+        logger.info(f"Merge job created: {job_id}")
+
+        return {
+            "job_id": job_id,
+            "status": "pending",
+            "message": "PDF merge job queued"
+        }
+
+    async def split_pdf(self, file_id: str, page_ranges: List[List[int]]) -> Dict:
+        """拆分 PDF 文件"""
+        file_path = str(self._get_file_path(file_id))
+
+        # 转换页面范围格式
+        ranges_tuples = [(r[0], r[1]) for r in page_ranges]
+
+        # 创建输出目录
+        output_dir = self.file_manager.create_temp_dir(prefix="split_")
+
+        # 创建任务
+        job_id = self._generate_job_id()
+
+        self._save_job_status(job_id, {
+            "job_id": job_id,
+            "status": "pending",
+            "created_at": time.time(),
+            "updated_at": time.time()
+        })
+
+        # 提交任务
+        task = split_pdf_task.apply_async(
+            args=[file_path, ranges_tuples, str(output_dir)],
+            task_id=job_id
+        )
+
+        logger.info(f"Split job created: {job_id}")
+
+        return {
+            "job_id": job_id,
+            "status": "pending",
+            "message": "PDF split job queued"
+        }
+
+    async def compress_pdf(self, file_id: str, quality: str = "medium") -> Dict:
+        """压缩 PDF 文件"""
+        file_path = str(self._get_file_path(file_id))
+
+        # 创建输出路径
+        output_dir = self.file_manager.create_temp_dir(prefix="compress_")
+        output_path = output_dir / "compressed.pdf"
+
+        # 创建任务
+        job_id = self._generate_job_id()
+
+        self._save_job_status(job_id, {
+            "job_id": job_id,
+            "status": "pending",
+            "created_at": time.time(),
+            "updated_at": time.time()
+        })
+
+        # 提交任务
+        task = compress_pdf_task.apply_async(
+            args=[file_path, str(output_path), quality],
+            task_id=job_id
+        )
+
+        logger.info(f"Compress job created: {job_id}")
+
+        return {
+            "job_id": job_id,
+            "status": "pending",
+            "message": "PDF compression job queued"
+        }
+
+    async def rotate_pdf(self, file_id: str, rotation: int) -> Dict:
+        """旋转 PDF 页面"""
+        file_path = str(self._get_file_path(file_id))
+
+        # 创建输出路径
+        output_dir = self.file_manager.create_temp_dir(prefix="rotate_")
+        output_path = output_dir / "rotated.pdf"
+
+        # 创建任务
+        job_id = self._generate_job_id()
+
+        self._save_job_status(job_id, {
+            "job_id": job_id,
+            "status": "pending",
+            "created_at": time.time(),
+            "updated_at": time.time()
+        })
+
+        # 提交任务
+        task = rotate_pdf_task.apply_async(
+            args=[file_path, str(output_path), rotation],
+            task_id=job_id
+        )
+
+        logger.info(f"Rotate job created: {job_id}")
+
+        return {
+            "job_id": job_id,
+            "status": "pending",
+            "message": "PDF rotation job queued"
+        }
+
+    async def images_to_pdf(self, file_ids: List[str], output_filename: Optional[str] = None) -> Dict:
+        """图片转 PDF"""
+        file_paths = [str(self._get_file_path(fid)) for fid in file_ids]
+
+        # 创建输出路径
+        output_dir = self.file_manager.create_temp_dir(prefix="img2pdf_")
+        output_path = output_dir / (output_filename or "converted.pdf")
+
+        # 创建任务
+        job_id = self._generate_job_id()
+
+        self._save_job_status(job_id, {
+            "job_id": job_id,
+            "status": "pending",
+            "created_at": time.time(),
+            "updated_at": time.time()
+        })
+
+        # 提交任务
+        task = convert_images_to_pdf_task.apply_async(
+            args=[file_paths, str(output_path)],
+            task_id=job_id
+        )
+
+        logger.info(f"Images to PDF job created: {job_id}")
+
+        return {
+            "job_id": job_id,
+            "status": "pending",
+            "message": "Image to PDF conversion job queued"
+        }
+
+    async def pdf_to_images(self, file_id: str, format: str = "png") -> Dict:
+        """PDF 转图片"""
+        file_path = str(self._get_file_path(file_id))
+
+        # 创建输出目录
+        output_dir = self.file_manager.create_temp_dir(prefix="pdf2img_")
+
+        # 创建任务
+        job_id = self._generate_job_id()
+
+        self._save_job_status(job_id, {
+            "job_id": job_id,
+            "status": "pending",
+            "created_at": time.time(),
+            "updated_at": time.time()
+        })
+
+        # 提交任务
+        task = convert_pdf_to_images_task.apply_async(
+            args=[file_path, str(output_dir), format],
+            task_id=job_id
+        )
+
+        logger.info(f"PDF to images job created: {job_id}")
+
+        return {
+            "job_id": job_id,
+            "status": "pending",
+            "message": "PDF to images conversion job queued"
+        }
+
+    async def extract_text_ocr(self, file_id: str, language: str = "eng") -> Dict:
+        """OCR 文本提取"""
+        file_path = str(self._get_file_path(file_id))
+
+        # 创建任务
+        job_id = self._generate_job_id()
+
+        self._save_job_status(job_id, {
+            "job_id": job_id,
+            "status": "pending",
+            "created_at": time.time(),
+            "updated_at": time.time()
+        })
+
+        # 提交任务
+        task = extract_text_task.apply_async(
+            args=[file_path, language],
+            task_id=job_id
+        )
+
+        logger.info(f"OCR job created: {job_id}")
+
+        return {
+            "job_id": job_id,
+            "status": "pending",
+            "message": "OCR job queued"
+        }
+
+
+# 全局服务实例
+file_processing_service = FileProcessingService()

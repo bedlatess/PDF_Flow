@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: pdfflow_db
+    environment:
+      POSTGRES_USER: pdfflow
+      POSTGRES_PASSWORD: pdfflow_dev_password
+      POSTGRES_DB: pdfflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pdfflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: pdfflow_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pdfflow_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - DATABASE_URL=postgresql://pdfflow:pdfflow_dev_password@db:5432/pdfflow
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=dev-secret-key-change-in-production-min-32-chars
+      - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+      - /tmp/pdf-flow:/tmp/pdf-flow
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Celery Worker for async processing
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pdfflow_celery_worker
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://pdfflow:pdfflow_dev_password@db:5432/pdfflow
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=dev-secret-key-change-in-production-min-32-chars
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./app:/app/app
+      - /tmp/pdf-flow:/tmp/pdf-flow
+    command: celery -A app.celery_worker worker --loglevel=info
+
+volumes:
+  postgres_data:
+  redis_data:

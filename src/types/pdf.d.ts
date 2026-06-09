@@ -1,0 +1,40 @@
+/**
+ * PDF 相关类型定义
+ */
+
+export interface PDFDocument {
+  id: string
+  name: string
+  size: number
+  pageCount: number
+  blob: Blob
+  url: string
+}
+
+export interface PDFPage {
+  pageNumber: number
+  width: number
+  height: number
+  rotation: number
+  thumbnail?: string
+}
+
+export interface PDFProcessingOptions {
+  quality?: number
+  compression?: boolean
+  format?: 'pdf' | 'jpg' | 'png'
+}
+
+export interface PDFMergeOptions extends PDFProcessingOptions {
+  order?: number[]
+}
+
+export interface PDFSplitOptions {
+  ranges?: string // 例如: "1-3,5,7-9"
+  pages?: number[]
+}
+
+export interface PDFRotateOptions {
+  angle: 90 | 180 | 270
+  pages?: number[] // 如果为空，则旋转所有页面
+}
