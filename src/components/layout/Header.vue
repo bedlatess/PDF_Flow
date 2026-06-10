@@ -31,27 +31,6 @@ const localeOptions = [
   { value: 'es', label: 'Espa\u00f1ol' },
 ] as const
 
-const brandCopy = computed(() => {
-  if (locale.value === 'zh') {
-    return {
-      eyebrow: 'Secure PDF Studio',
-      note: '\u9690\u79c1\u4f18\u5148\u7684\u6587\u6863\u5de5\u4f5c\u53f0',
-    }
-  }
-
-  if (locale.value === 'es') {
-    return {
-      eyebrow: 'Secure PDF Studio',
-      note: 'Espacio PDF centrado en privacidad',
-    }
-  }
-
-  return {
-    eyebrow: 'Secure PDF Studio',
-    note: 'Privacy-first document workspace',
-  }
-})
-
 const publicLinks = computed(() => [
   {
     key: 'features',
@@ -125,37 +104,26 @@ onMounted(() => {
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="flex h-20 items-center justify-between gap-4">
         <button
-          class="group flex items-center gap-3 rounded-full border border-violet-200/80 bg-white/86 px-3 py-2 shadow-sm shadow-violet-100/70 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg hover:shadow-violet-200/60 dark:border-violet-500/20 dark:bg-slate-900/78 dark:shadow-none dark:hover:border-violet-400/40"
+          class="group flex items-center gap-3 rounded-full border border-violet-200/80 bg-white/88 px-3.5 py-2 shadow-sm shadow-violet-100/70 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg hover:shadow-violet-200/60 dark:border-violet-500/20 dark:bg-slate-900/80 dark:shadow-none dark:hover:border-violet-400/40"
           @click="navigateHome"
         >
-          <div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[18px] bg-[linear-gradient(145deg,#2e1065_0%,#6d28d9_52%,#c084fc_100%)] text-white shadow-lg shadow-violet-500/25">
-            <div class="absolute left-[9px] top-[10px] h-5 w-4 rounded-[5px] border border-white/30 bg-white/18 backdrop-blur-sm" />
-            <div class="absolute left-[15px] top-[7px] h-5 w-4 rounded-[5px] border border-white/60 bg-white/28" />
+          <div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[18px] bg-[linear-gradient(145deg,#3b1b8f_0%,#6d28d9_58%,#8b5cf6_100%)] text-white shadow-lg shadow-violet-500/30">
+            <div class="absolute inset-[7px] rounded-[12px] border border-white/18 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.28),transparent_55%)]" />
             <svg
-              class="relative h-5 w-5"
+              class="relative h-6 w-6"
               fill="none"
               viewBox="0 0 24 24"
             >
-              <path
-                d="M8.5 6.75h5l2 2v8.5a1.75 1.75 0 0 1-1.75 1.75H8.5a1.75 1.75 0 0 1-1.75-1.75V8.5A1.75 1.75 0 0 1 8.5 6.75Z"
-                fill="currentColor"
-                opacity="0.92"
-              />
-              <path d="M13.5 6.75v2h2" stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3" />
-              <path d="M10 12h4M10 14.75h4" stroke="white" stroke-linecap="round" stroke-width="1.3" />
+              <path d="M8 5.75h6l2.25 2.25v8.25A1.75 1.75 0 0 1 14.5 18H8.75A1.75 1.75 0 0 1 7 16.25v-8.5A2 2 0 0 1 8 5.75Z" fill="white" fill-opacity="0.96" />
+              <path d="M14 5.75v2.5h2.25" stroke="#6d28d9" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" />
+              <path d="M9.75 10.75h3.75M9.75 13.25h3.75" stroke="#7c3aed" stroke-linecap="round" stroke-width="1.25" />
+              <path d="M6.25 8.5v7.25A2.25 2.25 0 0 0 8.5 18h5.5" stroke="white" stroke-linecap="round" stroke-opacity="0.55" stroke-width="1.1" />
             </svg>
-            <span class="absolute right-[6px] top-[5px] h-1.5 w-1.5 rounded-full bg-fuchsia-100 shadow-[0_0_12px_rgba(255,255,255,0.85)]" />
           </div>
 
-          <div class="hidden text-left sm:block">
-            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-300">
-              {{ brandCopy.eyebrow }}
-            </p>
-            <p class="text-base font-semibold text-slate-950 dark:text-white">
-              {{ t('app.title') }}
-            </p>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
-              {{ brandCopy.note }}
+          <div class="text-left">
+            <p class="text-base font-semibold tracking-[0.01em] text-slate-950 dark:text-white sm:text-[1.05rem]">
+              PDF-Flow
             </p>
           </div>
         </button>

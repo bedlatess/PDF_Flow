@@ -26,6 +26,8 @@ const pageCopy = computed(() => {
   if (locale.value === 'zh') {
     return {
       heroEyebrow: '\u4e3a\u771f\u5b9e\u6587\u6863\u5de5\u4f5c\u800c\u8bbe\u8ba1',
+      heroTitle: '\u628a\u5e38\u7528 PDF \u5de5\u4f5c\uff0c\u6536\u8fdb\u4e00\u4e2a\u66f4\u987a\u624b\u7684\u5de5\u4f5c\u53f0',
+      heroDescription: '\u65e0\u8bba\u662f\u5408\u5e76\u3001\u62c6\u5206\u3001\u538b\u7f29\uff0c\u8fd8\u662f OCR\u3001Office \u8f6c\u6362\u4e0e AI \u5206\u6790\uff0cPDF-Flow \u90fd\u8ba9\u6d41\u7a0b\u66f4\u6e05\u6670\u3001\u66f4\u7a33\u5b9a\uff0c\u4e5f\u66f4\u9002\u5408\u56e2\u961f\u65e5\u5e38\u4f7f\u7528\u3002',
       supportTitle: '\u4f60\u4f1a\u5148\u611f\u53d7\u5230\u7684\u4e09\u4ef6\u4e8b',
       supportDescription: '\u4ece\u7b2c\u4e00\u4e2a\u6587\u4ef6\u5f00\u59cb\uff0c\u5c31\u80fd\u611f\u53d7\u5230\u66f4\u6e05\u6670\u3001\u66f4\u5b89\u5fc3\u7684 PDF \u5de5\u4f5c\u6d41\u7a0b\u3002',
       summaryPrivacy: '\u57fa\u7840\u5904\u7406\u5c3d\u91cf\u4e0d\u79bb\u5f00\u8bbe\u5907\u3002',
@@ -41,17 +43,81 @@ const pageCopy = computed(() => {
       comparisonDescription: '\u771f\u6b63\u62c9\u5f00\u5dee\u8ddd\u7684\uff0c\u5f80\u5f80\u4e0d\u662f\u529f\u80fd\u540d\u5b57\u672c\u8eab\uff0c\u800c\u662f\u4f7f\u7528\u65f6\u7684\u8fde\u8d2f\u611f\u548c\u53ef\u89c2\u6d4b\u6027\u3002',
       yes: '\u662f',
       no: '\u5426',
-      ctaEyebrow: '\u4ece\u7b2c\u4e00\u4e2a\u6587\u4ef6\u5f00\u59cb',
-      ctaTitle: '\u5148\u7528\u57fa\u7840 PDF \u5de5\u5177\uff0c\u9700\u8981\u65f6\u518d\u5347\u7ea7',
-      ctaDescription: '\u5148\u611f\u53d7\u5408\u5e76\u3001\u62c6\u5206\u3001\u538b\u7f29\u7b49\u65e5\u5e38\u6d41\u7a0b\uff0c\u5982\u679c\u4f60\u771f\u7684\u9700\u8981 OCR\u3001Office \u8f6c\u6362\u6216 AI \u5206\u6790\uff0c\u518d\u89e3\u9501\u5bf9\u5e94\u80fd\u529b\u3002',
-      ctaPointA: '\u6e38\u5ba2\u53ef\u4ee5\u5148\u4f53\u9a8c\u57fa\u7840\u5de5\u5177',
-      ctaPointB: '\u9ad8\u7ea7\u80fd\u529b\u8d70\u767b\u5f55\u540e\u6309\u9700\u5f00\u901a\u8def\u5f84',
+      ctaEyebrow: '\u4ece\u7b2c\u4e00\u4efd\u6587\u4ef6\u5f00\u59cb',
+      ctaTitle: '\u5148\u8ba9\u65e5\u5e38 PDF \u5de5\u4f5c\u8dd1\u987a\uff0c\u9700\u8981\u66f4\u591a\u65f6\u518d\u7ee7\u7eed\u6269\u5c55',
+      ctaDescription: '\u5982\u679c\u4f60\u73b0\u5728\u6700\u5e38\u7528\u7684\u662f\u5408\u5e76\u3001\u62c6\u5206\u3001\u538b\u7f29\u8fd9\u4e9b\u57fa\u7840\u6d41\u7a0b\uff0c\u53ef\u4ee5\u5148\u4ece\u8fd9\u91cc\u5f00\u59cb\u3002\u5f53 OCR\u3001Office \u8f6c\u6362\u6216 AI \u5206\u6790\u771f\u7684\u6210\u4e3a\u4f60\u5de5\u4f5c\u7684\u4e00\u90e8\u5206\u65f6\uff0c\u518d\u5e73\u6ed1\u5730\u63a5\u4e0a\u53bb\u5c31\u597d\u3002',
+      ctaPointA: '\u4e0d\u9700\u5148\u7814\u7a76\u4e00\u5927\u5806\u529f\u80fd\u624d\u80fd\u5f00\u59cb',
+      ctaPointB: '\u9700\u8981\u66f4\u5f3a\u80fd\u529b\u65f6\uff0c\u76f4\u63a5\u5728\u540c\u4e00\u5957\u4f53\u9a8c\u91cc\u7ee7\u7eed',
+      coreFeatures: [
+        {
+          title: '\u5148\u628a\u9690\u79c1\u548c\u7a33\u5b9a\u653e\u5728\u524d\u9762',
+          description: '\u5e38\u89c1 PDF \u5904\u7406\u5c3d\u91cf\u5728\u672c\u5730\u5b8c\u6210\uff0c\u8ba9\u4f60\u5904\u7406\u5408\u540c\u3001\u62a5\u4ef7\u3001\u6587\u6863\u6750\u6599\u65f6\u66f4\u5b89\u5fc3\u3002',
+          details: [
+            '\u5408\u5e76\u3001\u62c6\u5206\u3001\u538b\u7f29\u7b49\u5e38\u7528\u6d41\u7a0b\u6253\u5f00\u5c31\u80fd\u7528',
+            '\u4e0a\u4f20\u4e0e\u5904\u7406\u8def\u5f84\u66f4\u6e05\u6670\uff0c\u4e0d\u5bb9\u6613\u8bef\u64cd\u4f5c',
+            '\u4e0b\u8f7d\u7ed3\u679c\u76f4\u63a5\u53ef\u53d6\uff0c\u51cf\u5c11\u989d\u5916\u8df3\u8f6c',
+            '\u66f4\u9002\u5408\u4f9b\u56e2\u961f\u6216\u5ba2\u6237\u76f4\u63a5\u4f7f\u7528',
+          ],
+        },
+        {
+          title: '\u957f\u4efb\u52a1\u4e5f\u77e5\u9053\u8dd1\u5230\u54ea\u91cc',
+          description: '\u5f53\u5904\u7406\u9700\u8981\u7b49\u5f85\u65f6\uff0c\u9875\u9762\u4f1a\u6301\u7eed\u7ed9\u51fa\u8fdb\u5ea6\u72b6\u6001\uff0c\u800c\u4e0d\u662f\u8ba9\u7528\u6237\u5bf9\u7740\u7a7a\u767d\u9875\u731c\u6d4b\u3002',
+          details: [
+            '\u8f83\u957f\u4efb\u52a1\u53ef\u4ee5\u770b\u5230\u72b6\u6001\u53d8\u5316',
+            '\u51fa\u9519\u65f6\u4f1a\u7ed9\u51fa\u66f4\u6613\u622a\u56fe\u53cd\u9988\u7684\u63d0\u793a',
+            '\u5bf9\u65b0\u7528\u6237\u66f4\u53cb\u597d\uff0c\u51cf\u5c11\u201c\u4ee5\u4e3a\u5361\u4f4f\u4e86\u201d\u7684\u611f\u89c9',
+            '\u5bf9\u7ba1\u7406\u5458\u4e5f\u66f4\u597d\u5b9a\u4f4d\u95ee\u9898\u5927\u81f4\u65b9\u5411',
+          ],
+        },
+        {
+          title: '\u9ad8\u7ea7\u80fd\u529b\u53ea\u5728\u9700\u8981\u65f6\u51fa\u73b0',
+          description: 'OCR\u3001Office \u8f6c PDF \u548c AI \u5206\u6790\u4e0d\u4f1a\u4e00\u4e0a\u6765\u5c31\u628a\u754c\u9762\u5835\u6ee1\uff0c\u800c\u662f\u5728\u4f60\u771f\u7684\u9700\u8981\u65f6\u518d\u51fa\u573a\u3002',
+          details: [
+            '\u514d\u8d39\u548c\u57fa\u7840\u529f\u80fd\u4f53\u9a8c\u66f4\u7eaf\u7cb9',
+            '\u767b\u5f55\u540e\u518d\u89e3\u9501\u8fdb\u9636\u6d41\u7a0b\uff0c\u903b\u8f91\u66f4\u6e05\u695a',
+            '\u907f\u514d\u6e38\u5ba2\u9996\u5c4f\u770b\u5230\u8fc7\u591a\u6742\u8baf',
+            '\u5f53\u4f60\u771f\u7684\u6709\u9700\u6c42\u65f6\uff0c\u4e00\u6837\u53ef\u4ee5\u65e0\u7f1d\u7ee7\u7eed',
+          ],
+        },
+        {
+          title: '\u9875\u9762\u66f4\u50cf\u4e00\u4e2a\u5de5\u4f5c\u53f0\uff0c\u800c\u4e0d\u662f\u529f\u80fd\u5806\u53e0',
+          description: '\u540c\u4e00\u5957\u89c6\u89c9\u8282\u594f\u4f1a\u8d2f\u7a7f\u5de5\u5177\u9875\uff0c\u7528\u6237\u8fdb\u5165\u65b0\u529f\u80fd\u65f6\u4e0d\u9700\u8981\u91cd\u65b0\u5b66\u4e00\u904d\u4ea4\u4e92\u3002',
+          details: [
+            '\u91cd\u70b9\u63d0\u793a\u3001\u4e0a\u4f20\u533a\u3001\u7ed3\u679c\u533a\u7684\u6392\u7248\u66f4\u7edf\u4e00',
+            '\u9875\u9762\u89c6\u7ebf\u66f4\u805a\u7126\uff0c\u9996\u6b21\u4f7f\u7528\u4e5f\u5bb9\u6613\u4e0a\u624b',
+            '\u4e0d\u540c\u5de5\u5177\u95f4\u4fdd\u6301\u76f8\u540c\u7684\u52a8\u4f5c\u9884\u671f',
+            '\u6574\u4f53\u770b\u8d77\u6765\u66f4\u50cf\u4e00\u4e2a\u5b8c\u6574\u4ea7\u54c1',
+          ],
+        },
+        {
+          title: '\u5207\u6362\u8bed\u8a00\u540e\uff0c\u5173\u952e\u5185\u5bb9\u4e5f\u80fd\u7acb\u5373\u8ddf\u4e0a',
+          description: '\u7528\u6237\u4e0d\u9700\u8981\u5728\u4e2d\u82f1\u6587\u6df7\u6742\u7684\u72b6\u6001\u91cc\u731c\u6d4b\u6309\u94ae\u548c\u5185\u5bb9\u7684\u610f\u601d\u3002',
+          details: [
+            '\u5e38\u7528\u6d41\u7a0b\u8bf4\u660e\u4e0e\u6309\u94ae\u72b6\u6001\u4fdd\u6301\u540c\u6b65',
+            '\u767b\u5f55\u3001\u6ce8\u518c\u3001\u529f\u80fd\u9875\u66f4\u5bb9\u6613\u76f4\u63a5\u7ed9\u5ba2\u6237\u770b',
+            '\u8de8\u8bed\u8a00\u6233\u56fe\u53cd\u9988\u65f6\u66f4\u597d\u6c9f\u901a',
+            '\u51cf\u5c11\u56e0\u6587\u6848\u4e0d\u4e00\u81f4\u5e26\u6765\u7684\u4e0d\u4fe1\u4efb\u611f',
+          ],
+        },
+        {
+          title: '\u4ece\u7b80\u5355\u5904\u7406\u5230\u8fdb\u9636\u4efb\u52a1\uff0c\u5165\u53e3\u59cb\u7ec8\u4fdd\u6301\u4e00\u81f4',
+          description: '\u4e0d\u7528\u5728\u4e0d\u540c\u98ce\u683c\u7684\u9875\u9762\u91cc\u6765\u56de\u8df3\u8f6c\uff0c\u6574\u4e2a PDF \u5de5\u4f5c\u8def\u5f84\u4f1a\u66f4\u987a\u3002',
+          details: [
+            '\u65e0\u8bba\u662f\u57fa\u7840\u5de5\u5177\u8fd8\u662f\u8fdb\u9636\u5de5\u5177\uff0c\u8282\u594f\u90fd\u66f4\u4e00\u81f4',
+            '\u767b\u5f55\u3001\u8bd5\u7528\u3001\u5347\u7ea7\u7684\u8f6c\u6362\u8def\u5f84\u66f4\u6e05\u695a',
+            '\u6b63\u5f0f\u4e0a\u7ebf\u540e\u66f4\u5bb9\u6613\u505a\u4eba\u5de5\u9a8c\u6536',
+            '\u540e\u7eed\u6269\u5c55\u65b0\u5de5\u5177\u65f6\u4e5f\u66f4\u597d\u5ef6\u7eed\u8fd9\u5957\u4f53\u9a8c',
+          ],
+        },
+      ],
     }
   }
 
   if (locale.value === 'es') {
     return {
       heroEyebrow: 'Pensado para trabajo real',
+      heroTitle: 'Reune el trabajo PDF diario en un espacio mucho mas claro',
+      heroDescription: 'Desde combinar y comprimir hasta OCR, Office y analisis con IA, PDF-Flow ordena el flujo para que se sienta mas estable y facil de usar en trabajo real.',
       supportTitle: 'Lo primero que se nota',
       supportDescription: 'Desde el primer archivo se siente un flujo PDF mas claro, mas tranquilo y mas facil de seguir.',
       summaryPrivacy: 'El trabajo esencial se mantiene local siempre que sea posible.',
@@ -67,16 +133,50 @@ const pageCopy = computed(() => {
       comparisonDescription: 'La diferencia real no suele estar en el nombre de la funcion, sino en la claridad del flujo cuando la usas.',
       yes: 'Si',
       no: 'No',
-      ctaEyebrow: 'Empieza por lo esencial',
-      ctaTitle: 'Usa primero las herramientas base y amplia despues',
-      ctaDescription: 'Prueba las tareas PDF mas comunes y activa OCR, Office o IA solo cuando ese trabajo pase a formar parte de tu rutina.',
-      ctaPointA: 'Las herramientas base se pueden probar de inmediato',
-      ctaPointB: 'Las funciones avanzadas siguen un acceso mas claro tras iniciar sesion',
+      ctaEyebrow: 'Empieza con tu primer archivo',
+      ctaTitle: 'Haz mas fluido el trabajo PDF diario y amplia despues',
+      ctaDescription: 'Si hoy lo mas habitual es combinar, dividir o comprimir, puedes empezar por ahi. Cuando OCR, Office o IA realmente entren en tu rutina, el camino para seguir creciendo ya estara listo.',
+      ctaPointA: 'No hace falta estudiar demasiadas funciones antes de empezar',
+      ctaPointB: 'Cuando necesites mas potencia, sigues dentro de la misma experiencia',
+      coreFeatures: [
+        {
+          title: 'Privacidad y estabilidad primero',
+          description: 'Las tareas PDF mas comunes se resuelven con un flujo mas tranquilo y apropiado para documentos de trabajo reales.',
+          details: ['Combinar, dividir y comprimir estan listos desde el inicio', 'El camino entre subir, procesar y descargar es mas claro', 'Menos pasos innecesarios al compartir resultados', 'Mas confianza para equipos y clientes'],
+        },
+        {
+          title: 'Las tareas largas siguen siendo comprensibles',
+          description: 'Cuando un trabajo necesita tiempo, la interfaz muestra progreso en lugar de dejar a la gente esperando sin contexto.',
+          details: ['Los estados cambian de forma visible', 'Los fallos devuelven mensajes mas utiles para soporte', 'La experiencia se siente menos bloqueada', 'Es mas facil saber si conviene esperar o reintentar'],
+        },
+        {
+          title: 'Las funciones avanzadas aparecen solo cuando importan',
+          description: 'OCR, Office e IA no invaden la primera visita y entran en escena cuando de verdad son parte del trabajo.',
+          details: ['La experiencia gratuita se mantiene limpia', 'El acceso tras iniciar sesion se entiende mejor', 'La portada no se llena de ruido', 'Se puede crecer sin rehacer el flujo'],
+        },
+        {
+          title: 'La interfaz se siente como un producto completo',
+          description: 'Las paginas comparten ritmo visual y estructura para que cada nueva herramienta se entienda mas rapido.',
+          details: ['Avisos, carga y resultados siguen una misma logica', 'La vista principal es mas facil de recorrer', 'Hay menos saltos mentales entre herramientas', 'Todo se siente mas coherente'],
+        },
+        {
+          title: 'Cambiar idioma no rompe la experiencia',
+          description: 'El contenido importante acompana el idioma elegido y evita la sensacion de una interfaz a medio traducir.',
+          details: ['Botones y mensajes clave se mantienen alineados', 'Login, registro y herramientas son mas presentables', 'Las capturas para soporte son mas claras', 'Mejora la confianza del usuario final'],
+        },
+        {
+          title: 'De tareas simples a flujos avanzados, el acceso sigue siendo claro',
+          description: 'El recorrido completo se mantiene ordenado aunque el usuario pase de herramientas base a procesos mas avanzados.',
+          details: ['La navegacion conserva una estructura conocida', 'Probar, iniciar sesion y ampliar el uso resulta mas natural', 'Ayuda a validar mejor en entorno real', 'Facilita sumar nuevas herramientas despues'],
+        },
+      ],
     }
   }
 
   return {
     heroEyebrow: 'Built for real document work',
+    heroTitle: 'Bring everyday PDF work into one cleaner workspace',
+    heroDescription: 'From merge and compress to OCR, Office conversion, and AI analysis, PDF-Flow keeps the journey easier to follow and more reliable for real teams.',
     supportTitle: 'What people notice first',
     supportDescription: 'From the first file onward, the experience feels calmer, clearer, and easier to trust.',
     summaryPrivacy: 'Core work stays local whenever it can.',
@@ -92,11 +192,43 @@ const pageCopy = computed(() => {
     comparisonDescription: 'The real difference is rarely the feature name itself. It is how understandable the workflow feels while you are using it.',
     yes: 'Yes',
     no: 'No',
-    ctaEyebrow: 'Start with the essentials',
-    ctaTitle: 'Use the core PDF tools first, expand only when you need more',
-    ctaDescription: 'Begin with the everyday PDF flow, then unlock OCR, Office conversion, or AI when those tasks become part of regular work.',
-    ctaPointA: 'Core tools are ready to try immediately',
-    ctaPointB: 'Advanced capabilities follow a clearer sign-in path',
+    ctaEyebrow: 'Start with your first file',
+    ctaTitle: 'Smooth out everyday PDF work first, expand when you are ready',
+    ctaDescription: 'If merge, split, and compress are the tasks you need today, start there. When OCR, Office conversion, or AI become part of regular work, the next step is already built into the same experience.',
+    ctaPointA: 'You do not need to learn everything before getting started',
+    ctaPointB: 'When you need more power, you stay inside the same product flow',
+    coreFeatures: [
+      {
+        title: 'Put privacy and stability first',
+        description: 'Everyday PDF work feels safer and more dependable when the basic flow stays simple and well-contained.',
+        details: ['Merge, split, and compress are ready right away', 'Upload, processing, and download stay easier to follow', 'There is less friction when sharing results', 'It feels more presentable for clients and teams'],
+      },
+      {
+        title: 'Long-running tasks stay understandable',
+        description: 'When something takes time, the interface keeps showing progress instead of leaving people to guess what is happening.',
+        details: ['Task states change visibly', 'Failure messages are easier to relay for support', 'The flow feels less stalled', 'It becomes easier to decide whether to wait or retry'],
+      },
+      {
+        title: 'Advanced capabilities appear only when they matter',
+        description: 'OCR, Office conversion, and AI do not crowd the first visit. They show up when that work actually becomes relevant.',
+        details: ['The core free experience stays cleaner', 'The sign-in path to advanced features feels clearer', 'First-time visitors see less noise', 'Teams can expand without relearning the product'],
+      },
+      {
+        title: 'The interface feels like one product, not stacked tools',
+        description: 'Pages share a consistent visual rhythm so each new tool is easier to understand without extra explanation.',
+        details: ['Notices, upload zones, and result areas follow the same logic', 'Primary actions are easier to scan', 'People spend less time relearning patterns', 'The experience feels more polished overall'],
+      },
+      {
+        title: 'Language switching keeps customer-facing content aligned',
+        description: 'Important content follows the selected language instead of turning into a half-translated experience.',
+        details: ['Buttons and key states stay in sync', 'Login, register, and tool screens feel more presentable', 'Support screenshots are easier to understand', 'End users feel more confident using the product'],
+      },
+      {
+        title: 'The path from simple tasks to advanced work stays consistent',
+        description: 'Users can move from quick PDF cleanup to richer workflows without feeling like they entered a different product.',
+        details: ['Navigation keeps a familiar structure', 'Trying, signing in, and expanding usage feels more natural', 'Manual validation in production becomes easier', 'New tools can inherit the same experience later'],
+      },
+    ],
   }
 })
 
@@ -127,81 +259,39 @@ const summaryCards = computed(() => [
 const coreFeatures = computed(() => [
   {
     icon: ShieldCheck,
-    title: t('marketing.featuresPage.coreFeatures.privacy.title'),
-    description: t('marketing.featuresPage.coreFeatures.privacy.description'),
-    details: [
-      t('marketing.featuresPage.coreFeatures.privacy.details.0'),
-      t('marketing.featuresPage.coreFeatures.privacy.details.1'),
-      t('marketing.featuresPage.coreFeatures.privacy.details.2'),
-      t('marketing.featuresPage.coreFeatures.privacy.details.3'),
-    ],
     accent: 'from-sky-500/15 to-cyan-500/10',
     iconTone: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300',
+    ...pageCopy.value.coreFeatures[0],
   },
   {
     icon: Zap,
-    title: t('marketing.featuresPage.coreFeatures.speed.title'),
-    description: t('marketing.featuresPage.coreFeatures.speed.description'),
-    details: [
-      t('marketing.featuresPage.coreFeatures.speed.details.0'),
-      t('marketing.featuresPage.coreFeatures.speed.details.1'),
-      t('marketing.featuresPage.coreFeatures.speed.details.2'),
-      t('marketing.featuresPage.coreFeatures.speed.details.3'),
-    ],
     accent: 'from-amber-500/15 to-orange-500/10',
     iconTone: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
+    ...pageCopy.value.coreFeatures[1],
   },
   {
     icon: Cloud,
-    title: t('marketing.featuresPage.coreFeatures.cloud.title'),
-    description: t('marketing.featuresPage.coreFeatures.cloud.description'),
-    details: [
-      t('marketing.featuresPage.coreFeatures.cloud.details.0'),
-      t('marketing.featuresPage.coreFeatures.cloud.details.1'),
-      t('marketing.featuresPage.coreFeatures.cloud.details.2'),
-      t('marketing.featuresPage.coreFeatures.cloud.details.3'),
-    ],
     accent: 'from-emerald-500/15 to-teal-500/10',
     iconTone: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+    ...pageCopy.value.coreFeatures[2],
   },
   {
     icon: LayoutPanelTop,
-    title: t('marketing.featuresPage.coreFeatures.design.title'),
-    description: t('marketing.featuresPage.coreFeatures.design.description'),
-    details: [
-      t('marketing.featuresPage.coreFeatures.design.details.0'),
-      t('marketing.featuresPage.coreFeatures.design.details.1'),
-      t('marketing.featuresPage.coreFeatures.design.details.2'),
-      t('marketing.featuresPage.coreFeatures.design.details.3'),
-    ],
     accent: 'from-violet-500/15 to-fuchsia-500/10',
     iconTone: 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300',
+    ...pageCopy.value.coreFeatures[3],
   },
   {
     icon: Globe2,
-    title: t('marketing.featuresPage.coreFeatures.languages.title'),
-    description: t('marketing.featuresPage.coreFeatures.languages.description'),
-    details: [
-      t('marketing.featuresPage.coreFeatures.languages.details.0'),
-      t('marketing.featuresPage.coreFeatures.languages.details.1'),
-      t('marketing.featuresPage.coreFeatures.languages.details.2'),
-      t('marketing.featuresPage.coreFeatures.languages.details.3'),
-    ],
     accent: 'from-slate-500/12 to-sky-500/10',
     iconTone: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
+    ...pageCopy.value.coreFeatures[4],
   },
   {
     icon: Blocks,
-    title: t('marketing.featuresPage.coreFeatures.tools.title'),
-    description: t('marketing.featuresPage.coreFeatures.tools.description'),
-    details: [
-      t('marketing.featuresPage.coreFeatures.tools.details.0'),
-      t('marketing.featuresPage.coreFeatures.tools.details.1'),
-      t('marketing.featuresPage.coreFeatures.tools.details.2'),
-      t('marketing.featuresPage.coreFeatures.tools.details.3'),
-    ],
     accent: 'from-rose-500/12 to-orange-500/10',
     iconTone: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300',
+    ...pageCopy.value.coreFeatures[5],
   },
 ])
 
@@ -305,10 +395,10 @@ const renderComparisonValue = (value: boolean | string) => value
             </div>
 
             <h1 class="mt-6 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-              {{ t('marketing.featuresPage.heroTitle') }}
+              {{ pageCopy.heroTitle }}
             </h1>
             <p class="mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
-              {{ t('marketing.featuresPage.heroDescription') }}
+              {{ pageCopy.heroDescription }}
             </p>
 
             <div class="mt-8 flex flex-wrap gap-3">

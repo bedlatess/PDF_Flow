@@ -14,20 +14,20 @@
 
         <div class="mt-8 max-w-xl">
           <h1 class="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            {{ $t('auth.registerHeroTitle') }}
+            {{ marketingCopy.heroTitle }}
           </h1>
           <p class="mt-5 text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
-            {{ $t('auth.registerHeroDescription') }}
+            {{ marketingCopy.heroDescription }}
           </p>
         </div>
 
         <div class="mt-10 rounded-[32px] border border-white/80 bg-white/82 p-6 shadow-xl shadow-teal-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/58 dark:shadow-none">
           <div class="space-y-3">
             <p class="text-sm font-semibold uppercase tracking-[0.22em] text-teal-700 dark:text-teal-300">
-              {{ $t('auth.registerSupportTitle') }}
+              {{ marketingCopy.supportTitle }}
             </p>
             <p class="text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {{ $t('auth.registerSupportDescription') }}
+              {{ marketingCopy.supportDescription }}
             </p>
           </div>
         </div>
@@ -228,7 +228,7 @@ import { formatUserFacingError, type FormattedUserError } from '@/utils/error-me
 
 const router = useRouter()
 const userStore = useUserStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const form = reactive({
   fullName: '',
@@ -250,6 +250,33 @@ const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const loading = ref(false)
 const errorState = ref<FormattedUserError | null>(null)
+
+const marketingCopy = computed(() => {
+  if (locale.value === 'zh') {
+    return {
+      heroTitle: '\u51e0\u5206\u949f\u5185\u5f00\u59cb\u4f60\u7684 PDF \u5de5\u4f5c\u53f0',
+      heroDescription: '\u521b\u5efa\u8d26\u53f7\u540e\uff0c\u4f60\u53ef\u4ee5\u66f4\u987a\u5730\u7ba1\u7406\u6587\u6863\u4efb\u52a1\u3001\u67e5\u770b\u5904\u7406\u7ed3\u679c\uff0c\u5e76\u5728\u9700\u8981\u65f6\u5f00\u542f\u8fdb\u9636\u529f\u80fd\u3002',
+      supportTitle: '\u7b80\u5355\u5f00\u59cb',
+      supportDescription: '\u6ce8\u518c\u53ea\u9700\u8981\u51e0\u9879\u5fc5\u8981\u4fe1\u606f\u3002\u5b8c\u6210\u540e\uff0c\u4f60\u5c31\u53ef\u4ee5\u7528\u66f4\u5b8c\u6574\u7684\u65b9\u5f0f\u7ee7\u7eed\u4f7f\u7528 PDF-Flow\u3002',
+    }
+  }
+
+  if (locale.value === 'es') {
+    return {
+      heroTitle: 'Empieza tu espacio de trabajo PDF en minutos',
+      heroDescription: 'Crea tu cuenta para gestionar tareas, revisar resultados y abrir funciones avanzadas solo cuando de verdad las necesites.',
+      supportTitle: 'Inicio simple',
+      supportDescription: 'El registro pide solo lo necesario para que puedas entrar rapido y seguir trabajando sin rodeos.',
+    }
+  }
+
+  return {
+    heroTitle: 'Start your PDF workspace in minutes',
+    heroDescription: 'Create an account to manage document tasks, review results, and unlock advanced features only when you actually need them.',
+    supportTitle: 'Simple start',
+    supportDescription: 'Registration only asks for what is needed so you can get in quickly and continue with a cleaner workflow.',
+  }
+})
 
 const passwordStrength = computed(() => {
   const password = form.password
