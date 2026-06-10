@@ -24,6 +24,18 @@ const router = createRouter({
       meta: { titleKey: 'nav.pricing' }
     },
     {
+      path: '/privacy',
+      name: 'privacy-policy',
+      component: () => import('@/views/legal/PrivacyPolicy.vue'),
+      meta: { titleKey: 'footer.privacyPolicy' }
+    },
+    {
+      path: '/terms',
+      name: 'terms-of-service',
+      component: () => import('@/views/legal/TermsOfService.vue'),
+      meta: { titleKey: 'footer.termsOfService' }
+    },
+    {
       path: '/auth',
       children: [
         {

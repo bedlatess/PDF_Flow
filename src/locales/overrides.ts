@@ -41,6 +41,18 @@ export const localeOverrides = {
       madeWith: '由 PDF-Flow 团队用心打造',
       privacyPolicy: '隐私政策',
       termsOfService: '服务条款',
+      brandDescription: '一个围绕隐私、清晰反馈与真实文档流程打造的现代 PDF 工作台。',
+      productTitle: '产品入口',
+      legalAndSupportTitle: '法律与支持',
+      trustPrivacyTitle: '本地优先',
+      trustPrivacyDescription: '基础 PDF 处理尽量优先在浏览器本地完成，减少不必要的文件外发。',
+      trustSupportTitle: '问题可定位',
+      trustSupportDescription: '错误提示尽量对用户友好，同时保留简短诊断码，方便截图反馈。',
+      trustWorkflowTitle: '流程更连贯',
+      trustWorkflowDescription: '上传、权限、处理、下载在同一套节奏里完成，不再到处跳转。',
+      contactTitle: '联系支持',
+      contactDescription: '如果你在上线测试中发现问题，可以把页面截图和简短操作步骤发给管理员或支持邮箱。',
+      bottomLine: '适合继续做真实环境测试与上线前验收。',
     },
     home: {
       badges: {
@@ -185,6 +197,14 @@ export const localeOverrides = {
       pricingPage: {
         title: '定价方案',
         description: '先把核心工具做好，再把云端能力做成按需升级，而不是强行一开始就收费。',
+        fit: {
+          freeTitle: '先直接开始',
+          freeDescription: '适合先体验基础 PDF 流程，不需要先为轻量使用付费。',
+          proTitle: '按需升级到 Pro',
+          proDescription: '当 OCR、Office 转换、表单与标注真的开始频繁使用时，再升级更自然。',
+          enterpriseTitle: '正式业务接入',
+          enterpriseDescription: '适合团队、集成场景和需要更稳定支持的正式业务流程。',
+        },
         badges: {
           refund: '支持退款保障',
           cancel: '可随时取消订阅',
@@ -198,6 +218,7 @@ export const localeOverrides = {
           free: {
             name: '免费版',
             description: '适合日常轻量 PDF 处理',
+            audience: '个人体验 / 基础处理',
             priceDetail: '永久免费',
             features: [
               '本地基础 PDF 工具',
@@ -214,6 +235,7 @@ export const localeOverrides = {
           pro: {
             name: 'Pro',
             description: '适合经常处理文档、需要云端能力的个人或小团队',
+            audience: '频繁文档工作 / 云端增强',
             priceDetail: '按月或按年订阅',
             features: [
               '包含免费版全部功能',
@@ -230,6 +252,7 @@ export const localeOverrides = {
           enterprise: {
             name: '企业版',
             description: '适合需要流程接入、团队协作和更高稳定性的企业场景',
+            audience: '团队接入 / 稳定交付',
             priceDetail: '按需求沟通',
             features: [
               '包含 Pro 全部能力',
@@ -275,6 +298,64 @@ export const localeOverrides = {
         bottomAction: '注册后继续测试',
         alerts: {
           paymentStartFailed: '暂时无法发起支付，请稍后重试或联系管理员。',
+        },
+      },
+      legal: {
+        privacy: {
+          title: '隐私政策',
+          description: '本页说明 PDF-Flow 在账户、文件处理、基础日志与支持沟通方面如何尽量保持克制与透明。',
+          summaryTitle: '你可以先记住这一点',
+          summaryBody: '我们优先让基础 PDF 工具在本地完成处理；只有在 OCR、Office 转换或其他确实依赖云端的能力中，相关文件数据才会进入后端处理链路，而且会尽量缩小保留范围。',
+          sections: {
+            overview: {
+              title: '1. 我们收集哪些信息',
+              body: '当你注册或登录时，我们会处理最基本的账户信息，例如邮箱地址、显示名称、认证状态以及与订阅相关的必要数据。我们不会为了营销目的额外收集与 PDF 处理无关的大量个人资料。',
+            },
+            data: {
+              title: '2. 账户与运行数据',
+              body: '为了让服务正常运行，我们可能保存必要的认证记录、订阅状态、任务状态和最低限度的安全或诊断日志。这些数据主要用于维持登录、排查故障、控制滥用和保障系统稳定，而不是出售或随意共享给第三方。',
+            },
+            files: {
+              title: '3. 文件处理方式',
+              body: '基础 PDF 工具会尽量优先在浏览器本地完成处理。对于 OCR、Office 转 PDF、部分高级标注或其他依赖服务端执行的能力，文件可能会在任务处理期间进入后端链路。我们会尽量减少文件暴露范围，并避免在与功能无关的场景中长期保留上传内容。',
+            },
+            retention: {
+              title: '4. 保留与删除',
+              body: '临时处理文件、任务结果和缓存数据通常只在完成处理、下载或排障所需的合理时间内保留。我们不会承诺所有数据都即时清零，但会尽量缩短保留周期，并通过自动清理策略减少残留。',
+            },
+            contact: {
+              title: '5. 隐私相关联系',
+              body: '如果你对账户信息、文件处理或日志保留有疑问，可以通过支持渠道联系管理员。提交问题时，建议附带页面截图、时间点和简短复现步骤，便于更快定位，而不需要主动发送额外敏感文件。',
+            },
+          },
+        },
+        terms: {
+          title: '服务条款',
+          description: '本页说明使用 PDF-Flow 时的基本规则、账户责任、订阅说明以及平台与用户各自的边界。',
+          summaryTitle: '这些规则的目的',
+          summaryBody: '这些条款的目标不是制造阅读负担，而是明确哪些使用方式被允许、平台会提供什么、以及在服务波动、文件失败或异常使用场景中各自需要承担什么责任。',
+          sections: {
+            acceptance: {
+              title: '1. 使用即代表接受规则',
+              body: '当你访问、注册或持续使用 PDF-Flow，即表示你同意遵守当前的服务规则。如果你不同意这些基本条款，应停止继续使用需要账户、文件上传或订阅的相关能力。',
+            },
+            accounts: {
+              title: '2. 账户与安全责任',
+              body: '你需要对自己的登录凭据、第三方登录授权和账户下的操作负责。若发现未授权访问、异常订阅行为或可疑任务记录，应尽快联系管理员或支持渠道。平台会尽量提供防护，但无法替代用户自身的账户安全管理。',
+            },
+            usage: {
+              title: '3. 允许与禁止的使用方式',
+              body: '你可以将本服务用于合法的 PDF 处理、文档转换、识别和协作流程；但不得上传违法、侵权、恶意攻击、绕过限制或明显超出合理用途的内容。平台保留对滥用、自动化刷接口、恶意占用资源等行为采取限流、暂停或封禁措施的权利。',
+            },
+            billing: {
+              title: '4. 订阅、取消与方案变更',
+              body: '部分高级功能需要登录后按方案使用。订阅、升级、取消和可能的退款规则以当时展示的支付流程与说明为准。平台可以在未来调整套餐结构、额度或功能边界，但会尽量保持说明清晰，并避免无提示地改变核心已承诺能力。',
+            },
+            limits: {
+              title: '5. 服务边界与责任限制',
+              body: '我们会持续提升稳定性，但不能承诺所有文件、所有格式、所有环境都 100% 成功处理。遇到浏览器限制、第三方依赖异常、文件损坏、服务器波动或集成链路问题时，任务可能失败、延迟或结果不完全符合预期。你仍应对关键文档保留自己的备份与最终校验责任。',
+            },
+          },
         },
       },
     },
@@ -688,6 +769,18 @@ export const localeOverrides = {
       madeWith: 'Crafted by the PDF-Flow team',
       privacyPolicy: 'Privacy Policy',
       termsOfService: 'Terms of Service',
+      brandDescription: 'A modern PDF workspace built around privacy, clear feedback, and practical document flows.',
+      productTitle: 'Product',
+      legalAndSupportTitle: 'Legal & Support',
+      trustPrivacyTitle: 'Local-first',
+      trustPrivacyDescription: 'Core PDF handling stays in the browser wherever possible to reduce unnecessary file exposure.',
+      trustSupportTitle: 'Debuggable',
+      trustSupportDescription: 'User-facing errors stay readable while short diagnostic codes help admins trace issues faster.',
+      trustWorkflowTitle: 'One workflow',
+      trustWorkflowDescription: 'Upload, access, processing, and download live in one clearer rhythm instead of scattered steps.',
+      contactTitle: 'Contact support',
+      contactDescription: 'If you find problems during staging or production-style testing, send a screenshot and short reproduction notes to your admin or support contact.',
+      bottomLine: 'Built to support real-environment validation before wider rollout.',
     },
     home: {
       badges: {
@@ -832,6 +925,14 @@ export const localeOverrides = {
       pricingPage: {
         title: 'Pricing',
         description: 'The goal is to keep the core tools broadly usable and make cloud features an intentional upgrade instead of the default gate.',
+        fit: {
+          freeTitle: 'Start immediately',
+          freeDescription: 'Best for trying the core PDF flow without paying first for lightweight usage.',
+          proTitle: 'Upgrade when needed',
+          proDescription: 'A natural step once OCR, Office conversion, forms, or annotation become part of regular work.',
+          enterpriseTitle: 'Move into operations',
+          enterpriseDescription: 'For teams, integrations, and business workflows that need more stable support.',
+        },
         badges: {
           refund: 'Refund-friendly',
           cancel: 'Cancel anytime',
@@ -845,6 +946,7 @@ export const localeOverrides = {
           free: {
             name: 'Free',
             description: 'Good for lightweight everyday PDF work',
+            audience: 'Individual trial / core tasks',
             priceDetail: 'Always free',
             features: [
               'Core local PDF tools',
@@ -861,6 +963,7 @@ export const localeOverrides = {
           pro: {
             name: 'Pro',
             description: 'For frequent document work and cloud-assisted workflows',
+            audience: 'Frequent work / cloud enhancement',
             priceDetail: 'Monthly or yearly subscription',
             features: [
               'Everything in Free',
@@ -877,6 +980,7 @@ export const localeOverrides = {
           enterprise: {
             name: 'Enterprise',
             description: 'For teams that need integrations, stability, and business-ready workflows',
+            audience: 'Team integration / stable delivery',
             priceDetail: 'Contact us',
             features: [
               'Everything in Pro',
@@ -922,6 +1026,64 @@ export const localeOverrides = {
         bottomAction: 'Sign up and keep testing',
         alerts: {
           paymentStartFailed: 'Unable to start checkout right now. Please try again later or contact an administrator.',
+        },
+      },
+      legal: {
+        privacy: {
+          title: 'Privacy Policy',
+          description: 'This page explains how PDF-Flow tries to stay restrained and transparent around accounts, file handling, minimal logging, and support communication.',
+          summaryTitle: 'The short version',
+          summaryBody: 'We aim to keep core PDF work local first. Only features that genuinely require backend execution, such as OCR or Office conversion, send file data into a server-side processing path, and even then we try to limit how long related data remains available.',
+          sections: {
+            overview: {
+              title: '1. What we collect',
+              body: 'When you register or sign in, we process only the most basic account information needed to operate the service, such as your email address, display name, authentication state, and subscription-related metadata. We do not deliberately collect large amounts of unrelated personal data for marketing purposes.',
+            },
+            data: {
+              title: '2. Account and runtime data',
+              body: 'To keep the platform working, we may store essential authentication records, subscription state, task state, and a minimum level of security or diagnostic logging. That data is used to keep sessions working, investigate faults, control abuse, and protect platform stability rather than to sell user behavior to third parties.',
+            },
+            files: {
+              title: '3. How files are handled',
+              body: 'Core PDF tools are designed to stay local whenever possible. For OCR, Office-to-PDF conversion, parts of advanced annotation, or other features that depend on backend execution, uploaded files may enter a server-side processing path during the task lifecycle. We try to minimize exposure and avoid keeping uploaded content longer than is useful for the feature itself.',
+            },
+            retention: {
+              title: '4. Retention and cleanup',
+              body: 'Temporary files, task results, and caches are generally kept only for a reasonable period tied to processing, downloading, or troubleshooting. We do not promise every piece of temporary data disappears instantly, but we do try to keep retention windows short and reduce leftovers through automated cleanup behavior.',
+            },
+            contact: {
+              title: '5. Privacy questions',
+              body: 'If you have questions about account data, file handling, or operational logs, contact your administrator or support channel. When reporting a privacy concern, a screenshot, timestamp, and short reproduction summary are usually more useful than sending additional sensitive documents.',
+            },
+          },
+        },
+        terms: {
+          title: 'Terms of Service',
+          description: 'This page outlines the basic rules for using PDF-Flow, including account responsibilities, subscription expectations, and the boundaries of the service.',
+          summaryTitle: 'Why these terms exist',
+          summaryBody: 'These terms are meant to clarify what kinds of use are allowed, what the platform is expected to provide, and where responsibility remains with the user when files fail, services fluctuate, or advanced workflows are involved.',
+          sections: {
+            acceptance: {
+              title: '1. Using the service means accepting the rules',
+              body: 'By accessing, registering for, or continuing to use PDF-Flow, you agree to follow the current service rules. If you do not agree with these basic terms, you should stop using the account, upload, or subscription-related parts of the platform.',
+            },
+            accounts: {
+              title: '2. Accounts and security',
+              body: 'You are responsible for your login credentials, third-party sign-in authorizations, and activity performed through your account. If you notice unauthorized access, suspicious billing behavior, or unusual task history, you should contact your administrator or support path promptly. Platform protections help, but they do not replace basic account hygiene.',
+            },
+            usage: {
+              title: '3. Allowed and prohibited use',
+              body: 'You may use the service for lawful PDF processing, conversion, recognition, and collaboration workflows. You may not use it to upload illegal, infringing, abusive, malicious, or clearly resource-exploitative content. The platform may rate-limit, suspend, or block accounts or workloads that abuse shared resources or attempt to bypass product restrictions.',
+            },
+            billing: {
+              title: '4. Billing, cancellation, and plan changes',
+              body: 'Some advanced features require a signed-in account and an appropriate plan. Subscription, upgrade, cancellation, and possible refund behavior follow the pricing and payment flow shown at the time of purchase. The platform may refine plans, limits, or feature boundaries over time, but should aim to do so clearly rather than silently.',
+            },
+            limits: {
+              title: '5. Service limits and liability boundaries',
+              body: 'We work to improve reliability, but cannot guarantee that every file, format, browser, or environment will process successfully 100% of the time. Browser constraints, damaged files, third-party dependency issues, infrastructure instability, or integration failures may all affect results. You remain responsible for backups and final verification of important documents.',
+            },
+          },
         },
       },
     },
@@ -970,6 +1132,18 @@ export const localeOverrides = {
       madeWith: 'Creado por el equipo de PDF-Flow',
       privacyPolicy: 'Política de privacidad',
       termsOfService: 'Términos del servicio',
+      brandDescription: 'Un espacio PDF moderno construido alrededor de la privacidad, la claridad y los flujos documentales reales.',
+      productTitle: 'Producto',
+      legalAndSupportTitle: 'Legal y soporte',
+      trustPrivacyTitle: 'Prioridad local',
+      trustPrivacyDescription: 'El trabajo PDF principal se mantiene en el navegador siempre que sea posible para reducir exposición innecesaria.',
+      trustSupportTitle: 'Más fácil de depurar',
+      trustSupportDescription: 'Los errores siguen siendo comprensibles para el usuario y conservan códigos breves para que el administrador pueda rastrearlos.',
+      trustWorkflowTitle: 'Un solo flujo',
+      trustWorkflowDescription: 'Subida, acceso, proceso y descarga siguen una misma cadencia más clara en vez de pasos dispersos.',
+      contactTitle: 'Contactar soporte',
+      contactDescription: 'Si detectas problemas durante pruebas reales, envía una captura y pasos breves de reproducción al administrador o al canal de soporte.',
+      bottomLine: 'Pensado para validar el producto en entornos reales antes de ampliar el despliegue.',
     },
     home: {
       badges: {
@@ -1117,6 +1291,14 @@ export const localeOverrides = {
       pricingPage: {
         title: 'Precios',
         description: 'La idea es mantener útiles las herramientas básicas y dejar la nube como una mejora intencional, no como una barrera desde el inicio.',
+        fit: {
+          freeTitle: 'Empieza ya',
+          freeDescription: 'Ideal para probar el flujo PDF esencial sin pagar primero por un uso ligero.',
+          proTitle: 'Sube cuando haga falta',
+          proDescription: 'Tiene sentido cuando OCR, Office, formularios o anotación pasan a ser parte del trabajo frecuente.',
+          enterpriseTitle: 'Llévalo a operaciones',
+          enterpriseDescription: 'Para equipos, integraciones y flujos de negocio que necesitan más estabilidad.',
+        },
         badges: {
           refund: 'Con opción de reembolso',
           cancel: 'Cancela cuando quieras',
@@ -1130,6 +1312,7 @@ export const localeOverrides = {
           free: {
             name: 'Gratis',
             description: 'Adecuado para tareas PDF cotidianas y ligeras',
+            audience: 'Prueba individual / tareas base',
             priceDetail: 'Siempre gratis',
             features: [
               'Herramientas PDF locales básicas',
@@ -1146,6 +1329,7 @@ export const localeOverrides = {
           pro: {
             name: 'Pro',
             description: 'Para trabajo documental frecuente y flujos asistidos por la nube',
+            audience: 'Trabajo frecuente / mejora en la nube',
             priceDetail: 'Suscripción mensual o anual',
             features: [
               'Todo lo de Gratis',
@@ -1162,6 +1346,7 @@ export const localeOverrides = {
           enterprise: {
             name: 'Empresarial',
             description: 'Para equipos que necesitan integraciones, estabilidad y flujos listos para negocio',
+            audience: 'Integración de equipo / entrega estable',
             priceDetail: 'Contáctanos',
             features: [
               'Todo lo de Pro',
@@ -1207,6 +1392,64 @@ export const localeOverrides = {
         bottomAction: 'Regístrate y sigue probando',
         alerts: {
           paymentStartFailed: 'No se puede iniciar el pago ahora mismo. Inténtalo más tarde o contacta con un administrador.',
+        },
+      },
+      legal: {
+        privacy: {
+          title: 'Política de privacidad',
+          description: 'Esta página explica cómo PDF-Flow intenta ser prudente y transparente con cuentas, manejo de archivos, registros mínimos y comunicación de soporte.',
+          summaryTitle: 'La idea principal',
+          summaryBody: 'Intentamos mantener el trabajo PDF esencial en local siempre que sea posible. Solo las funciones que realmente dependen del backend, como OCR o la conversión Office, envían datos de archivo al servidor, y aun así tratamos de limitar cuánto tiempo permanecen disponibles.',
+          sections: {
+            overview: {
+              title: '1. Qué recopilamos',
+              body: 'Cuando te registras o inicias sesión, procesamos solo la información de cuenta más básica necesaria para operar el servicio, como correo electrónico, nombre visible, estado de autenticación y metadatos relacionados con la suscripción. No buscamos reunir grandes volúmenes de datos personales ajenos al uso del producto.',
+            },
+            data: {
+              title: '2. Datos de cuenta y operación',
+              body: 'Para mantener la plataforma funcionando, podemos almacenar registros esenciales de autenticación, estado de suscripción, estado de tareas y una cantidad mínima de registros de seguridad o diagnóstico. Estos datos se usan para mantener sesiones, investigar fallos, controlar abusos y proteger la estabilidad del servicio, no para vender comportamiento de usuarios.',
+            },
+            files: {
+              title: '3. Cómo se tratan los archivos',
+              body: 'Las herramientas PDF básicas se diseñan para mantenerse locales cuando es posible. En OCR, conversión Office a PDF, partes de anotación avanzada u otras funciones que dependan del backend, los archivos subidos pueden entrar en una ruta de procesamiento del servidor durante la tarea. Intentamos minimizar la exposición y evitar conservar contenido más tiempo del necesario para la función.',
+            },
+            retention: {
+              title: '4. Retención y limpieza',
+              body: 'Los archivos temporales, resultados de tareas y cachés suelen conservarse solo durante un periodo razonable ligado al procesamiento, la descarga o la resolución de incidencias. No prometemos que todo dato temporal desaparezca de forma instantánea, pero sí intentamos reducir ventanas de retención y limpiar residuos automáticamente.',
+            },
+            contact: {
+              title: '5. Consultas sobre privacidad',
+              body: 'Si tienes preguntas sobre datos de cuenta, manejo de archivos o registros operativos, contacta con tu administrador o canal de soporte. Para reportar una incidencia, suele ser más útil una captura, una hora aproximada y una breve descripción del flujo que enviar documentos sensibles adicionales.',
+            },
+          },
+        },
+        terms: {
+          title: 'Términos del servicio',
+          description: 'Esta página resume las reglas básicas para usar PDF-Flow, incluidas responsabilidades de cuenta, suscripciones y los límites razonables del servicio.',
+          summaryTitle: 'Por qué existen estas reglas',
+          summaryBody: 'Estos términos buscan aclarar qué usos están permitidos, qué puede ofrecer la plataforma y qué responsabilidad sigue recayendo en el usuario cuando fallan archivos, hay variaciones del servicio o intervienen flujos avanzados.',
+          sections: {
+            acceptance: {
+              title: '1. Usar el servicio implica aceptar las reglas',
+              body: 'Al acceder, registrarte o seguir usando PDF-Flow, aceptas cumplir las reglas vigentes del servicio. Si no estás de acuerdo con estas condiciones básicas, debes dejar de usar las partes de la plataforma relacionadas con cuenta, subida o suscripción.',
+            },
+            accounts: {
+              title: '2. Cuentas y seguridad',
+              body: 'Eres responsable de tus credenciales, autorizaciones de inicio de sesión de terceros y de la actividad realizada desde tu cuenta. Si detectas accesos no autorizados, actividad de cobro sospechosa o historial extraño de tareas, debes contactar cuanto antes con tu administrador o soporte. La protección de la plataforma ayuda, pero no sustituye el cuidado básico de la cuenta.',
+            },
+            usage: {
+              title: '3. Uso permitido y uso prohibido',
+              body: 'Puedes usar el servicio para flujos legales de procesamiento, conversión, reconocimiento y colaboración con PDF. No puedes usarlo para subir contenido ilegal, infractor, abusivo, malicioso o claramente orientado a explotar recursos. La plataforma puede limitar, suspender o bloquear cuentas o cargas de trabajo que abusen del sistema o intenten saltarse restricciones.',
+            },
+            billing: {
+              title: '4. Facturación, cancelación y cambios de plan',
+              body: 'Algunas funciones avanzadas requieren cuenta iniciada y un plan adecuado. La suscripción, mejora, cancelación y posible reembolso siguen el flujo de precios y pago mostrado en el momento de la compra. La plataforma puede ajustar planes, límites o fronteras funcionales con el tiempo, pero debería hacerlo de forma clara y no silenciosa.',
+            },
+            limits: {
+              title: '5. Límites del servicio y responsabilidad',
+              body: 'Trabajamos para mejorar la fiabilidad, pero no podemos garantizar que todos los archivos, formatos, navegadores o entornos se procesen correctamente el 100% del tiempo. Restricciones del navegador, archivos dañados, dependencias externas, inestabilidad de infraestructura o fallos de integración pueden afectar al resultado. El usuario sigue siendo responsable de sus copias de seguridad y de la verificación final de documentos importantes.',
+            },
+          },
         },
       },
     },
