@@ -107,18 +107,35 @@ onMounted(() => {
           class="group flex items-center gap-3 rounded-full border border-violet-200/80 bg-white/88 px-3.5 py-2 shadow-sm shadow-violet-100/70 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg hover:shadow-violet-200/60 dark:border-violet-500/20 dark:bg-slate-900/80 dark:shadow-none dark:hover:border-violet-400/40"
           @click="navigateHome"
         >
-          <div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[18px] bg-[linear-gradient(145deg,#3b1b8f_0%,#6d28d9_58%,#8b5cf6_100%)] text-white shadow-lg shadow-violet-500/30">
-            <div class="absolute inset-[7px] rounded-[12px] border border-white/18 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.28),transparent_55%)]" />
+          <div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[18px] bg-[linear-gradient(155deg,#240046_0%,#5b21b6_52%,#a855f7_100%)] text-white shadow-lg shadow-violet-500/30">
+            <div class="absolute inset-[6px] rounded-[13px] border border-white/14 bg-[radial-gradient(circle_at_28%_22%,rgba(255,255,255,0.34),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0))]" />
+            <div class="absolute inset-y-[8px] left-[11px] w-[2.5px] rounded-full bg-white/92 shadow-[0_0_10px_rgba(255,255,255,0.18)]" />
             <svg
-              class="relative h-6 w-6"
+              class="relative h-7 w-7"
               fill="none"
               viewBox="0 0 24 24"
             >
-              <path d="M8 5.75h6l2.25 2.25v8.25A1.75 1.75 0 0 1 14.5 18H8.75A1.75 1.75 0 0 1 7 16.25v-8.5A2 2 0 0 1 8 5.75Z" fill="white" fill-opacity="0.96" />
-              <path d="M14 5.75v2.5h2.25" stroke="#6d28d9" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" />
-              <path d="M9.75 10.75h3.75M9.75 13.25h3.75" stroke="#7c3aed" stroke-linecap="round" stroke-width="1.25" />
-              <path d="M6.25 8.5v7.25A2.25 2.25 0 0 0 8.5 18h5.5" stroke="white" stroke-linecap="round" stroke-opacity="0.55" stroke-width="1.1" />
+              <path
+                d="M9 7.5h3.9c2.15 0 3.6 1.18 3.6 3.02 0 1.9-1.45 3.08-3.6 3.08H9"
+                stroke="white"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.75"
+              />
+              <path
+                d="M9 12.4h5.55"
+                stroke="white"
+                stroke-linecap="round"
+                stroke-width="1.75"
+              />
+              <path
+                d="M9 16.55h4.15"
+                stroke="white"
+                stroke-linecap="round"
+                stroke-width="1.75"
+              />
             </svg>
+            <span class="absolute right-[8px] top-[8px] h-1.5 w-1.5 rounded-full bg-fuchsia-100/90 shadow-[0_0_10px_rgba(255,255,255,0.7)]" />
           </div>
 
           <div class="text-left">
