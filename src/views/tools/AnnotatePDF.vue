@@ -27,7 +27,7 @@ import { useUserStore } from '@/stores/user'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 import { redirectForFeatureAccess } from '@/utils/feature-access'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
@@ -56,19 +56,41 @@ const highlightAnnotation = ref({
   color: '#FFFF00',
 })
 
-const textColors = [
-  { name: 'Red', value: '#FF0000' },
-  { name: 'Blue', value: '#2563EB' },
-  { name: 'Green', value: '#059669' },
-  { name: 'Black', value: '#111827' },
-]
+const textColors = computed(() => {
+  if (locale.value.toLowerCase().startsWith('zh')) {
+    return [
+      { name: '红色', value: '#FF0000' },
+      { name: '蓝色', value: '#2563EB' },
+      { name: '绿色', value: '#059669' },
+      { name: '黑色', value: '#111827' },
+    ]
+  }
 
-const highlightColors = [
-  { name: 'Yellow', value: '#FACC15' },
-  { name: 'Mint', value: '#34D399' },
-  { name: 'Sky', value: '#38BDF8' },
-  { name: 'Pink', value: '#F472B6' },
-]
+  return [
+    { name: 'Red', value: '#FF0000' },
+    { name: 'Blue', value: '#2563EB' },
+    { name: 'Green', value: '#059669' },
+    { name: 'Black', value: '#111827' },
+  ]
+})
+
+const highlightColors = computed(() => {
+  if (locale.value.toLowerCase().startsWith('zh')) {
+    return [
+      { name: '黄色', value: '#FACC15' },
+      { name: '薄荷绿', value: '#34D399' },
+      { name: '天蓝色', value: '#38BDF8' },
+      { name: '粉色', value: '#F472B6' },
+    ]
+  }
+
+  return [
+    { name: 'Yellow', value: '#FACC15' },
+    { name: 'Mint', value: '#34D399' },
+    { name: 'Sky', value: '#38BDF8' },
+    { name: 'Pink', value: '#F472B6' },
+  ]
+})
 
 const canUseTool = computed(() => userStore.isAuthenticated && userStore.canUseCloudFeatures)
 
@@ -294,10 +316,10 @@ const handleReset = () => {
       </div>
 
       <div class="mt-6 space-y-6">
-        <div
-          v-if="step === 1"
-          class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
-        >
+      <div
+        v-if="step === 1 && canUseTool"
+        class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
+      >
           <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
               <div class="space-y-2">

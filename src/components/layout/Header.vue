@@ -58,7 +58,6 @@ const toggleTheme = () => {
 }
 
 const changeLocale = (newLocale: 'en' | 'zh' | 'es') => {
-  locale.value = newLocale
   settingsStore.setLocale(newLocale)
 }
 

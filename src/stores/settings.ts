@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import i18n from '@/i18n'
 
 const localeStorageKey = 'pdf-flow-locale'
 const themeStorageKey = 'pdf-flow-theme'
@@ -28,6 +29,9 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const setLocale = (newLocale: typeof locale.value) => {
     locale.value = newLocale
+    if (i18n.global.locale.value !== newLocale) {
+      i18n.global.locale.value = newLocale
+    }
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(localeStorageKey, newLocale)
     }
@@ -58,6 +62,9 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   const initLocale = () => {
+    if (i18n.global.locale.value !== locale.value) {
+      i18n.global.locale.value = locale.value
+    }
     document.documentElement.lang = locale.value
   }
 
