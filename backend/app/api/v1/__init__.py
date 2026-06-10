@@ -3,7 +3,7 @@ API v1 router
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, health, files, websocket, oauth, payment, enterprise, ai, advanced
+from app.api.v1.endpoints import auth, users, health, files, websocket, oauth, payment, enterprise, ai, advanced, admin
 
 api_router = APIRouter()
 
@@ -18,3 +18,4 @@ api_router.include_router(websocket.router, tags=["websocket"])
 api_router.include_router(enterprise.router, tags=["enterprise"])
 api_router.include_router(ai.router, tags=["ai"])
 api_router.include_router(advanced.router, tags=["advanced-pdf"])
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])

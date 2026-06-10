@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { watch } from 'vue'
 import i18n from '@/i18n'
-import { guestGuard, authGuard, enterpriseGuard } from './guards'
+import { guestGuard, authGuard, enterpriseGuard, adminGuard } from './guards'
 
 const router = createRouter({
   history: createWebHistory('/'),
@@ -95,6 +95,13 @@ const router = createRouter({
           meta: { titleKey: 'enterprise.dashboard.title' }
         }
       ]
+    },
+    {
+      path: '/control-room',
+      name: 'control-room',
+      component: () => import('@/views/admin/ControlRoom.vue'),
+      beforeEnter: adminGuard,
+      meta: { title: 'Control Room' }
     },
     {
       path: '/tools',

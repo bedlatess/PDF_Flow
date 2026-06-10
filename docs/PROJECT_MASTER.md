@@ -638,3 +638,13 @@ python -m pytest tests/ -q      # 35 通过
   - 新增审计日志：记录管理员、动作、对象、时间、结果和必要诊断信息。
 - 后台第一阶段不做公开注册入口、不做复杂多管理员权限矩阵、不做拖拽页面搭建器，先解决“能安全地开关功能、修改全站基础内容、维护法律页和公告”的真实运营需求。
 - 安全要求：后台路由不出现在导航；前端隐藏只是体验层，真实权限必须由后端判断；所有配置更新需要输入校验；敏感错误只返回诊断码；管理员操作写入审计日志。
+
+### 2026-06-10 Hidden Admin Console MVP / 隐藏后台第一阶段落地
+
+- 新增后端后台基础能力：`backend/app/api/v1/endpoints/admin.py`，挂载到 `/api/v1/admin/*`，所有接口强制当前用户为 `admin` 角色，否则返回 403。
+- 新增后台数据模型与迁移：`SiteSetting`、`FeatureFlag`、`ContentBlock`、`AdminAuditLog`，对应迁移文件为 `backend/alembic/versions/add_admin_console_models.py`。
+- 后台首次访问会自动种子化基础站点配置、全功能开关、默认内容块；后续管理员可通过接口修改，并自动写入审计日志。
+- 新增前端隐藏入口 `/control-room`，不加入 Header、Footer 或公开导航；仅 admin 用户可访问，普通用户会被路由守卫拦回首页，未登录用户会被引导登录。
+- 新增 `adminAPI`、`adminGuard` 和 `userStore.isAdmin`，前端控制台支持管理功能开关、站点配置、内容块和查看最近审计记录。
+- 当前阶段后台开关已经可保存到后端，但尚未统一接入所有公开工具页和后端业务执行路径；下一阶段需要把工具可见性、维护提示、登录要求、Pro 要求统一改为读取后端配置。
+- 本地验证：`npm run build` 通过；`python -m pytest backend/tests/test_auth.py backend/tests/test_admin.py -q` 通过，17 passed。Windows 本机直接导入 `app.main` 时会被历史监控服务中的 Unicode 控制台输出影响，服务端 Linux/Docker 不受该 GBK 控制台问题影响。

@@ -21,6 +21,7 @@ export const useUserStore = defineStore('user', () => {
   const isEnterpriseTier = computed(
     () => user.value?.role === 'enterprise' || user.value?.role === 'admin'
   )
+  const isAdmin = computed(() => user.value?.role === 'admin')
 
   const canUseCloudFeatures = computed(() => {
     return isProTier.value || isEnterpriseTier.value
@@ -216,6 +217,7 @@ export const useUserStore = defineStore('user', () => {
     isFreeTier,
     isProTier,
     isEnterpriseTier,
+    isAdmin,
     canUseCloudFeatures,
     quotaUsagePercentage,
 

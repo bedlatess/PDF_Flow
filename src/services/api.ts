@@ -366,6 +366,110 @@ export const userAPI = {
   }
 }
 
+// ==================== Hidden Admin API ====================
+
+export interface AdminOverview {
+  settings_count: number
+  feature_flags_count: number
+  content_blocks_count: number
+  recent_audit_logs: AdminAuditLog[]
+}
+
+export interface AdminAuditLog {
+  id: number
+  admin_user_id: number
+  action: string
+  target_type: string
+  target_key: string
+  status: string
+  detail: string | null
+  created_at: string
+}
+
+export interface SiteSetting {
+  id: number
+  key: string
+  value: string
+  value_type: string
+  group: string
+  label: string
+  description: string | null
+  is_public: boolean
+  updated_at: string
+}
+
+export interface FeatureFlag {
+  id: number
+  key: string
+  label: string
+  description: string | null
+  enabled: boolean
+  requires_login: boolean
+  requires_pro: boolean
+  maintenance_message: string | null
+  updated_at: string
+}
+
+export interface ContentBlock {
+  id: number
+  key: string
+  locale: string
+  title: string
+  content: string
+  description: string | null
+  is_public: boolean
+  updated_at: string
+}
+
+export const adminAPI = {
+  async getOverview(): Promise<AdminOverview> {
+    const response = await apiClient.get<AdminOverview>('/api/v1/admin/overview')
+    return response.data
+  },
+
+  async listSettings(): Promise<SiteSetting[]> {
+    const response = await apiClient.get<SiteSetting[]>('/api/v1/admin/settings')
+    return response.data
+  },
+
+  async updateSetting(key: string, data: Omit<SiteSetting, 'id' | 'key' | 'updated_at'>): Promise<SiteSetting> {
+    const response = await apiClient.put<SiteSetting>(`/api/v1/admin/settings/${encodeURIComponent(key)}`, data)
+    return response.data
+  },
+
+  async listFeatureFlags(): Promise<FeatureFlag[]> {
+    const response = await apiClient.get<FeatureFlag[]>('/api/v1/admin/feature-flags')
+    return response.data
+  },
+
+  async updateFeatureFlag(key: string, data: Omit<FeatureFlag, 'id' | 'key' | 'updated_at'>): Promise<FeatureFlag> {
+    const response = await apiClient.put<FeatureFlag>(`/api/v1/admin/feature-flags/${encodeURIComponent(key)}`, data)
+    return response.data
+  },
+
+  async listContentBlocks(): Promise<ContentBlock[]> {
+    const response = await apiClient.get<ContentBlock[]>('/api/v1/admin/content-blocks')
+    return response.data
+  },
+
+  async updateContentBlock(
+    key: string,
+    locale: string,
+    data: Omit<ContentBlock, 'id' | 'key' | 'updated_at'>
+  ): Promise<ContentBlock> {
+    const response = await apiClient.put<ContentBlock>(
+      `/api/v1/admin/content-blocks/${encodeURIComponent(key)}/${encodeURIComponent(locale)}`,
+      data
+    )
+    return response.data
+  },
+
+  async listAuditLogs(): Promise<AdminAuditLog[]> {
+    const response = await apiClient.get<AdminAuditLog[]>('/api/v1/admin/audit-logs')
+    return response.data
+  }
+}
+
 // ==================== Payment API ====================
 
 export interface CheckoutSessionRequest {

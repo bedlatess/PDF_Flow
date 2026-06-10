@@ -104,3 +104,29 @@ export async function enterpriseGuard(
     })
   }
 }
+
+export async function adminGuard(
+  to: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
+  next: NavigationGuardNext
+) {
+  const userStore = useUserStore()
+
+  if (!userStore.isAuthenticated) {
+    const isLoggedIn = await userStore.checkAuth()
+    if (!isLoggedIn) {
+      next({
+        path: '/auth/login',
+        query: { redirect: to.fullPath }
+      })
+      return
+    }
+  }
+
+  if (userStore.isAdmin) {
+    next()
+    return
+  }
+
+  next('/')
+}

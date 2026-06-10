@@ -4,7 +4,7 @@ Following v4.0 specification: User authentication, API keys, usage tracking
 """
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, ForeignKey, Index, Text, UniqueConstraint
 from sqlalchemy.orm import relationship, declarative_base
 import enum
 
@@ -209,4 +209,91 @@ class Webhook(Base):
     __table_args__ = (
         Index('idx_webhook_user', 'user_id'),
         Index('idx_webhook_active', 'is_active'),
+    )
+
+
+class SiteSetting(Base):
+    """Admin-managed site setting."""
+    __tablename__ = "site_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, nullable=False)
+    value = Column(Text, nullable=False, default="")
+    value_type = Column(String, default="text", nullable=False)
+    group = Column("setting_group", String, default="general", nullable=False)
+    label = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    is_public = Column(Boolean, default=True, nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("idx_site_setting_key", "key"),
+        Index("idx_site_setting_group", "setting_group"),
+    )
+
+
+class FeatureFlag(Base):
+    """Admin-managed feature access switch."""
+    __tablename__ = "feature_flags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, nullable=False)
+    label = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    enabled = Column(Boolean, default=True, nullable=False)
+    requires_login = Column(Boolean, default=False, nullable=False)
+    requires_pro = Column(Boolean, default=False, nullable=False)
+    maintenance_message = Column(Text, nullable=True)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("idx_feature_flag_key", "key"),
+        Index("idx_feature_flag_enabled", "enabled"),
+    )
+
+
+class ContentBlock(Base):
+    """Admin-editable content block for public pages."""
+    __tablename__ = "content_blocks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, nullable=False)
+    locale = Column(String, default="zh", nullable=False)
+    title = Column(String, nullable=False)
+    content = Column(Text, nullable=False, default="")
+    description = Column(Text, nullable=True)
+    is_public = Column(Boolean, default=True, nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("key", "locale", name="uq_content_block_key_locale"),
+        Index("idx_content_block_key", "key"),
+        Index("idx_content_block_locale", "locale"),
+    )
+
+
+class AdminAuditLog(Base):
+    """Audit trail for hidden admin operations."""
+    __tablename__ = "admin_audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String, nullable=False)
+    target_type = Column(String, nullable=False)
+    target_key = Column(String, nullable=False)
+    status = Column(String, default="success", nullable=False)
+    detail = Column(Text, nullable=True)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index("idx_admin_audit_admin", "admin_user_id"),
+        Index("idx_admin_audit_target", "target_type", "target_key"),
     )
