@@ -20,6 +20,7 @@ import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
 import ToolHeader from '@/components/tools/ToolHeader.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
+import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
 import { useUserStore } from '@/stores/user'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 import { redirectForFeatureAccess } from '@/utils/feature-access'
@@ -240,48 +241,25 @@ const closeResultModal = () => {
         :support-hint="errorState.supportHint"
       />
 
-      <div
+      <ToolAccessPanel
         v-if="!canUseOCR"
         class="mt-6"
+        accent="purple"
+        :label="t('tools.ocr.accessLabel')"
+        :title="userStore.isAuthenticated ? t('tools.ocr.accessMemberTitle') : t('tools.ocr.accessGuestTitle')"
+        :description="userStore.isAuthenticated ? t('tools.ocr.accessMemberDescription') : t('tools.ocr.accessGuestDescription')"
+        :action-label="userStore.isAuthenticated ? t('tools.ocr.goToUpgrade') : t('tools.ocr.goToSignIn')"
+        :steps="[
+          t('tools.ocr.accessStep1'),
+          t('tools.ocr.accessStep2'),
+          t('tools.ocr.accessStep3'),
+        ]"
+        @action="ensureAccess()"
       >
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
-          <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div class="space-y-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                {{ t('tools.ocr.accessLabel') }}
-              </p>
-              <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ userStore.isAuthenticated ? t('tools.ocr.accessMemberTitle') : t('tools.ocr.accessGuestTitle') }}
-              </h2>
-              <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ userStore.isAuthenticated ? t('tools.ocr.accessMemberDescription') : t('tools.ocr.accessGuestDescription') }}
-              </p>
-
-              <Button
-                size="lg"
-                @click="ensureAccess()"
-              >
-                <Crown class="mr-2 h-4 w-4" />
-                {{ userStore.isAuthenticated ? t('tools.ocr.goToUpgrade') : t('tools.ocr.goToSignIn') }}
-              </Button>
-            </div>
-
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
-              <div class="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  1. {{ t('tools.ocr.accessStep1') }}
-                </div>
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  2. {{ t('tools.ocr.accessStep2') }}
-                </div>
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  3. {{ t('tools.ocr.accessStep3') }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
+        <template #actionIcon>
+          <Crown class="mr-2 h-4 w-4" />
+        </template>
+      </ToolAccessPanel>
 
       <div class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">

@@ -40,11 +40,73 @@ interface PricingTier {
 const isLoggedIn = computed(() => userStore.isAuthenticated)
 const currentTier = computed(() => userStore.user?.role || 'free')
 
-const enterprisePrice = computed(() => {
-  if (locale.value === 'zh') return '按需'
-  if (locale.value === 'es') return 'A medida'
-  return 'Custom'
+const pageCopy = computed(() => {
+  if (locale.value === 'zh') {
+    return {
+      heroEyebrow: '\u6309\u4f7f\u7528\u8282\u594f\u9009\u5957\u9910',
+      sideTitle: '\u6bcf\u4e00\u6863\u7684\u4f7f\u7528\u65b9\u5f0f',
+      sideDescription: '\u5148\u628a\u65e5\u5e38 PDF \u6d41\u7a0b\u8dd1\u987a\uff0c\u9700\u8981\u4e91\u7aef\u80fd\u529b\u65f6\u518d\u5f80\u4e0a\u5347\u3002',
+      freeAudience: '\u4e2a\u4eba\u5904\u7406 / \u8f7b\u91cf\u65e5\u5e38',
+      proAudience: '\u9ad8\u9891\u6587\u6863 / \u4e91\u7aef\u589e\u5f3a',
+      enterpriseAudience: '\u56e2\u961f\u63a5\u5165 / \u7a33\u5b9a\u4ea4\u4ed8',
+      faqEyebrow: '\u5e38\u89c1\u95ee\u9898',
+      faqDescription: '\u5173\u4e8e\u5347\u7ea7\u3001\u53d6\u6d88\u3001\u5b89\u5168\u548c\u4f01\u4e1a\u63a5\u5165\u7684\u6838\u5fc3\u95ee\u9898\uff0c\u5728\u8fd9\u91cc\u4e00\u6b21\u8bf4\u6e05\u695a\u3002',
+      trustEyebrow: '\u5148\u7a33\u5b9a\uff0c\u518d\u6269\u5c55',
+      trustPanelTitle: '\u628a\u5957\u9910\u9009\u62e9\u53d8\u5f97\u7b80\u5355',
+      joinEyebrow: '\u4ece\u514d\u8d39\u5f00\u59cb',
+      joinTitle: '\u5148\u5904\u7406\u7b2c\u4e00\u4efd\u6587\u4ef6\uff0c\u518d\u51b3\u5b9a\u662f\u5426\u5347\u7ea7',
+      joinDescription: '\u4f60\u53ef\u4ee5\u5148\u4ece\u57fa\u7840 PDF \u5de5\u5177\u5f00\u59cb\uff0c\u5f53 OCR\u3001Office \u8f6c\u6362\u6216\u56e2\u961f\u534f\u4f5c\u771f\u6b63\u53d8\u6210\u65e5\u5e38\u9700\u6c42\u65f6\uff0c\u518d\u8fdb\u4e00\u6b65\u5f00\u542f\u5bf9\u5e94\u80fd\u529b\u3002',
+      joinPointA: '\u514d\u8d39\u5de5\u5177\u9002\u5408\u5148\u9a8c\u8bc1\u65e5\u5e38\u6d41\u7a0b',
+      joinPointB: 'Pro \u5728\u4f60\u771f\u7684\u9700\u8981\u4e91\u7aef\u80fd\u529b\u65f6\u518d\u5f00\u901a',
+      joinPointC: '\u4f01\u4e1a\u5957\u9910\u66f4\u9002\u5408\u56e2\u961f\u96c6\u6210\u548c\u7a33\u5b9a\u4ea4\u4ed8',
+      enterprisePrice: '\u6309\u9700',
+    }
+  }
+
+  if (locale.value === 'es') {
+    return {
+      heroEyebrow: 'Elige segun tu ritmo',
+      sideTitle: 'Como suele usarse cada plan',
+      sideDescription: 'Haz fluido el trabajo PDF diario primero y sube solo cuando la nube forme parte del proceso real.',
+      freeAudience: 'Uso personal / tareas ligeras',
+      proAudience: 'Trabajo frecuente / mejora en la nube',
+      enterpriseAudience: 'Equipo e integracion / entrega estable',
+      faqEyebrow: 'Preguntas comunes',
+      faqDescription: 'Aqui esta lo esencial sobre mejora, cancelacion, seguridad y adopcion para equipos.',
+      trustEyebrow: 'Primero estabilidad',
+      trustPanelTitle: 'Elegir un plan deberia sentirse sencillo',
+      joinEyebrow: 'Empieza gratis',
+      joinTitle: 'Procesa tu primer archivo antes de pensar en subir',
+      joinDescription: 'Empieza con las herramientas PDF base y activa OCR, Office o colaboracion cuando ese trabajo pase a ser parte de tu rutina.',
+      joinPointA: 'Gratis sirve para validar el flujo diario',
+      joinPointB: 'Pro cobra sentido cuando la nube ya forma parte del trabajo',
+      joinPointC: 'Enterprise encaja mejor con integracion, control y soporte constante',
+      enterprisePrice: 'A medida',
+    }
+  }
+
+  return {
+    heroEyebrow: 'Choose the plan by pace',
+    sideTitle: 'How each tier tends to fit',
+    sideDescription: 'Make the everyday PDF workflow smooth first, then upgrade only when cloud work becomes part of the real routine.',
+    freeAudience: 'Personal use / lighter tasks',
+    proAudience: 'Frequent document work / cloud-enhanced',
+    enterpriseAudience: 'Team integration / stable delivery',
+    faqEyebrow: 'Common questions',
+    faqDescription: 'The main questions around upgrades, cancellation, security, and team adoption are answered here.',
+    trustEyebrow: 'Stability first',
+    trustPanelTitle: 'Choosing a plan should feel straightforward',
+    joinEyebrow: 'Start free',
+    joinTitle: 'Process the first file before deciding to upgrade',
+    joinDescription: 'Begin with the core PDF workflow, then unlock OCR, Office conversion, or team features when that work becomes part of regular use.',
+    joinPointA: 'Free is ideal for validating the everyday flow',
+    joinPointB: 'Pro makes sense when cloud features become part of normal work',
+    joinPointC: 'Enterprise fits better when integration, control, and support matter every day',
+    enterprisePrice: 'Custom',
+  }
 })
+
+const enterprisePrice = computed(() => pageCopy.value.enterprisePrice)
 
 const fitCards = computed(() => [
   {
@@ -74,7 +136,7 @@ const pricingTiers = computed<PricingTier[]>(() => [
     price: '$0',
     priceDetail: t('marketing.pricingPage.tiers.free.priceDetail'),
     description: t('marketing.pricingPage.tiers.free.description'),
-    audience: t('marketing.pricingPage.tiers.free.audience'),
+    audience: pageCopy.value.freeAudience,
     icon: Sparkles,
     iconTone: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300',
     features: [
@@ -97,7 +159,7 @@ const pricingTiers = computed<PricingTier[]>(() => [
     price: '$9.9',
     priceDetail: t('marketing.pricingPage.tiers.pro.priceDetail'),
     description: t('marketing.pricingPage.tiers.pro.description'),
-    audience: t('marketing.pricingPage.tiers.pro.audience'),
+    audience: pageCopy.value.proAudience,
     icon: Crown,
     iconTone: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
     features: [
@@ -119,7 +181,7 @@ const pricingTiers = computed<PricingTier[]>(() => [
     price: enterprisePrice.value,
     priceDetail: t('marketing.pricingPage.tiers.enterprise.priceDetail'),
     description: t('marketing.pricingPage.tiers.enterprise.description'),
-    audience: t('marketing.pricingPage.tiers.enterprise.audience'),
+    audience: pageCopy.value.enterpriseAudience,
     icon: Users,
     iconTone: 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300',
     features: [
@@ -198,15 +260,15 @@ const handleCTA = async (tier: PricingTier) => {
 
 <template>
   <div
-    class="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.12),transparent_28%),radial-gradient(circle_at_100%_0%,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f8fffd_0%,#f8fafc_100%)] px-4 pb-20 pt-16 dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.12),transparent_28%),radial-gradient(circle_at_100%_0%,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#02110f_0%,#0f172a_100%)] sm:px-6 lg:px-8"
+    class="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.10),transparent_28%),radial-gradient(circle_at_100%_0%,rgba(109,40,217,0.10),transparent_24%),linear-gradient(180deg,#fbfffd_0%,#f8fafc_100%)] px-4 pb-20 pt-16 dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.10),transparent_28%),radial-gradient(circle_at_100%_0%,rgba(109,40,217,0.10),transparent_24%),linear-gradient(180deg,#02110f_0%,#0f172a_100%)] sm:px-6 lg:px-8"
     :data-locale="activeLocale"
   >
     <div class="mx-auto max-w-7xl">
-      <section class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+      <section class="grid gap-8 lg:grid-cols-[1.02fr_0.98fr]">
         <div class="rounded-[36px] border border-white/70 bg-white/86 p-8 shadow-2xl shadow-emerald-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/74 dark:shadow-none sm:p-10">
           <div class="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
             <Sparkles class="h-4 w-4" />
-            Pricing Brief
+            {{ pageCopy.heroEyebrow }}
           </div>
 
           <h1 class="mt-6 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
@@ -232,22 +294,31 @@ const handleCTA = async (tier: PricingTier) => {
           </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-          <article
-            v-for="card in fitCards"
-            :key="card.title"
-            class="rounded-[30px] border border-white/70 bg-white/82 p-6 shadow-lg shadow-slate-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/68 dark:shadow-none"
-          >
-            <div :class="['flex h-11 w-11 items-center justify-center rounded-2xl', card.tone]">
-              <component :is="card.icon" class="h-5 w-5" />
-            </div>
-            <h2 class="mt-4 text-lg font-semibold text-slate-950 dark:text-white">
-              {{ card.title }}
-            </h2>
-            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {{ card.description }}
-            </p>
-          </article>
+        <div class="rounded-[36px] border border-white/70 bg-white/82 p-7 shadow-xl shadow-slate-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 dark:shadow-none sm:p-8">
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+            {{ pageCopy.sideTitle }}
+          </p>
+          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            {{ pageCopy.sideDescription }}
+          </p>
+
+          <div class="mt-6 grid gap-4 sm:grid-cols-3">
+            <article
+              v-for="card in fitCards"
+              :key="card.title"
+              class="rounded-[26px] border border-slate-200/80 bg-slate-50/85 p-5 dark:border-slate-800 dark:bg-slate-950/55"
+            >
+              <div :class="['flex h-11 w-11 items-center justify-center rounded-2xl', card.tone]">
+                <component :is="card.icon" class="h-5 w-5" />
+              </div>
+              <h2 class="mt-4 text-lg font-semibold text-slate-950 dark:text-white">
+                {{ card.title }}
+              </h2>
+              <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                {{ card.description }}
+              </p>
+            </article>
+          </div>
         </div>
       </section>
 
@@ -362,14 +433,14 @@ const handleCTA = async (tier: PricingTier) => {
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-              FAQ
+              {{ pageCopy.faqEyebrow }}
             </p>
             <h2 class="mt-3 text-3xl font-semibold text-slate-950 dark:text-white">
               {{ t('marketing.pricingPage.faqTitle') }}
             </h2>
           </div>
           <p class="max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            {{ t('marketing.pricingPage.trust.description') }}
+            {{ pageCopy.faqDescription }}
           </p>
         </div>
 
@@ -392,13 +463,13 @@ const handleCTA = async (tier: PricingTier) => {
         </div>
       </section>
 
-      <section class="mt-12 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div class="rounded-[36px] bg-[linear-gradient(135deg,#0f172a_0%,#0ea5e9_48%,#14b8a6_100%)] p-8 text-white shadow-2xl shadow-sky-900/15 sm:p-10">
-          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">
-            Enterprise
+      <section class="mt-12 grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
+        <div class="rounded-[36px] bg-[linear-gradient(135deg,#0f172a_0%,#0ea5e9_42%,#14b8a6_100%)] p-8 text-white shadow-2xl shadow-sky-900/15 sm:p-10">
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-white/72">
+            {{ pageCopy.trustEyebrow }}
           </p>
           <h2 class="mt-4 text-3xl font-semibold sm:text-4xl">
-            {{ t('marketing.pricingPage.trust.title') }}
+            {{ pageCopy.trustPanelTitle }}
           </h2>
           <p class="mt-4 max-w-2xl text-sm leading-7 text-white/84 sm:text-base">
             {{ t('marketing.pricingPage.trust.description') }}
@@ -421,14 +492,35 @@ const handleCTA = async (tier: PricingTier) => {
 
         <div class="rounded-[36px] border border-white/70 bg-white/84 p-8 shadow-2xl shadow-slate-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/72 dark:shadow-none sm:p-10">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-            Join
+            {{ pageCopy.joinEyebrow }}
           </p>
           <h2 class="mt-4 text-3xl font-semibold text-slate-950 dark:text-white">
-            {{ t('marketing.pricingPage.bottomPrompt') }}
+            {{ pageCopy.joinTitle }}
           </h2>
           <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            {{ t('marketing.pricingPage.bottomAction') }}
+            {{ pageCopy.joinDescription }}
           </p>
+
+          <div class="mt-6 space-y-3">
+            <div class="flex items-start gap-3 rounded-[22px] bg-slate-50/90 px-4 py-3 dark:bg-slate-950/55">
+              <BadgeCheck class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+              <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {{ pageCopy.joinPointA }}
+              </p>
+            </div>
+            <div class="flex items-start gap-3 rounded-[22px] bg-slate-50/90 px-4 py-3 dark:bg-slate-950/55">
+              <Crown class="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+              <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {{ pageCopy.joinPointB }}
+              </p>
+            </div>
+            <div class="flex items-start gap-3 rounded-[22px] bg-slate-50/90 px-4 py-3 dark:bg-slate-950/55">
+              <Users class="mt-0.5 h-4 w-4 shrink-0 text-sky-500" />
+              <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {{ pageCopy.joinPointC }}
+              </p>
+            </div>
+          </div>
 
           <div class="mt-8 flex flex-wrap gap-3">
             <Button

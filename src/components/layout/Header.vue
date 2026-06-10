@@ -26,10 +26,31 @@ const mobileMenuOpen = ref(false)
 const userMenuOpen = ref(false)
 
 const localeOptions = [
-  { value: 'zh', label: '简体中文' },
+  { value: 'zh', label: '\u7b80\u4f53\u4e2d\u6587' },
   { value: 'en', label: 'English' },
-  { value: 'es', label: 'Español' },
+  { value: 'es', label: 'Espa\u00f1ol' },
 ] as const
+
+const brandCopy = computed(() => {
+  if (locale.value === 'zh') {
+    return {
+      eyebrow: 'Secure PDF Studio',
+      note: '\u9690\u79c1\u4f18\u5148\u7684\u6587\u6863\u5de5\u4f5c\u53f0',
+    }
+  }
+
+  if (locale.value === 'es') {
+    return {
+      eyebrow: 'Secure PDF Studio',
+      note: 'Espacio PDF centrado en privacidad',
+    }
+  }
+
+  return {
+    eyebrow: 'Secure PDF Studio',
+    note: 'Privacy-first document workspace',
+  }
+})
 
 const publicLinks = computed(() => [
   {
@@ -37,16 +58,16 @@ const publicLinks = computed(() => [
     label: t('nav.features'),
     route: '/features',
     icon: LayoutPanelTop,
-    accent: 'from-sky-500/15 to-cyan-500/15 text-sky-700 ring-sky-200/80 dark:text-sky-200 dark:ring-sky-500/20',
-    activeAccent: 'from-sky-500 to-cyan-500 text-white ring-sky-400/60 shadow-lg shadow-sky-500/20',
+    accent: 'from-violet-500/16 to-fuchsia-500/12 text-violet-700 ring-violet-200/80 dark:text-violet-200 dark:ring-violet-500/20',
+    activeAccent: 'from-violet-600 to-fuchsia-500 text-white ring-violet-400/60 shadow-lg shadow-violet-500/25',
   },
   {
     key: 'pricing',
     label: t('nav.pricing'),
     route: '/pricing',
     icon: Crown,
-    accent: 'from-emerald-500/15 to-teal-500/15 text-emerald-700 ring-emerald-200/80 dark:text-emerald-200 dark:ring-emerald-500/20',
-    activeAccent: 'from-emerald-500 to-teal-500 text-white ring-emerald-400/60 shadow-lg shadow-emerald-500/20',
+    accent: 'from-sky-500/15 to-cyan-500/12 text-sky-700 ring-sky-200/80 dark:text-sky-200 dark:ring-sky-500/20',
+    activeAccent: 'from-sky-500 to-cyan-500 text-white ring-sky-400/60 shadow-lg shadow-sky-500/25',
   },
 ])
 
@@ -94,11 +115,6 @@ const changeLocale = (newLocale: 'en' | 'zh' | 'es') => {
   settingsStore.setLocale(newLocale)
 }
 
-const closeMenus = () => {
-  mobileMenuOpen.value = false
-  userMenuOpen.value = false
-}
-
 onMounted(() => {
   userStore.checkAuth()
 })
@@ -109,38 +125,47 @@ onMounted(() => {
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="flex h-20 items-center justify-between gap-4">
         <button
-          class="group flex items-center gap-3 rounded-full border border-slate-200/70 bg-white/80 px-3 py-2 shadow-sm transition hover:border-sky-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/75 dark:hover:border-sky-500/30"
+          class="group flex items-center gap-3 rounded-full border border-violet-200/80 bg-white/86 px-3 py-2 shadow-sm shadow-violet-100/70 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg hover:shadow-violet-200/60 dark:border-violet-500/20 dark:bg-slate-900/78 dark:shadow-none dark:hover:border-violet-400/40"
           @click="navigateHome"
         >
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f172a_0%,#0ea5e9_55%,#22c55e_100%)] text-white shadow-lg shadow-sky-500/20">
+          <div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[18px] bg-[linear-gradient(145deg,#2e1065_0%,#6d28d9_52%,#c084fc_100%)] text-white shadow-lg shadow-violet-500/25">
+            <div class="absolute left-[9px] top-[10px] h-5 w-4 rounded-[5px] border border-white/30 bg-white/18 backdrop-blur-sm" />
+            <div class="absolute left-[15px] top-[7px] h-5 w-4 rounded-[5px] border border-white/60 bg-white/28" />
             <svg
-              class="h-6 w-6"
-              fill="currentColor"
-              viewBox="0 0 20 20"
+              class="relative h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
             >
               <path
-                fill-rule="evenodd"
-                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                clip-rule="evenodd"
+                d="M8.5 6.75h5l2 2v8.5a1.75 1.75 0 0 1-1.75 1.75H8.5a1.75 1.75 0 0 1-1.75-1.75V8.5A1.75 1.75 0 0 1 8.5 6.75Z"
+                fill="currentColor"
+                opacity="0.92"
               />
+              <path d="M13.5 6.75v2h2" stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3" />
+              <path d="M10 12h4M10 14.75h4" stroke="white" stroke-linecap="round" stroke-width="1.3" />
             </svg>
+            <span class="absolute right-[6px] top-[5px] h-1.5 w-1.5 rounded-full bg-fuchsia-100 shadow-[0_0_12px_rgba(255,255,255,0.85)]" />
           </div>
+
           <div class="hidden text-left sm:block">
-            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-300">
-              PDF Workspace
+            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-300">
+              {{ brandCopy.eyebrow }}
             </p>
             <p class="text-base font-semibold text-slate-950 dark:text-white">
               {{ t('app.title') }}
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              {{ brandCopy.note }}
             </p>
           </div>
         </button>
 
         <div class="hidden items-center gap-3 md:flex">
           <button
-            class="group inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-950 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:text-white"
+            class="group inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-violet-200 hover:text-slate-950 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-200 dark:hover:border-violet-400/30 dark:hover:text-white"
             @click="navigateHome"
           >
-            <Sparkles class="h-4 w-4 text-sky-500 transition group-hover:rotate-6" />
+            <Sparkles class="h-4 w-4 text-violet-500 transition group-hover:rotate-6" />
             {{ t('nav.home') }}
           </button>
 
@@ -164,7 +189,7 @@ onMounted(() => {
         <div class="hidden items-center gap-3 md:flex">
           <select
             :value="locale"
-            class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-400 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-100 dark:hover:border-slate-700"
+            class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-700 outline-none transition hover:border-violet-200 focus:border-violet-400 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-100 dark:hover:border-violet-400/30"
             @change="changeLocale(($event.target as HTMLSelectElement).value as 'en' | 'zh' | 'es')"
           >
             <option
@@ -177,7 +202,7 @@ onMounted(() => {
           </select>
 
           <button
-            class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-white"
+            class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-sm transition hover:border-violet-200 hover:text-slate-950 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-300 dark:hover:border-violet-400/30 dark:hover:text-white"
             @click="toggleTheme"
           >
             <Moon
@@ -195,7 +220,7 @@ onMounted(() => {
             class="relative"
           >
             <button
-              class="flex h-11 w-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f172a_0%,#0ea5e9_70%,#14b8a6_100%)] text-sm font-bold text-white shadow-lg shadow-sky-500/20 transition hover:-translate-y-0.5"
+              class="flex h-11 w-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,#2e1065_0%,#7c3aed_68%,#d8b4fe_100%)] text-sm font-bold text-white shadow-lg shadow-violet-500/20 transition hover:-translate-y-0.5"
               @click="userMenuOpen = !userMenuOpen"
             >
               {{ userInitial }}
@@ -238,7 +263,7 @@ onMounted(() => {
         </div>
 
         <button
-          class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-950 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:text-white md:hidden"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-700 shadow-sm transition hover:border-violet-200 hover:text-slate-950 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-200 dark:hover:border-violet-400/30 dark:hover:text-white md:hidden"
           @click="mobileMenuOpen = !mobileMenuOpen"
         >
           <Menu
@@ -263,7 +288,7 @@ onMounted(() => {
               @click="navigateHome"
             >
               <span class="flex items-center gap-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                <Sparkles class="h-4 w-4 text-sky-500" />
+                <Sparkles class="h-4 w-4 text-violet-500" />
                 {{ t('nav.home') }}
               </span>
               <ChevronRight class="h-4 w-4 text-slate-400" />
@@ -291,7 +316,7 @@ onMounted(() => {
           <div class="grid gap-3 rounded-[28px] border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/72">
             <select
               :value="locale"
-              class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+              class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
               @change="changeLocale(($event.target as HTMLSelectElement).value as 'en' | 'zh' | 'es')"
             >
               <option
@@ -304,7 +329,7 @@ onMounted(() => {
             </select>
 
             <button
-              class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-700"
+              class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-violet-200 dark:border-slate-800 dark:text-slate-200 dark:hover:border-violet-400/30"
               @click="toggleTheme"
             >
               <span>{{ settingsStore.theme === 'light' ? t('nav.themeToDark') : t('nav.themeToLight') }}</span>
@@ -320,7 +345,7 @@ onMounted(() => {
 
             <template v-if="userStore.isAuthenticated">
               <button
-                class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-700"
+                class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-violet-200 dark:border-slate-800 dark:text-slate-200 dark:hover:border-violet-400/30"
                 @click="goToProfile"
               >
                 <span>{{ t('account.myAccount') }}</span>
