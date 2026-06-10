@@ -23,6 +23,7 @@ import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
 import ToolHeader from '@/components/tools/ToolHeader.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
+import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
 import { useUserStore } from '@/stores/user'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 import { redirectForFeatureAccess } from '@/utils/feature-access'
@@ -38,6 +39,7 @@ const annotationType = ref<'text' | 'highlight'>('text')
 const progress = ref(0)
 const errorState = ref<FormattedUserError | null>(null)
 const resultJobId = ref('')
+const isChinese = computed(() => locale.value.toLowerCase().startsWith('zh'))
 
 const textAnnotation = ref({
   text: '',
@@ -272,48 +274,25 @@ const handleReset = () => {
         :support-hint="errorState.supportHint"
       />
 
-      <div
+      <ToolAccessPanel
         v-if="step === 1 && !canUseTool"
         class="mt-6"
+        accent="purple"
+        :label="t('tools.annotate.accessLabel')"
+        :title="userStore.isAuthenticated ? t('tools.annotate.accessMemberTitle') : t('tools.annotate.accessGuestTitle')"
+        :description="userStore.isAuthenticated ? t('tools.annotate.accessMemberDescription') : t('tools.annotate.accessGuestDescription')"
+        :action-label="userStore.isAuthenticated ? t('tools.annotate.goToUpgrade') : t('tools.annotate.goToSignIn')"
+        :steps="[
+          t('tools.annotate.accessStep1'),
+          t('tools.annotate.accessStep2'),
+          t('tools.annotate.accessStep3'),
+        ]"
+        @action="ensureAccess()"
       >
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
-          <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div class="space-y-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                {{ t('tools.annotate.accessLabel') }}
-              </p>
-              <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ userStore.isAuthenticated ? t('tools.annotate.accessMemberTitle') : t('tools.annotate.accessGuestTitle') }}
-              </h2>
-              <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ userStore.isAuthenticated ? t('tools.annotate.accessMemberDescription') : t('tools.annotate.accessGuestDescription') }}
-              </p>
-
-              <Button
-                size="lg"
-                @click="ensureAccess()"
-              >
-                <LockKeyhole class="mr-2 h-4 w-4" />
-                {{ userStore.isAuthenticated ? t('tools.annotate.goToUpgrade') : t('tools.annotate.goToSignIn') }}
-              </Button>
-            </div>
-
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
-              <div class="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  1. {{ t('tools.annotate.accessStep1') }}
-                </div>
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  2. {{ t('tools.annotate.accessStep2') }}
-                </div>
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  3. {{ t('tools.annotate.accessStep3') }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
+        <template #actionIcon>
+          <LockKeyhole class="mr-2 h-4 w-4" />
+        </template>
+      </ToolAccessPanel>
 
       <div class="mt-6 space-y-6">
       <div
@@ -424,7 +403,7 @@ const handleReset = () => {
           <div class="space-y-6">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                Step 2
+                {{ isChinese ? '步骤 2' : 'Step 2' }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
                 {{ t('tools.annotate.configureTitle') }}
@@ -696,7 +675,7 @@ const handleReset = () => {
             <div class="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-purple-100 border-t-purple-500 dark:border-purple-950 dark:border-t-purple-400" />
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                Step 3
+                {{ isChinese ? '步骤 3' : 'Step 3' }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
                 {{ t('tools.annotate.stepGenerating') }}

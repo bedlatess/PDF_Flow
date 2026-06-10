@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { FileText } from 'lucide-vue-next'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
 import Button from '@/components/common/Button.vue'
+import Card from '@/components/common/Card.vue'
 import Modal from '@/components/common/Modal.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import PDFViewer from '@/components/pdf/PDFViewer.vue'
 import { memoryManager } from '@/utils/memory-manager'
 import { historyManager } from '@/utils/history-manager'
 import { addWatermark, type WatermarkPosition } from '@/utils/pdf/watermark'
+import ToolHeader from '@/components/tools/ToolHeader.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const selectedFile = ref<File | null>(null)
 const watermarkText = ref('CONFIDENTIAL')
@@ -29,12 +32,88 @@ const showPDFViewer = ref(false)
 const resultUrl = ref('')
 const errorMessage = ref('')
 
-const positionOptions: { value: WatermarkPosition; labelKey: string }[] = [
-  { value: 'center', labelKey: 'tools.watermark.posCenter' },
-  { value: 'tile', labelKey: 'tools.watermark.posTile' },
-  { value: 'top', labelKey: 'tools.watermark.posTop' },
-  { value: 'bottom', labelKey: 'tools.watermark.posBottom' },
-]
+const isChinese = computed(() => locale.value.startsWith('zh'))
+
+const copy = computed(() => isChinese.value
+  ? {
+      badge: '本地工具',
+      setupLabel: '水印设置',
+      setupTitle: '调整文案和样式',
+      setupDesc: '适合为合同、报告、内部资料添加清晰但不过分抢眼的归属标记。',
+      outputLabel: '导出动作',
+      outputTitle: '生成带水印的新文件',
+      outputTips: [
+        '建议使用简短清晰的水印文字，便于识别和管理。',
+        '透明度高会更醒目，透明度低更适合阅读场景。',
+        '处理完成后会生成新的 PDF 文件，不会修改原文件。',
+      ],
+      localTitle: '本地安全处理',
+      localDesc: '水印在浏览器本地完成处理，适合带有内部标识、审阅标识或保密标签的文档。',
+      action: '添加水印',
+      successTitle: '水印添加完成',
+      successMessage: '带水印的 PDF 已准备好，可以立即下载。',
+      placeholder: '例如：内部资料 / 已审核 / Sample',
+      color: '水印颜色',
+      text: '水印文字',
+      position: '位置',
+      opacity: '透明度',
+      rotation: '旋转角度',
+      fontSize: '字体大小',
+      errorNoText: '请输入水印文字后再继续。',
+      errorFailed: '添加水印失败，请稍后重试。',
+      processing: '正在生成水印...',
+      done: '处理完成',
+      defaultText: '内部资料',
+      positions: [
+        { value: 'center' as WatermarkPosition, label: '居中' },
+        { value: 'tile' as WatermarkPosition, label: '平铺' },
+        { value: 'top' as WatermarkPosition, label: '顶部' },
+        { value: 'bottom' as WatermarkPosition, label: '底部' },
+      ],
+    }
+  : {
+      badge: 'Local tool',
+      setupLabel: 'Watermark setup',
+      setupTitle: 'Adjust the message and style',
+      setupDesc: 'Useful for contracts, reports, and internal material that needs a clear ownership mark without overpowering the content.',
+      outputLabel: 'Output',
+      outputTitle: 'Generate a new watermarked file',
+      outputTips: [
+        'Keep the watermark short and easy to identify.',
+        'Higher opacity is more visible, while lower opacity is better for reading-heavy files.',
+        'A new PDF is generated after processing. Your original file remains unchanged.',
+      ],
+      localTitle: 'Local secure processing',
+      localDesc: 'The watermark is applied locally in your browser, which fits internal marks, review labels, and privacy-sensitive documents.',
+      action: 'Apply watermark',
+      successTitle: 'Watermark applied',
+      successMessage: 'Your watermarked PDF is ready to download.',
+      placeholder: 'Example: Internal / Reviewed / Sample',
+      color: 'Watermark color',
+      text: 'Watermark text',
+      position: 'Position',
+      opacity: 'Opacity',
+      rotation: 'Rotation',
+      fontSize: 'Font size',
+      errorNoText: 'Enter watermark text before continuing.',
+      errorFailed: 'Failed to apply the watermark. Please try again later.',
+      processing: 'Applying watermark...',
+      done: 'Completed',
+      defaultText: 'CONFIDENTIAL',
+      positions: [
+        { value: 'center' as WatermarkPosition, label: 'Center' },
+        { value: 'tile' as WatermarkPosition, label: 'Tile' },
+        { value: 'top' as WatermarkPosition, label: 'Top' },
+        { value: 'bottom' as WatermarkPosition, label: 'Bottom' },
+      ],
+    })
+
+watch(isChinese, (zh) => {
+  const trimmed = watermarkText.value.trim()
+  if (!trimmed || trimmed === 'CONFIDENTIAL' || trimmed === '内部资料') {
+    watermarkText.value = zh ? '内部资料' : 'CONFIDENTIAL'
+  }
+}, { immediate: true })
 
 const handleFilesSelected = (files: File[]) => {
   selectedFile.value = files[0]
@@ -54,7 +133,6 @@ const clearAll = () => {
   }
 }
 
-/** 将 #rrggbb 转为 {r,g,b} */
 const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   const normalized = hex.replace('#', '')
   return {
@@ -66,14 +144,15 @@ const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
 
 const applyWatermark = async () => {
   if (!selectedFile.value) return
+
   if (!watermarkText.value.trim()) {
-    errorMessage.value = t('tools.watermark.errorNoText')
+    errorMessage.value = copy.value.errorNoText
     return
   }
 
   isProcessing.value = true
   processingProgress.value = 20
-  processingStatus.value = t('tools.watermark.processing')
+  processingStatus.value = copy.value.processing
   errorMessage.value = ''
 
   try {
@@ -88,7 +167,7 @@ const applyWatermark = async () => {
     })
 
     processingProgress.value = 100
-    processingStatus.value = t('common.processing')
+    processingStatus.value = copy.value.done
     resultUrl.value = memoryManager.createTemporaryURL(blob)
 
     historyManager.addHistory({
@@ -100,8 +179,7 @@ const applyWatermark = async () => {
 
     showSuccessModal.value = true
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : t('tools.watermark.errorFailed')
+    errorMessage.value = error instanceof Error ? error.message : copy.value.errorFailed
   } finally {
     isProcessing.value = false
     processingProgress.value = 0
@@ -134,17 +212,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="tool-page-container min-h-screen bg-background-light p-8 dark:bg-background-dark">
-    <div class="mx-auto max-w-4xl">
-      <div class="mb-8">
-        <h1 class="mb-2 text-3xl font-bold text-gray-900 dark:text-white">
-          {{ t('tools.watermark.title') }}
-        </h1>
-        <p class="text-gray-600 dark:text-gray-300">
-          {{ t('tools.watermark.desc') }}
-        </p>
-      </div>
+  <div class="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 dark:from-slate-950 dark:via-slate-950 dark:to-pink-950/20">
+    <ToolHeader
+      :title="t('tools.watermark.title')"
+      :subtitle="t('tools.watermark.desc')"
+      :badge="copy.badge"
+      accent="pink"
+    >
+      <template #badgeIcon>
+        <FileText class="h-4 w-4" />
+      </template>
+    </ToolHeader>
 
+    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <div
         v-if="errorMessage"
         class="mb-4 rounded-lg bg-error-light p-4 text-error-dark dark:bg-error/20 dark:text-error"
@@ -162,138 +242,173 @@ onUnmounted(() => {
 
       <div
         v-else
-        class="space-y-6"
+        class="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]"
       >
-        <FilePreview
-          :file="selectedFile"
-          @remove="clearAll"
-          @preview="handlePreview"
-        />
-
-        <!-- 隐私提示 -->
-        <div
-          class="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400"
-        >
-          🔒 {{ t('tools.watermark.localHint') }}
-        </div>
-
-        <!-- 水印设置 -->
-        <div class="space-y-5 rounded-lg bg-white p-6 dark:bg-gray-800">
-          <!-- 文字 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-              {{ t('tools.watermark.text') }}
-            </label>
-            <input
-              v-model="watermarkText"
-              type="text"
-              :placeholder="t('tools.watermark.textPlaceholder')"
-              class="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-
-          <!-- 位置 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-              {{ t('tools.watermark.position') }}
-            </label>
-            <div class="grid grid-cols-4 gap-2">
-              <button
-                v-for="option in positionOptions"
-                :key="option.value"
-                :class="[
-                  'rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all',
-                  position === option.value
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-gray-200 text-gray-700 hover:border-primary/50 dark:border-gray-600 dark:text-gray-300',
-                ]"
-                @click="position = option.value"
-              >
-                {{ t(option.labelKey) }}
-              </button>
-            </div>
-          </div>
-
-          <!-- 不透明度 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-              {{ t('tools.watermark.opacity') }}: {{ Math.round(opacity * 100) }}%
-            </label>
-            <input
-              v-model.number="opacity"
-              type="range"
-              min="0.05"
-              max="1"
-              step="0.05"
-              class="w-full accent-primary"
-            />
-          </div>
-
-          <!-- 旋转 + 字号 -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                {{ t('tools.watermark.rotation') }}: {{ rotation }}°
-              </label>
-              <input
-                v-model.number="rotation"
-                type="range"
-                min="0"
-                max="90"
-                step="5"
-                class="w-full accent-primary"
-              />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                {{ t('tools.watermark.fontSize') }}: {{ fontSize }}
-              </label>
-              <input
-                v-model.number="fontSize"
-                type="range"
-                min="12"
-                max="100"
-                step="2"
-                class="w-full accent-primary"
-              />
-            </div>
-          </div>
-
-          <!-- 颜色 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-              {{ t('tools.watermark.color') }}
-            </label>
-            <input
-              v-model="watermarkColor"
-              type="color"
-              class="h-10 w-20 cursor-pointer rounded border border-gray-300 dark:border-gray-600"
-            />
-          </div>
-        </div>
-
-        <div class="space-y-4">
-          <ProgressBar
-            v-if="isProcessing"
-            :progress="processingProgress"
-            :label="processingStatus"
-            variant="primary"
-            size="md"
+        <div class="space-y-6">
+          <FilePreview
+            :file="selectedFile"
+            @remove="clearAll"
+            @preview="handlePreview"
           />
 
-          <Button
-            variant="primary"
-            size="lg"
-            :loading="isProcessing"
-            full-width
-            @click="applyWatermark"
-          >
-            {{ isProcessing ? t('common.processing') : t('tools.watermark.apply') }}
-          </Button>
+          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-pink-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+            <div class="space-y-5">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-500">
+                  {{ copy.setupLabel }}
+                </p>
+                <h2 class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+                  {{ copy.setupTitle }}
+                </h2>
+                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {{ copy.setupDesc }}
+                </p>
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                  {{ copy.text }}
+                </label>
+                <input
+                  v-model="watermarkText"
+                  type="text"
+                  :placeholder="copy.placeholder"
+                  class="w-full rounded-2xl border border-slate-300 px-4 py-3 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                  {{ copy.position }}
+                </label>
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <button
+                    v-for="option in copy.positions"
+                    :key="option.value"
+                    :class="[
+                      'rounded-[18px] border-2 px-3 py-3 text-sm font-medium transition-all',
+                      position === option.value
+                        ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                        : 'border-slate-200 bg-slate-50/70 text-slate-700 hover:border-primary/40 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300',
+                    ]"
+                    @click="position = option.value"
+                  >
+                    {{ option.label }}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                  {{ copy.opacity }}: {{ Math.round(opacity * 100) }}%
+                </label>
+                <input
+                  v-model.number="opacity"
+                  type="range"
+                  min="0.05"
+                  max="1"
+                  step="0.05"
+                  class="w-full accent-primary"
+                >
+              </div>
+
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                    {{ copy.rotation }}: {{ rotation }}°
+                  </label>
+                  <input
+                    v-model.number="rotation"
+                    type="range"
+                    min="0"
+                    max="90"
+                    step="5"
+                    class="w-full accent-primary"
+                  >
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                    {{ copy.fontSize }}: {{ fontSize }}
+                  </label>
+                  <input
+                    v-model.number="fontSize"
+                    type="range"
+                    min="12"
+                    max="100"
+                    step="2"
+                    class="w-full accent-primary"
+                  >
+                </div>
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                  {{ copy.color }}
+                </label>
+                <input
+                  v-model="watermarkColor"
+                  type="color"
+                  class="h-11 w-24 cursor-pointer rounded-2xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900"
+                >
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <div class="space-y-6">
+          <div class="rounded-[28px] border border-emerald-100 bg-emerald-50/80 p-5 text-sm leading-6 text-emerald-800 shadow-lg shadow-emerald-100/40 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300 dark:shadow-none">
+            <p class="font-semibold">
+              {{ copy.localTitle }}
+            </p>
+            <p class="mt-2">
+              {{ copy.localDesc }}
+            </p>
+          </div>
+
+          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-pink-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+            <div class="space-y-5">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-500">
+                  {{ copy.outputLabel }}
+                </p>
+                <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
+                  {{ copy.outputTitle }}
+                </h3>
+              </div>
+
+              <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40">
+                <ul class="space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  <li
+                    v-for="tip in copy.outputTips"
+                    :key="tip"
+                  >
+                    {{ tip }}
+                  </li>
+                </ul>
+              </div>
+
+              <ProgressBar
+                v-if="isProcessing"
+                :progress="processingProgress"
+                :label="processingStatus"
+                variant="primary"
+                size="md"
+              />
+
+              <Button
+                variant="primary"
+                size="lg"
+                :loading="isProcessing"
+                full-width
+                @click="applyWatermark"
+              >
+                {{ isProcessing ? t('common.processing') : copy.action }}
+              </Button>
+            </div>
+          </Card>
         </div>
       </div>
 
-      <!-- PDF Viewer Modal -->
       <Modal
         v-model="showPDFViewer"
         title=""
@@ -306,15 +421,14 @@ onUnmounted(() => {
         />
       </Modal>
 
-      <!-- Success Modal -->
       <Modal
         v-model="showSuccessModal"
-        :title="t('tools.watermark.successTitle')"
+        :title="copy.successTitle"
         size="md"
       >
         <div class="text-center">
           <p class="mb-6 text-gray-600 dark:text-gray-300">
-            {{ t('tools.watermark.successMessage') }}
+            {{ copy.successMessage }}
           </p>
           <Button
             variant="primary"
@@ -326,6 +440,6 @@ onUnmounted(() => {
           </Button>
         </div>
       </Modal>
-    </div>
+    </section>
   </div>
 </template>

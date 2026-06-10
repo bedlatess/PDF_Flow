@@ -18,6 +18,7 @@ import FilePreview from '@/components/pdf/FilePreview.vue'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import ToolHeader from '@/components/tools/ToolHeader.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
+import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
 import { fileAPI } from '@/services/api'
 import { useUserStore } from '@/stores/user'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
@@ -236,48 +237,25 @@ onUnmounted(() => {
         :support-hint="errorState.supportHint"
       />
 
-      <div
+      <ToolAccessPanel
         v-if="!userStore.isAuthenticated"
         class="mt-6"
+        accent="blue"
+        :label="t('tools.officeToPdf.accessLabel')"
+        :title="t('tools.officeToPdf.accessGuestTitle')"
+        :description="t('tools.officeToPdf.accessGuestDescription')"
+        :action-label="t('tools.officeToPdf.goToSignIn')"
+        :steps="[
+          t('tools.officeToPdf.accessStep1'),
+          t('tools.officeToPdf.accessStep2'),
+          t('tools.officeToPdf.accessStep3'),
+        ]"
+        @action="ensureLogin()"
       >
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-blue-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
-          <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div class="space-y-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-blue-500">
-                {{ t('tools.officeToPdf.accessLabel') }}
-              </p>
-              <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ t('tools.officeToPdf.accessGuestTitle') }}
-              </h2>
-              <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ t('tools.officeToPdf.accessGuestDescription') }}
-              </p>
-
-              <Button
-                size="lg"
-                @click="ensureLogin()"
-              >
-                <LogIn class="mr-2 h-4 w-4" />
-                {{ t('tools.officeToPdf.goToSignIn') }}
-              </Button>
-            </div>
-
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
-              <div class="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  1. {{ t('tools.officeToPdf.accessStep1') }}
-                </div>
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  2. {{ t('tools.officeToPdf.accessStep2') }}
-                </div>
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  3. {{ t('tools.officeToPdf.accessStep3') }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
+        <template #actionIcon>
+          <LogIn class="mr-2 h-4 w-4" />
+        </template>
+      </ToolAccessPanel>
 
       <div class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-blue-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">

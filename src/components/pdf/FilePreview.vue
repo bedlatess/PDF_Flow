@@ -55,12 +55,12 @@ const handlePreview = () => {
 <template>
   <div
     data-testid="file-preview"
-    class="group relative flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+    class="group relative flex items-center gap-4 rounded-[24px] border border-white/70 bg-white/90 p-4 shadow-lg shadow-slate-200/50 backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none"
   >
     <!-- Thumbnail -->
     <div class="flex-shrink-0">
       <div
-        class="flex h-16 w-16 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700"
+        class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800"
       >
         <template v-if="thumbnailUrl">
           <img
@@ -88,10 +88,10 @@ const handlePreview = () => {
 
     <!-- File Info -->
     <div class="flex-1 min-w-0">
-      <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
+      <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">
         {{ file.name }}
       </p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
         {{ formatFileSize(file.size) }}
       </p>
     </div>
@@ -99,7 +99,7 @@ const handlePreview = () => {
     <!-- Actions -->
     <div
       v-if="showActions"
-      class="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100"
+      class="flex items-center gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
     >
       <Button
         v-if="file.type === 'application/pdf'"

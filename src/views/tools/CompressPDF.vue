@@ -1,21 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { FileText } from 'lucide-vue-next'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
 import Button from '@/components/common/Button.vue'
+import Card from '@/components/common/Card.vue'
 import Modal from '@/components/common/Modal.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import PDFViewer from '@/components/pdf/PDFViewer.vue'
-import { compressPDF, estimateCompressionRatio, formatCompressionInfo, type CompressionQuality, type CompressionResult } from '@/utils/pdf/compress'
+import {
+  compressPDF,
+  estimateCompressionRatio,
+  type CompressionQuality,
+  type CompressionResult,
+} from '@/utils/pdf/compress'
 import { memoryManager } from '@/utils/memory-manager'
 import { usePDFWorker } from '@/composables/usePDFWorker'
 import { useCloudProcessing } from '@/composables/useCloudProcessing'
 import { fileAPI } from '@/services/api'
 import CloudToggle from '@/components/common/CloudToggle.vue'
 import { historyManager } from '@/utils/history-manager'
+import ToolHeader from '@/components/tools/ToolHeader.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const selectedFile = ref<File | null>(null)
 const selectedQuality = ref<CompressionQuality>('medium')
@@ -33,11 +41,85 @@ const errorMessage = ref('')
 const { destroyWorker } = usePDFWorker()
 const { cloudProgress, cloudPhase, processInCloud } = useCloudProcessing()
 
-const qualityOptions: { value: CompressionQuality; label: string; description: string }[] = [
-  { value: 'high', label: '高质量', description: '轻度压缩，保持最佳质量（约 10% 压缩）' },
-  { value: 'medium', label: '平衡', description: '中度压缩，平衡质量和大小（约 20% 压缩）' },
-  { value: 'low', label: '高压缩', description: '强度压缩，最小文件大小（约 30% 压缩）' },
-]
+const copy = computed(() => locale.value.startsWith('zh')
+  ? {
+      badge: '本地工具',
+      setupLabel: '压缩设置',
+      setupTitle: '选择压缩强度',
+      setupDesc: '根据用途选择更合适的压缩级别，在文件大小和阅读体验之间取得平衡。',
+      resultLabel: '预计结果',
+      resultTitle: '输出前快速确认',
+      originalSize: '原始大小',
+      estimatedCompression: '预计压缩',
+      estimatedSize: '预计大小',
+      outputSize: '压缩后大小',
+      savedSize: '节省空间',
+      ratio: '压缩比例',
+      action: '压缩 PDF',
+      successTitle: '压缩完成',
+      compressMore: '继续压缩其他文件',
+      errorFailed: '压缩失败，请稍后重试。',
+      errorCloudFailed: '云端压缩失败，请稍后再试。',
+      statusPreparing: '正在准备压缩...',
+      statusProcessing: '正在压缩 PDF...',
+      statusDone: '压缩完成',
+      qualityOptions: [
+        {
+          value: 'high' as CompressionQuality,
+          label: '高质量',
+          description: '轻度压缩，优先保留更好的阅读清晰度。',
+        },
+        {
+          value: 'medium' as CompressionQuality,
+          label: '平衡',
+          description: '适合大多数日常分享、归档和在线传输场景。',
+        },
+        {
+          value: 'low' as CompressionQuality,
+          label: '高压缩',
+          description: '尽可能减小体积，更适合上传和快速分发。',
+        },
+      ],
+    }
+  : {
+      badge: 'Local tool',
+      setupLabel: 'Compression setup',
+      setupTitle: 'Choose a compression level',
+      setupDesc: 'Pick the compression level that best fits your use case and balance file size with reading quality.',
+      resultLabel: 'Estimated result',
+      resultTitle: 'Review before exporting',
+      originalSize: 'Original size',
+      estimatedCompression: 'Estimated compression',
+      estimatedSize: 'Estimated size',
+      outputSize: 'Compressed size',
+      savedSize: 'Space saved',
+      ratio: 'Compression ratio',
+      action: 'Compress PDF',
+      successTitle: 'Compression complete',
+      compressMore: 'Compress more files',
+      errorFailed: 'Compression failed. Please try again later.',
+      errorCloudFailed: 'Cloud compression failed. Please try again later.',
+      statusPreparing: 'Preparing compression...',
+      statusProcessing: 'Compressing PDF...',
+      statusDone: 'Compression complete',
+      qualityOptions: [
+        {
+          value: 'high' as CompressionQuality,
+          label: 'High quality',
+          description: 'Light compression with a stronger focus on visual clarity.',
+        },
+        {
+          value: 'medium' as CompressionQuality,
+          label: 'Balanced',
+          description: 'A steady middle ground for most sharing, archive, and upload workflows.',
+        },
+        {
+          value: 'low' as CompressionQuality,
+          label: 'High compression',
+          description: 'Prioritizes a smaller file size for uploads and fast distribution.',
+        },
+      ],
+    })
 
 const estimatedRatio = computed(() => {
   if (!selectedFile.value) return 0
@@ -50,9 +132,22 @@ const estimatedSize = computed(() => {
   return selectedFile.value.size * (1 - ratio)
 })
 
-const compressionInfo = computed(() => {
+const resultStats = computed(() => {
   if (!compressionResult.value) return null
-  return formatCompressionInfo(compressionResult.value)
+
+  const originalSize = compressionResult.value.originalSize
+  const compressedSize = compressionResult.value.compressedSize
+  const savedSize = Math.max(originalSize - compressedSize, 0)
+  const ratio = originalSize > 0 ? ((savedSize / originalSize) * 100) : 0
+
+  const formatMB = (value: number) => `${(value / (1024 * 1024)).toFixed(2)} MB`
+
+  return {
+    originalSize: formatMB(originalSize),
+    compressedSize: formatMB(compressedSize),
+    savedSize: formatMB(savedSize),
+    ratio: `${ratio.toFixed(1)}%`,
+  }
 })
 
 const handleFilesSelected = (files: File[]) => {
@@ -78,7 +173,6 @@ const clearAll = () => {
 const compressFile = async () => {
   if (!selectedFile.value) return
 
-  // 云端处理路径
   if (useCloud.value) {
     await compressInCloud()
     return
@@ -86,12 +180,12 @@ const compressFile = async () => {
 
   isProcessing.value = true
   processingProgress.value = 0
-  processingStatus.value = '准备压缩...'
+  processingStatus.value = copy.value.statusPreparing
   errorMessage.value = ''
 
   try {
     processingProgress.value = 30
-    processingStatus.value = '正在压缩 PDF...'
+    processingStatus.value = copy.value.statusProcessing
 
     const result = await compressPDF(selectedFile.value, {
       quality: selectedQuality.value,
@@ -99,7 +193,7 @@ const compressFile = async () => {
     })
 
     processingProgress.value = 100
-    processingStatus.value = '压缩完成！'
+    processingStatus.value = copy.value.statusDone
 
     compressionResult.value = result
     resultUrl.value = memoryManager.createTemporaryURL(result.compressedBlob)
@@ -107,7 +201,6 @@ const compressFile = async () => {
     const originalName = selectedFile.value.name.replace('.pdf', '')
     resultFileName.value = `${originalName}-compressed-${timestamp}.pdf`
 
-    // 添加到历史记录
     historyManager.addHistory({
       type: 'compress',
       fileName: selectedFile.value.name,
@@ -117,7 +210,7 @@ const compressFile = async () => {
 
     showSuccessModal.value = true
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '压缩 PDF 失败'
+    errorMessage.value = error instanceof Error ? error.message : copy.value.errorFailed
   } finally {
     isProcessing.value = false
     processingProgress.value = 0
@@ -125,12 +218,9 @@ const compressFile = async () => {
   }
 }
 
-/**
- * 云端压缩：上传 → 提交任务 → 轮询 → 下载，结果存为可下载 Blob URL。
- * 注意：云端结果为压缩后的 PDF，详细压缩比由后端返回（此处不展示本地估算对比）。
- */
 const compressInCloud = async () => {
   if (!selectedFile.value) return
+
   isProcessing.value = true
   errorMessage.value = ''
 
@@ -145,7 +235,6 @@ const compressInCloud = async () => {
     const originalName = selectedFile.value.name.replace('.pdf', '')
     resultFileName.value = `${originalName}-compressed-${timestamp}.pdf`
 
-    // 用返回 blob 大小构造结果信息
     compressionResult.value = {
       originalSize,
       compressedSize: blob.size,
@@ -162,7 +251,7 @@ const compressInCloud = async () => {
 
     showSuccessModal.value = true
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '云端压缩失败'
+    errorMessage.value = error instanceof Error ? error.message : copy.value.errorCloudFailed
   } finally {
     isProcessing.value = false
   }
@@ -190,7 +279,6 @@ const handleCloseViewer = () => {
   showPDFViewer.value = false
 }
 
-// 清理资源
 onUnmounted(() => {
   destroyWorker()
   if (resultUrl.value) {
@@ -200,19 +288,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="tool-page-container min-h-screen bg-background-light p-8 dark:bg-background-dark">
-    <div class="mx-auto max-w-4xl">
-      <!-- Header -->
-      <div class="mb-8">
-        <h1 class="mb-2 text-3xl font-bold text-gray-900 dark:text-white">
-          {{ t('tools.compress.title') }}
-        </h1>
-        <p class="text-gray-600 dark:text-gray-300">
-          {{ t('tools.compress.desc') }}
-        </p>
-      </div>
+  <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-950 dark:to-emerald-950/20">
+    <ToolHeader
+      :title="t('tools.compress.title')"
+      :subtitle="t('tools.compress.desc')"
+      :badge="copy.badge"
+      accent="emerald"
+    >
+      <template #badgeIcon>
+        <FileText class="h-4 w-4" />
+      </template>
+    </ToolHeader>
 
-      <!-- Error Message -->
+    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <div
         v-if="errorMessage"
         class="mb-4 rounded-lg bg-error-light p-4 text-error-dark dark:bg-error/20 dark:text-error"
@@ -220,7 +308,6 @@ onUnmounted(() => {
         {{ errorMessage }}
       </div>
 
-      <!-- Drag & Drop Zone -->
       <DragDropZone
         v-if="!selectedFile"
         accept="pdf"
@@ -229,105 +316,149 @@ onUnmounted(() => {
         @error="handleError"
       />
 
-      <!-- File Selected -->
       <div
         v-else
-        class="space-y-6"
+        class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
       >
-        <FilePreview
-          :file="selectedFile"
-          @remove="clearAll"
-          @preview="handlePreview"
-        />
+        <div class="space-y-6">
+          <FilePreview
+            :file="selectedFile"
+            @remove="clearAll"
+            @preview="handlePreview"
+          />
 
-        <!-- 本地 / 云端处理切换 -->
-        <CloudToggle v-model="useCloud" />
+          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-emerald-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+            <div class="space-y-5">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-500">
+                  {{ copy.setupLabel }}
+                </p>
+                <h2 class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+                  {{ copy.setupTitle }}
+                </h2>
+                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {{ copy.setupDesc }}
+                </p>
+              </div>
 
-        <!-- Quality Selection -->
-        <div class="rounded-lg bg-white p-6 dark:bg-gray-800">
-          <label class="mb-3 block text-sm font-medium text-gray-900 dark:text-white">
-            压缩质量
-          </label>
-          <div class="space-y-3">
-            <button
-              v-for="option in qualityOptions"
-              :key="option.value"
-              :class="[
-                'w-full rounded-lg border-2 p-4 text-left transition-all',
-                selectedQuality === option.value
-                  ? 'border-primary bg-primary/10'
-                  : 'border-gray-200 hover:border-primary/50 dark:border-gray-600',
-              ]"
-              @click="selectedQuality = option.value"
-            >
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium text-gray-900 dark:text-white">
+              <CloudToggle v-model="useCloud" />
+
+              <div class="space-y-3">
+                <button
+                  v-for="option in copy.qualityOptions"
+                  :key="option.value"
+                  :class="[
+                    'w-full rounded-[24px] border-2 p-4 text-left transition-all',
+                    selectedQuality === option.value
+                      ? 'border-primary bg-primary/10 shadow-sm'
+                      : 'border-slate-200 bg-slate-50/70 hover:border-primary/40 dark:border-slate-700 dark:bg-slate-950/40',
+                  ]"
+                  @click="selectedQuality = option.value"
+                >
+                  <p class="font-semibold text-slate-900 dark:text-white">
                     {{ option.label }}
                   </p>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     {{ option.description }}
                   </p>
-                </div>
-                <div
-                  v-if="selectedQuality === option.value"
-                  class="flex-shrink-0 text-primary"
-                >
-                  <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                  </svg>
-                </div>
+                </button>
               </div>
-            </button>
-          </div>
-
-          <!-- Estimated Result -->
-          <div class="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-              📊 预估效果
-            </p>
-            <div class="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-400">
-              <p>原始大小: {{ (selectedFile.size / (1024 * 1024)).toFixed(2) }} MB</p>
-              <p>预估压缩: {{ estimatedRatio }}%</p>
-              <p>预估大小: {{ (estimatedSize / (1024 * 1024)).toFixed(2) }} MB</p>
             </div>
-          </div>
+          </Card>
         </div>
 
-        <!-- Actions -->
-        <div class="space-y-4">
-          <!-- 云端进度条（云端模式时替代本地进度） -->
-          <div v-if="useCloud && isProcessing" class="space-y-2">
+        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-emerald-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <div class="space-y-5">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-500">
+                {{ copy.resultLabel }}
+              </p>
+              <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
+                {{ copy.resultTitle }}
+              </h3>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+              <div class="rounded-[22px] border border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{{ copy.originalSize }}</p>
+                <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                  {{ (selectedFile.size / (1024 * 1024)).toFixed(2) }} MB
+                </p>
+              </div>
+              <div class="rounded-[22px] border border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{{ copy.estimatedCompression }}</p>
+                <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                  {{ estimatedRatio }}%
+                </p>
+              </div>
+              <div class="rounded-[22px] border border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{{ copy.estimatedSize }}</p>
+                <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                  {{ (estimatedSize / (1024 * 1024)).toFixed(2) }} MB
+                </p>
+              </div>
+            </div>
+
+            <div
+              v-if="resultStats"
+              class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40"
+            >
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p class="text-slate-500 dark:text-slate-400">{{ copy.originalSize }}</p>
+                  <p class="mt-1 font-semibold text-slate-900 dark:text-white">
+                    {{ resultStats.originalSize }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-slate-500 dark:text-slate-400">{{ copy.outputSize }}</p>
+                  <p class="mt-1 font-semibold text-slate-900 dark:text-white">
+                    {{ resultStats.compressedSize }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-slate-500 dark:text-slate-400">{{ copy.savedSize }}</p>
+                  <p class="mt-1 font-semibold text-emerald-600">
+                    {{ resultStats.savedSize }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-slate-500 dark:text-slate-400">{{ copy.ratio }}</p>
+                  <p class="mt-1 font-semibold text-primary">
+                    {{ resultStats.ratio }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <ProgressBar
+              v-if="useCloud && isProcessing"
               :progress="cloudProgress"
               :label="t(`cloud.${cloudPhase}`, t('common.processing'))"
               variant="primary"
               size="md"
             />
-          </div>
-          <!-- 本地进度条 -->
-          <ProgressBar
-            v-else-if="isProcessing"
-            :progress="processingProgress"
-            :label="processingStatus"
-            variant="primary"
-            size="md"
-          />
+            <ProgressBar
+              v-else-if="isProcessing"
+              :progress="processingProgress"
+              :label="processingStatus"
+              variant="primary"
+              size="md"
+            />
 
-          <!-- Compress Button -->
-          <Button
-            variant="primary"
-            size="lg"
-            :loading="isProcessing"
-            full-width
-            @click="compressFile"
-          >
-            {{ isProcessing ? t('common.processing') : '压缩 PDF' }}
-          </Button>
-        </div>
+            <Button
+              variant="primary"
+              size="lg"
+              :loading="isProcessing"
+              full-width
+              @click="compressFile"
+            >
+              {{ isProcessing ? t('common.processing') : copy.action }}
+            </Button>
+          </div>
+        </Card>
       </div>
 
-      <!-- PDF Viewer Modal -->
       <Modal
         v-model="showPDFViewer"
         title=""
@@ -340,64 +471,42 @@ onUnmounted(() => {
         />
       </Modal>
 
-      <!-- Success Modal -->
       <Modal
         v-model="showSuccessModal"
-        title="压缩完成！"
+        :title="copy.successTitle"
         size="md"
       >
         <div class="text-center">
-          <div class="mb-4 flex justify-center">
-            <div class="rounded-full bg-success/20 p-3">
-              <svg
-                class="h-12 w-12 text-success"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-          </div>
-
-          <div v-if="compressionInfo" class="mb-6">
-            <div class="mb-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
-              <div class="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p class="text-gray-500 dark:text-gray-400">原始大小</p>
-                  <p class="mt-1 font-semibold text-gray-900 dark:text-white">
-                    {{ compressionInfo.originalSizeText }}
-                  </p>
-                </div>
-                <div>
-                  <p class="text-gray-500 dark:text-gray-400">压缩后</p>
-                  <p class="mt-1 font-semibold text-gray-900 dark:text-white">
-                    {{ compressionInfo.compressedSizeText }}
-                  </p>
-                </div>
-                <div>
-                  <p class="text-gray-500 dark:text-gray-400">节省空间</p>
-                  <p class="mt-1 font-semibold text-success">
-                    {{ compressionInfo.savedSizeText }}
-                  </p>
-                </div>
-                <div>
-                  <p class="text-gray-500 dark:text-gray-400">压缩比例</p>
-                  <p class="mt-1 font-semibold text-primary">
-                    {{ compressionInfo.ratioText }}
-                  </p>
-                </div>
+          <div
+            v-if="resultStats"
+            class="mb-6 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 text-left dark:border-slate-800 dark:bg-slate-950/40"
+          >
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-slate-500 dark:text-slate-400">{{ copy.originalSize }}</p>
+                <p class="mt-1 font-semibold text-slate-900 dark:text-white">
+                  {{ resultStats.originalSize }}
+                </p>
+              </div>
+              <div>
+                <p class="text-slate-500 dark:text-slate-400">{{ copy.outputSize }}</p>
+                <p class="mt-1 font-semibold text-slate-900 dark:text-white">
+                  {{ resultStats.compressedSize }}
+                </p>
+              </div>
+              <div>
+                <p class="text-slate-500 dark:text-slate-400">{{ copy.savedSize }}</p>
+                <p class="mt-1 font-semibold text-emerald-600">
+                  {{ resultStats.savedSize }}
+                </p>
+              </div>
+              <div>
+                <p class="text-slate-500 dark:text-slate-400">{{ copy.ratio }}</p>
+                <p class="mt-1 font-semibold text-primary">
+                  {{ resultStats.ratio }}
+                </p>
               </div>
             </div>
-
-            <p class="text-sm text-gray-600 dark:text-gray-300">
-              成功压缩 PDF 文件，节省了 {{ compressionInfo.ratioText }} 的存储空间
-            </p>
           </div>
 
           <div class="flex flex-col gap-3">
@@ -415,11 +524,11 @@ onUnmounted(() => {
               full-width
               @click="startNew"
             >
-              压缩更多文件
+              {{ copy.compressMore }}
             </Button>
           </div>
         </div>
       </Modal>
-    </div>
+    </section>
   </div>
 </template>

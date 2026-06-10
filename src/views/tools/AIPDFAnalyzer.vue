@@ -34,48 +34,25 @@
         :support-hint="errorState.supportHint"
       />
 
-      <div
+      <ToolAccessPanel
         v-if="!canUseAI"
         class="mt-6"
+        accent="pink"
+        :label="t('ai.accessLabel')"
+        :title="userStore.isAuthenticated ? t('ai.accessMemberTitle') : t('ai.accessGuestTitle')"
+        :description="userStore.isAuthenticated ? t('ai.accessMemberDescription') : t('ai.accessGuestDescription')"
+        :action-label="userStore.isAuthenticated ? t('ai.goToUpgrade') : t('ai.goToSignIn')"
+        :steps="[
+          t('ai.accessStep1'),
+          t('ai.accessStep2'),
+          t('ai.accessStep3'),
+        ]"
+        @action="ensureAccess()"
       >
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-fuchsia-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
-          <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div class="space-y-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-500">
-                {{ t('ai.accessLabel') }}
-              </p>
-              <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ userStore.isAuthenticated ? t('ai.accessMemberTitle') : t('ai.accessGuestTitle') }}
-              </h2>
-              <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ userStore.isAuthenticated ? t('ai.accessMemberDescription') : t('ai.accessGuestDescription') }}
-              </p>
-
-              <Button
-                size="lg"
-                @click="ensureAccess()"
-              >
-                <LockKeyhole class="mr-2 h-4 w-4" />
-                {{ userStore.isAuthenticated ? t('ai.goToUpgrade') : t('ai.goToSignIn') }}
-              </Button>
-            </div>
-
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
-              <div class="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  1. {{ t('ai.accessStep1') }}
-                </div>
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  2. {{ t('ai.accessStep2') }}
-                </div>
-                <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  3. {{ t('ai.accessStep3') }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
+        <template #actionIcon>
+          <LockKeyhole class="mr-2 h-4 w-4" />
+        </template>
+      </ToolAccessPanel>
 
       <div class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-fuchsia-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
@@ -232,7 +209,7 @@
                       :key="index"
                       class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300"
                     >
-                      <span class="mt-1 text-fuchsia-500">•</span>
+                      <span class="mt-1 text-fuchsia-500">&bull;</span>
                       <span>{{ point }}</span>
                     </li>
                   </ul>
@@ -399,6 +376,7 @@ import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import ToolHeader from '@/components/tools/ToolHeader.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
+import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
 import {
   Sparkles,
   Loader2,
@@ -545,3 +523,4 @@ const extractData = async () => {
   }
 }
 </script>
+

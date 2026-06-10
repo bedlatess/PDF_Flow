@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { FileText } from 'lucide-vue-next'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
 import Button from '@/components/common/Button.vue'
+import Card from '@/components/common/Card.vue'
 import Modal from '@/components/common/Modal.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import PageSelector from '@/components/pdf/PageSelector.vue'
 import PDFViewer from '@/components/pdf/PDFViewer.vue'
 import CloudToggle from '@/components/common/CloudToggle.vue'
+import ToolHeader from '@/components/tools/ToolHeader.vue'
 import { getPDFPageCount } from '@/utils/pdf/merge'
 import { memoryManager } from '@/utils/memory-manager'
 import { usePDFWorker } from '@/composables/usePDFWorker'
@@ -16,7 +19,7 @@ import { useCloudProcessing } from '@/composables/useCloudProcessing'
 import { fileAPI } from '@/services/api'
 import { historyManager } from '@/utils/history-manager'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const selectedFile = ref<File | null>(null)
 const totalPages = ref(0)
@@ -35,13 +38,75 @@ const errorMessage = ref('')
 const { submitTask, getTask, waitForTask, destroyWorker } = usePDFWorker()
 const { processInCloud } = useCloudProcessing()
 
+const copy = computed(() => locale.value.startsWith('zh')
+  ? {
+      badge: '本地工具',
+      setupLabel: '页面提取',
+      setupTitle: '选择要导出的页面',
+      setupDesc: '你可以直接输入页码范围，也可以打开可视化选择器，更直观地挑选需要保留的页面。',
+      rangeLabel: `页面范围，共 ${totalPages.value} 页`,
+      rangePlaceholder: '例如：1-3,5,7-9',
+      rangeHint: '用逗号分隔单页或范围，例如 1-3,5 表示提取第 1、2、3、5 页。',
+      visualSelect: '可视化选择',
+      actionLabel: '输出动作',
+      actionTitle: '确认范围后生成新文件',
+      actionTips: [
+        '先确认页码范围，再点击提取。',
+        '页码较多时，建议使用可视化选择以减少输入错误。',
+        '处理完成后会生成一个新的 PDF 文件，不会修改原文件。',
+      ],
+      extract: '提取页面',
+      modalTitle: '选择要提取的页面',
+      successTitle: '提取完成',
+      successMessage: '选定页面已经准备好，可以立即下载。',
+      errorLoad: '加载 PDF 失败，请重新选择文件后再试。',
+      errorNoPages: '请至少选择一个页面。',
+      errorNoRange: '请输入要提取的页面范围，例如 1-3,5,7-9。',
+      statusPreparing: '正在准备处理...',
+      statusProcessing: '正在提取页面...',
+      statusProgress: '处理中... {progress}%',
+      statusDone: '处理完成',
+      errorFailed: '页面提取失败，请稍后重试。',
+      errorCloudFailed: '云端提取失败，请稍后再试。',
+    }
+  : {
+      badge: 'Local tool',
+      setupLabel: 'Page extraction',
+      setupTitle: 'Choose the pages to export',
+      setupDesc: 'Enter page ranges directly or open the visual selector for a clearer way to pick the pages you want to keep.',
+      rangeLabel: `${totalPages.value} pages available`,
+      rangePlaceholder: 'Example: 1-3,5,7-9',
+      rangeHint: 'Separate single pages or ranges with commas. For example, 1-3,5 keeps pages 1, 2, 3, and 5.',
+      visualSelect: 'Visual selector',
+      actionLabel: 'Output',
+      actionTitle: 'Confirm the range, then generate a new file',
+      actionTips: [
+        'Confirm the page range before extracting.',
+        'For longer documents, the visual selector helps reduce typing mistakes.',
+        'A new PDF is created after processing. Your original file stays unchanged.',
+      ],
+      extract: 'Extract pages',
+      modalTitle: 'Choose pages to extract',
+      successTitle: 'Extraction complete',
+      successMessage: 'The selected pages are ready to download.',
+      errorLoad: 'Failed to load the PDF. Please reselect the file and try again.',
+      errorNoPages: 'Select at least one page.',
+      errorNoRange: 'Enter the pages to extract, for example 1-3,5,7-9.',
+      statusPreparing: 'Preparing...',
+      statusProcessing: 'Extracting pages...',
+      statusProgress: 'Processing... {progress}%',
+      statusDone: 'Completed',
+      errorFailed: 'Failed to extract pages. Please try again later.',
+      errorCloudFailed: 'Cloud extraction failed. Please try again later.',
+    })
+
 const handleFilesSelected = async (files: File[]) => {
   try {
     selectedFile.value = files[0]
     totalPages.value = await getPDFPageCount(files[0])
     errorMessage.value = ''
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to load PDF'
+    errorMessage.value = error instanceof Error ? error.message : copy.value.errorLoad
   }
 }
 
@@ -62,40 +127,10 @@ const clearAll = () => {
   }
 }
 
-// 打开可视化选择器
 const openPageSelector = () => {
   showPageSelector.value = true
 }
 
-// 页面选择确认
-const handlePageSelect = (pages: number[]) => {
-  if (pages.length === 0) {
-    errorMessage.value = '请至少选择一页'
-    return
-  }
-
-  // 将页面数组转换为范围字符串
-  pageRanges.value = formatPagesAsRanges(pages)
-  showPageSelector.value = false
-  useVisualSelector.value = true
-}
-
-// 取消选择
-const handlePageSelectCancel = () => {
-  showPageSelector.value = false
-}
-
-// 打开 PDF 预览
-const handlePreview = () => {
-  showPDFViewer.value = true
-}
-
-// 关闭 PDF 预览
-const handleCloseViewer = () => {
-  showPDFViewer.value = false
-}
-
-// 将页面数组格式化为范围字符串（如 [1,2,3,5,7,8,9] -> "1-3,5,7-9"）
 const formatPagesAsRanges = (pages: number[]): string => {
   if (pages.length === 0) return ''
 
@@ -104,7 +139,7 @@ const formatPagesAsRanges = (pages: number[]): string => {
   let start = sorted[0]
   let end = sorted[0]
 
-  for (let i = 1; i <= sorted.length; i++) {
+  for (let i = 1; i <= sorted.length; i += 1) {
     if (i < sorted.length && sorted[i] === end + 1) {
       end = sorted[i]
     } else {
@@ -115,6 +150,7 @@ const formatPagesAsRanges = (pages: number[]): string => {
       } else {
         ranges.push(`${start}-${end}`)
       }
+
       if (i < sorted.length) {
         start = sorted[i]
         end = sorted[i]
@@ -125,14 +161,37 @@ const formatPagesAsRanges = (pages: number[]): string => {
   return ranges.join(',')
 }
 
-const extractPages = async () => {
-  if (!selectedFile.value) return
-  if (!pageRanges.value.trim()) {
-    errorMessage.value = '请输入要提取的页面范围（如 1-3,5,7-9）'
+const handlePageSelect = (pages: number[]) => {
+  if (pages.length === 0) {
+    errorMessage.value = copy.value.errorNoPages
     return
   }
 
-  // 云端处理路径
+  pageRanges.value = formatPagesAsRanges(pages)
+  showPageSelector.value = false
+  useVisualSelector.value = true
+}
+
+const handlePageSelectCancel = () => {
+  showPageSelector.value = false
+}
+
+const handlePreview = () => {
+  showPDFViewer.value = true
+}
+
+const handleCloseViewer = () => {
+  showPDFViewer.value = false
+}
+
+const extractPages = async () => {
+  if (!selectedFile.value) return
+
+  if (!pageRanges.value.trim()) {
+    errorMessage.value = copy.value.errorNoRange
+    return
+  }
+
   if (useCloud.value) {
     await splitInCloud()
     return
@@ -140,23 +199,22 @@ const extractPages = async () => {
 
   isProcessing.value = true
   processingProgress.value = 0
-  processingStatus.value = '准备处理...'
+  processingStatus.value = copy.value.statusPreparing
   errorMessage.value = ''
 
   try {
-    processingStatus.value = '正在提取页面...'
+    processingStatus.value = copy.value.statusProcessing
     const taskId = await submitTask('split', {
       file: selectedFile.value,
       options: { ranges: pageRanges.value },
     })
 
-    // 轮询任务进度
     const progressInterval = setInterval(() => {
       const task = getTask(taskId)
       if (task) {
         processingProgress.value = task.progress
         if (task.progress < 100) {
-          processingStatus.value = `处理中... ${Math.round(task.progress)}%`
+          processingStatus.value = copy.value.statusProgress.replace('{progress}', String(Math.round(task.progress)))
         }
       }
     }, 100)
@@ -165,11 +223,9 @@ const extractPages = async () => {
     clearInterval(progressInterval)
 
     processingProgress.value = 100
-    processingStatus.value = '处理完成！'
-
+    processingStatus.value = copy.value.statusDone
     resultUrl.value = memoryManager.createTemporaryURL(blob)
 
-    // 添加到历史记录
     historyManager.addHistory({
       type: 'split',
       fileName: selectedFile.value.name,
@@ -179,7 +235,7 @@ const extractPages = async () => {
 
     showSuccessModal.value = true
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '拆分 PDF 失败'
+    errorMessage.value = error instanceof Error ? error.message : copy.value.errorFailed
   } finally {
     isProcessing.value = false
     processingProgress.value = 0
@@ -187,17 +243,14 @@ const extractPages = async () => {
   }
 }
 
-/**
- * 云端拆分：上传 → 提交拆分任务 → 轮询 → 下载
- */
 const splitInCloud = async () => {
   if (!selectedFile.value) return
+
   isProcessing.value = true
   errorMessage.value = ''
 
   try {
-    // 解析页面范围字符串为二维数组 [[1,3], [5], [7,9]]
-    const ranges = pageRanges.value.split(',').map(range => {
+    const ranges = pageRanges.value.split(',').map((range) => {
       const parts = range.trim().split('-').map(Number)
       return parts.length === 1 ? [parts[0], parts[0]] : parts
     })
@@ -208,7 +261,6 @@ const splitInCloud = async () => {
 
     resultUrl.value = memoryManager.createTemporaryURL(blob)
 
-    // 添加到历史记录
     historyManager.addHistory({
       type: 'split',
       fileName: selectedFile.value.name,
@@ -218,7 +270,7 @@ const splitInCloud = async () => {
 
     showSuccessModal.value = true
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '云端拆分失败'
+    errorMessage.value = error instanceof Error ? error.message : copy.value.errorCloudFailed
   } finally {
     isProcessing.value = false
   }
@@ -233,7 +285,6 @@ const downloadResult = () => {
   showSuccessModal.value = false
 }
 
-// 清理资源
 onUnmounted(() => {
   destroyWorker()
   if (resultUrl.value) {
@@ -243,17 +294,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="tool-page-container min-h-screen bg-background-light p-8 dark:bg-background-dark">
-    <div class="mx-auto max-w-4xl">
-      <div class="mb-8">
-        <h1 class="mb-2 text-3xl font-bold text-gray-900 dark:text-white">
-          {{ t('tools.split.title') }}
-        </h1>
-        <p class="text-gray-600 dark:text-gray-300">
-          {{ t('tools.split.desc') }}
-        </p>
-      </div>
+  <div class="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-sky-50 dark:from-slate-950 dark:via-slate-950 dark:to-cyan-950/20">
+    <ToolHeader
+      :title="t('tools.split.title')"
+      :subtitle="t('tools.split.desc')"
+      :badge="copy.badge"
+      accent="cyan"
+    >
+      <template #badgeIcon>
+        <FileText class="h-4 w-4" />
+      </template>
+    </ToolHeader>
 
+    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <div
         v-if="errorMessage"
         class="mb-4 rounded-lg bg-error-light p-4 text-error-dark dark:bg-error/20 dark:text-error"
@@ -271,86 +324,107 @@ onUnmounted(() => {
 
       <div
         v-else
-        class="space-y-6"
+        class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
       >
-        <FilePreview
-          :file="selectedFile"
-          @remove="clearAll"
-          @preview="handlePreview"
-        />
-
-        <!-- 本地 / 云端处理切换 -->
-        <CloudToggle v-model="useCloud" />
-
-        <div class="rounded-lg bg-white p-6 dark:bg-gray-800">
-          <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-            页面范围（共 {{ totalPages }} 页）
-          </label>
-          <div class="flex gap-2">
-            <input
-              v-model="pageRanges"
-              type="text"
-              placeholder="例如: 1-3,5,7-9"
-              :class="[
-                'flex-1 rounded-lg border px-4 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-700 dark:text-white',
-                useVisualSelector
-                  ? 'border-primary bg-primary/5'
-                  : 'border-gray-300 dark:border-gray-600',
-              ]"
-            >
-            <Button
-              variant="outline"
-              size="md"
-              @click="openPageSelector"
-            >
-              <svg
-                class="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"
-                />
-              </svg>
-              <span class="ml-2">可视化选择</span>
-            </Button>
-          </div>
-          <p class="mt-2 text-xs text-gray-500">
-            用逗号分隔单页或范围，例如 1-3,5 表示提取第 1、2、3、5 页，或点击"可视化选择"直观选择页面
-          </p>
-        </div>
-
-        <div class="space-y-4">
-          <!-- Progress Bar -->
-          <ProgressBar
-            v-if="isProcessing"
-            :progress="processingProgress"
-            :label="processingStatus"
-            variant="primary"
-            size="md"
+        <div class="space-y-6">
+          <FilePreview
+            :file="selectedFile"
+            @remove="clearAll"
+            @preview="handlePreview"
           />
 
-          <!-- Extract Button -->
-          <Button
-            variant="primary"
-            size="lg"
-            :loading="isProcessing"
-            full-width
-            @click="extractPages"
-          >
-            {{ isProcessing ? t('common.processing') : '提取页面' }}
-          </Button>
+          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-cyan-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+            <div class="space-y-5">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-500">
+                  {{ copy.setupLabel }}
+                </p>
+                <h2 class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+                  {{ copy.setupTitle }}
+                </h2>
+                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {{ copy.setupDesc }}
+                </p>
+              </div>
+
+              <CloudToggle v-model="useCloud" />
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                  {{ copy.rangeLabel }}
+                </label>
+                <div class="flex gap-2">
+                  <input
+                    v-model="pageRanges"
+                    type="text"
+                    :placeholder="copy.rangePlaceholder"
+                    :class="[
+                      'flex-1 rounded-2xl border px-4 py-3 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10 dark:bg-slate-900 dark:text-white',
+                      useVisualSelector ? 'border-primary bg-primary/5' : 'border-slate-300 dark:border-slate-700',
+                    ]"
+                  >
+                  <Button
+                    variant="outline"
+                    size="md"
+                    @click="openPageSelector"
+                  >
+                    {{ copy.visualSelect }}
+                  </Button>
+                </div>
+                <p class="mt-3 text-xs leading-6 text-slate-500 dark:text-slate-400">
+                  {{ copy.rangeHint }}
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
+
+        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-cyan-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <div class="space-y-5">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-500">
+                {{ copy.actionLabel }}
+              </p>
+              <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
+                {{ copy.actionTitle }}
+              </h3>
+            </div>
+
+            <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40">
+              <ul class="space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                <li
+                  v-for="tip in copy.actionTips"
+                  :key="tip"
+                >
+                  {{ tip }}
+                </li>
+              </ul>
+            </div>
+
+            <ProgressBar
+              v-if="isProcessing"
+              :progress="processingProgress"
+              :label="processingStatus"
+              variant="primary"
+              size="md"
+            />
+
+            <Button
+              variant="primary"
+              size="lg"
+              :loading="isProcessing"
+              full-width
+              @click="extractPages"
+            >
+              {{ isProcessing ? t('common.processing') : copy.extract }}
+            </Button>
+          </div>
+        </Card>
       </div>
 
-      <!-- Page Selector Modal -->
       <Modal
         v-model="showPageSelector"
-        title="选择要提取的页面"
+        :title="copy.modalTitle"
         size="xl"
       >
         <PageSelector
@@ -362,7 +436,6 @@ onUnmounted(() => {
         />
       </Modal>
 
-      <!-- PDF Viewer Modal -->
       <Modal
         v-model="showPDFViewer"
         title=""
@@ -375,15 +448,14 @@ onUnmounted(() => {
         />
       </Modal>
 
-      <!-- Success Modal -->
       <Modal
         v-model="showSuccessModal"
-        title="拆分完成！"
+        :title="copy.successTitle"
         size="md"
       >
         <div class="text-center">
           <p class="mb-6 text-gray-600 dark:text-gray-300">
-            页面已成功提取
+            {{ copy.successMessage }}
           </p>
           <Button
             variant="primary"
@@ -395,6 +467,6 @@ onUnmounted(() => {
           </Button>
         </div>
       </Modal>
-    </div>
+    </section>
   </div>
 </template>
