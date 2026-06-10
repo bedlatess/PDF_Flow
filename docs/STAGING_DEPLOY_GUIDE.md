@@ -462,9 +462,9 @@ git push origin main
 
 ---
 
-## 11. Main Release Quick Path
+## 11. Main 分支快速上线验证
 
-If `main` has already been pushed and the server is meant to validate the production branch directly, use this exact order:
+如果 `main` 已经推送完成，并且服务器要直接验证正式分支，请严格按下面顺序执行：
 
 ```bash
 cd /path/to/pdf-flow
@@ -475,39 +475,39 @@ bash scripts/deploy-main.sh
 bash scripts/main-smoke-suite.sh
 ```
 
-What `main-smoke-suite.sh` does:
+`main-smoke-suite.sh` 会自动执行：
 
-1. Runs `scripts/smoke-test.sh`
-2. Runs `scripts/business-smoke-test.sh`
-3. Runs `scripts/ocr-smoke-test.sh`
-4. Runs `scripts/office-smoke-test.sh`
+1. `scripts/smoke-test.sh`
+2. `scripts/business-smoke-test.sh`
+3. `scripts/ocr-smoke-test.sh`
+4. `scripts/office-smoke-test.sh`
 
-It auto-generates isolated smoke-test emails, so you do not need to hand-write them each time.
+脚本会自动生成独立的 smoke 测试邮箱，不需要你每次手工改邮箱变量。
 
-### Manual UAT After The Smoke Suite
+### Smoke 通过后的人工验收
 
-After the script passes, validate these five browser checks in order:
+脚本通过后，按下面顺序继续做浏览器人工验收：
 
-1. Home page and tool navigation load correctly from `https://pdf.pawn.eu.org`
-2. Register, login, logout, and Pro gating messaging behave correctly
-3. Merge upload / process / download succeeds from the UI
-4. OCR, Fill Form, Annotate, and Office pages render correctly on desktop and mobile widths
-5. Error prompts are understandable when uploading the wrong file type or using a gated feature
-6. `登录` no longer opens a blank page, and Merge PDF page thumbnails render instead of showing `加载失败`
+1. `https://pdf.pawn.eu.org` 首页和工具导航加载正常
+2. 注册、登录、退出登录、Pro 权限拦截提示符合预期
+3. Merge 的上传、处理、下载可在前端完整跑通
+4. OCR、Fill Form、Annotate、Office 页面在桌面和移动宽度下显示正常
+5. 上传错误文件类型或使用受限功能时，错误提示对用户可理解
+6. `登录` 页面不再出现空白，Merge PDF 页面缩略图也不再显示 `加载失败`
 
-### Rollback If Main Validation Fails
+### Main 验证失败时的回滚
 
 ```bash
 cd /path/to/pdf-flow
 bash scripts/rollback-main.sh
 ```
 
-### 12. Frontend Access And Error Checks
+### 12. 前端访问权限与错误提示检查项
 
-When validating the current frontend on `main`, confirm these newer behavior rules as part of manual UAT:
+验证当前 `main` 前端时，人工验收里还要额外确认下面这些规则：
 
-1. Guest users who open `OCR`, `AI Analyzer`, `Fill Form`, or `Annotate` are sent to sign in first.
-2. Free signed-in users only see the upgrade path after authentication, not before.
-3. `OfficeToPDF` requires login first but should not incorrectly show a Pro-only wall.
-4. Error prompts should be readable by end users and include a short `PF-*` diagnostic code for screenshots.
-5. Frontend messages must not expose raw SQL traces, Python exceptions, or backend stack details directly.
+1. 游客打开 `OCR`、`AI Analyzer`、`Fill Form`、`Annotate` 时，会先被引导去登录。
+2. 已登录但免费套餐的用户，只会在登录后看到升级路径，不会在游客态直接看到升级墙。
+3. `OfficeToPDF` 需要先登录，但不应该错误显示成 Pro 专属功能墙。
+4. 错误提示需要让终端用户能看懂，并带有简短的 `PF-*` 诊断码，方便截图反馈。
+5. 前端提示文案不能直接暴露 SQL trace、Python 异常栈或后端内部实现细节。
