@@ -83,7 +83,7 @@ const footerCopy = computed(() => {
     trustPrivacyTitle: 'Local-first',
     trustPrivacyDescription: 'Core PDF work stays in the browser whenever it can.',
     trustSupportTitle: 'Easier to troubleshoot',
-    trustSupportDescription: 'Helpful messages keep enough context for support without exposing internals.',
+    trustSupportDescription: 'Clear messages make it easier to share issues with support and get help faster.',
     trustWorkflowTitle: 'One workspace',
     trustWorkflowDescription: 'Upload, processing, and download stay inside one calmer flow.',
     linksTitle: 'Quick access',

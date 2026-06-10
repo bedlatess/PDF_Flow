@@ -261,7 +261,7 @@ const closeResultModal = () => {
         </template>
       </ToolAccessPanel>
 
-      <div class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <div v-if="canUseOCR" class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-6">
             <div class="space-y-2">
@@ -323,21 +323,6 @@ const closeResultModal = () => {
 
         <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-6">
-            <div class="flex flex-wrap gap-2">
-              <span class="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-200">
-                <Languages class="h-4 w-4" />
-                {{ t('tools.ocr.workspaceLanguage') }}
-              </span>
-              <span class="inline-flex items-center gap-2 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-4 py-2 text-sm font-medium text-fuchsia-700 dark:border-fuchsia-800 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
-                <Sparkles class="h-4 w-4" />
-                {{ t('tools.ocr.cloudOcr') }}
-              </span>
-              <span class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-200">
-                <Download class="h-4 w-4" />
-                {{ t('tools.ocr.txtExport') }}
-              </span>
-            </div>
-
             <div class="space-y-5">
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
@@ -381,25 +366,6 @@ const closeResultModal = () => {
                   </button>
                 </div>
               </div>
-
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50">
-                <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  {{ canUseOCR ? t('tools.ocr.accountReady') : t('tools.ocr.accountGuest') }}
-                </p>
-                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {{ canUseOCR ? t('tools.ocr.accountReadyDescription') : t('tools.ocr.accountGuestDescription') }}
-                </p>
-              </div>
-
-              <Button
-                v-if="!canUseOCR"
-                variant="outline"
-                size="lg"
-                full-width
-                @click="ensureAccess()"
-              >
-                {{ userStore.isAuthenticated ? t('tools.ocr.goToUpgrade') : t('tools.ocr.goToSignIn') }}
-              </Button>
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">

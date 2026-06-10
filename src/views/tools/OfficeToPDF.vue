@@ -37,27 +37,44 @@ const status = ref('')
 const errorState = ref<FormattedUserError | null>(null)
 const resultUrl = ref('')
 
-const copy = computed(() => locale.value.toLowerCase().startsWith('zh')
-  ? {
+const copy = computed(() => {
+  if (locale.value.toLowerCase().startsWith('zh')) {
+    return {
       formats: {
-        word: 'Word 文档',
-        excel: 'Excel 表格',
-        powerpoint: 'PowerPoint 演示文稿',
+        word: 'Word \u6587\u6863',
+        excel: 'Excel \u8868\u683c',
+        powerpoint: 'PowerPoint \u6f14\u793a',
       },
-      unsupported: '请上传 Word、Excel 或 PowerPoint 文件。',
-      conversionFailed: '转换失败，请稍后再试。',
-      conversionFailedShort: '转换失败。',
+      unsupported: '\u8bf7\u4e0a\u4f20 Word\u3001Excel \u6216 PowerPoint \u6587\u4ef6\u3002',
+      conversionFailed: '\u8f6c\u6362\u6ca1\u6709\u5b8c\u6210\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002',
+      conversionFailedShort: '\u8f6c\u6362\u672a\u5b8c\u6210\u3002',
     }
-  : {
+  }
+
+  if (locale.value === 'es') {
+    return {
       formats: {
-        word: 'Word document',
-        excel: 'Excel spreadsheet',
-        powerpoint: 'PowerPoint presentation',
+        word: 'Documento Word',
+        excel: 'Hoja de Excel',
+        powerpoint: 'Presentacion PowerPoint',
       },
-      unsupported: 'Please upload a Word, Excel, or PowerPoint file.',
-      conversionFailed: 'Conversion failed. Please try again in a moment.',
-      conversionFailedShort: 'Conversion failed.',
-    })
+      unsupported: 'Sube un archivo de Word, Excel o PowerPoint.',
+      conversionFailed: 'La conversion fallo. Intentalo de nuevo en un momento.',
+      conversionFailedShort: 'La conversion fallo.',
+    }
+  }
+
+  return {
+    formats: {
+      word: 'Word document',
+      excel: 'Excel spreadsheet',
+      powerpoint: 'PowerPoint presentation',
+    },
+    unsupported: 'Please upload a Word, Excel, or PowerPoint file.',
+    conversionFailed: 'Conversion failed. Please try again in a moment.',
+    conversionFailedShort: 'Conversion failed.',
+  }
+})
 
 const supportedFormats = computed(() => [
   { label: copy.value.formats.word, ext: '.doc, .docx', tone: 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-200' },
@@ -246,7 +263,7 @@ onUnmounted(() => {
         </template>
       </ToolAccessPanel>
 
-      <div class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <div v-if="userStore.isAuthenticated" class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-blue-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-6">
             <div class="space-y-2">
@@ -279,29 +296,11 @@ onUnmounted(() => {
               </template>
             </DragDropZone>
 
-            <div
-              v-else
-              class="space-y-5"
-            >
+            <div v-else class="space-y-5">
               <FilePreview
                 :file="uploadedFile"
                 @remove="removeFile"
               />
-
-              <div class="grid gap-4 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50 sm:grid-cols-3">
-                <div
-                  v-for="format in supportedFormats"
-                  :key="format.label"
-                  :class="['rounded-2xl px-4 py-4 text-sm', format.tone]"
-                >
-                  <p class="font-semibold">
-                    {{ format.label }}
-                  </p>
-                  <p class="mt-1 text-xs opacity-80">
-                    {{ format.ext }}
-                  </p>
-                </div>
-              </div>
 
               <ProgressBar
                 v-if="converting || resultUrl"
@@ -313,7 +312,6 @@ onUnmounted(() => {
 
               <div class="flex flex-col gap-3 sm:flex-row">
                 <Button
-                  v-if="userStore.isAuthenticated"
                   variant="primary"
                   size="lg"
                   :loading="converting"
@@ -343,31 +341,12 @@ onUnmounted(() => {
         <div class="space-y-6">
           <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-blue-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="format in supportedFormats"
-                  :key="format.label"
-                  :class="['inline-flex rounded-full px-3 py-1 text-xs font-semibold', format.tone]"
-                >
-                  {{ format.label }} {{ format.ext }}
-                </span>
-              </div>
-
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
                   {{ t('tools.officeToPdf.workspaceTitle') }}
                 </h3>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                   {{ t('tools.officeToPdf.workspaceDescription') }}
-                </p>
-              </div>
-
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50">
-                <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  {{ userStore.isAuthenticated ? t('tools.officeToPdf.accountReady') : t('tools.officeToPdf.accountGuest') }}
-                </p>
-                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {{ userStore.isAuthenticated ? t('tools.officeToPdf.accountReadyDescription') : t('tools.officeToPdf.accountGuestDescription') }}
                 </p>
               </div>
 

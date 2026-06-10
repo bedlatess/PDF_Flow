@@ -40,13 +40,7 @@ const progress = ref(0)
 const errorState = ref<FormattedUserError | null>(null)
 const resultJobId = ref('')
 const isChinese = computed(() => locale.value.toLowerCase().startsWith('zh'))
-
-const fieldTypeClasses: Record<string, string> = {
-  text: 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-200',
-  checkbox: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200',
-  radio: 'bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-200',
-  dropdown: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-200',
-}
+const stepText = (value: number) => isChinese.value ? `\u6b65\u9aa4 ${value}` : `Step ${value}`
 
 const canUseTool = computed(() => userStore.isAuthenticated && userStore.canUseCloudFeatures)
 
@@ -260,7 +254,7 @@ const handleReset = () => {
 
       <div class="mt-6 space-y-6">
         <div
-          v-if="step === 1"
+          v-if="step === 1 && canUseTool"
           class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
         >
           <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-amber-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
@@ -298,31 +292,12 @@ const handleReset = () => {
 
           <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-amber-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="fieldType in ['text', 'checkbox', 'radio', 'dropdown']"
-                  :key="fieldType"
-                  :class="['inline-flex rounded-full px-3 py-1 text-xs font-semibold', fieldTypeClasses[fieldType]]"
-                >
-                  {{ t(`tools.fillForm.fieldTypes.${fieldType}`) }}
-                </span>
-              </div>
-
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
                   {{ t('tools.fillForm.workspaceTitle') }}
                 </h3>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                   {{ t('tools.fillForm.workspaceDescription') }}
-                </p>
-              </div>
-
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50">
-                <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  {{ userStore.isAuthenticated ? t('tools.fillForm.accountReady') : t('tools.fillForm.accountGuest') }}
-                </p>
-                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {{ userStore.isAuthenticated ? t('tools.fillForm.accountReadyDescription') : t('tools.fillForm.accountGuestDescription') }}
                 </p>
               </div>
 
@@ -366,7 +341,7 @@ const handleReset = () => {
             <div class="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-amber-100 border-t-amber-500 dark:border-amber-950 dark:border-t-amber-400" />
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-500">
-                {{ isChinese ? '步骤 2' : 'Step 2' }}
+                {{ stepText(2) }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
                 {{ t('tools.fillForm.stepDetecting') }}
@@ -383,7 +358,7 @@ const handleReset = () => {
           >
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-500">
-                {{ isChinese ? '步骤 2' : 'Step 2' }}
+                {{ stepText(2) }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
                 {{ t('tools.fillForm.stepReview') }}
@@ -540,7 +515,7 @@ const handleReset = () => {
             <div class="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-amber-100 border-t-amber-500 dark:border-amber-950 dark:border-t-amber-400" />
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-500">
-                {{ isChinese ? '步骤 3' : 'Step 3' }}
+                {{ stepText(3) }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
                 {{ t('tools.fillForm.stepGenerating') }}

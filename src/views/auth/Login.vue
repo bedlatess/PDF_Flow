@@ -14,21 +14,36 @@
 
         <div class="mt-8 max-w-xl">
           <h1 class="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            {{ $t('auth.loginHeroTitle') }}
+            {{ marketingCopy.heroTitle }}
           </h1>
           <p class="mt-5 text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
-            {{ $t('auth.loginHeroDescription') }}
+            {{ marketingCopy.heroDescription }}
           </p>
         </div>
 
-        <div class="mt-10 rounded-[32px] border border-white/80 bg-white/82 p-6 shadow-xl shadow-sky-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/58 dark:shadow-none">
-          <div class="space-y-3">
+        <div class="mt-10 space-y-4">
+          <div class="rounded-[32px] border border-white/80 bg-white/82 p-6 shadow-xl shadow-sky-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/58 dark:shadow-none">
             <p class="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
-              {{ $t('auth.loginSupportTitle') }}
+              {{ marketingCopy.panelTitle }}
             </p>
-            <p class="text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {{ $t('auth.loginSupportDescription') }}
+            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+              {{ marketingCopy.panelDescription }}
             </p>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-3">
+            <article
+              v-for="item in marketingCopy.highlights"
+              :key="item.title"
+              class="rounded-[24px] border border-white/80 bg-white/76 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/50"
+            >
+              <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                {{ item.title }}
+              </p>
+              <p class="mt-2 text-xs leading-6 text-slate-600 dark:text-slate-300">
+                {{ item.description }}
+              </p>
+            </article>
           </div>
         </div>
       </section>
@@ -194,7 +209,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
 import { useUserStore } from '@/stores/user'
@@ -204,7 +219,7 @@ import { formatUserFacingError, type FormattedUserError } from '@/utils/error-me
 
 const router = useRouter()
 const userStore = useUserStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const form = reactive({
   email: '',
@@ -220,6 +235,75 @@ const errors = reactive({
 const showPassword = ref(false)
 const loading = ref(false)
 const errorState = ref<FormattedUserError | null>(null)
+
+const marketingCopy = computed(() => {
+  if (locale.value === 'zh') {
+    return {
+      heroTitle: '\u767b\u5f55\u540e\u7ee7\u7eed\u5904\u7406\u4f60\u7684 PDF \u5de5\u4f5c',
+      heroDescription: '\u6253\u5f00\u6700\u8fd1\u4efb\u52a1\uff0c\u7ee7\u7eed OCR\u3001\u8f6c\u6362\u4e0e\u4e0b\u8f7d\uff0c\u4e5f\u80fd\u968f\u65f6\u67e5\u770b\u8d26\u53f7\u8bbe\u7f6e\u3002',
+      panelTitle: '\u767b\u5f55\u540e\u4f60\u53ef\u4ee5',
+      panelDescription: '\u5e38\u7528\u5de5\u5177\u3001\u8fd1\u671f\u7ed3\u679c\u548c\u8d26\u53f7\u72b6\u6001\u4f1a\u5728\u540c\u4e00\u5957\u6d41\u7a0b\u91cc\u8854\u63a5\u8d77\u6765\uff0c\u4e0d\u7528\u91cd\u65b0\u5bfb\u627e\u5165\u53e3\u3002',
+      highlights: [
+        {
+          title: '\u6700\u8fd1\u7ed3\u679c',
+          description: '\u66f4\u5feb\u627e\u56de\u4e0a\u4e00\u6b21\u5904\u7406\u8fc7\u7684\u6587\u6863\u3001\u4e0b\u8f7d\u8bb0\u5f55\u548c\u8f93\u51fa\u7ed3\u679c\u3002',
+        },
+        {
+          title: '\u5e38\u7528\u5de5\u5177',
+          description: '\u7ee7\u7eed OCR\u3001\u8f6c\u6362\u3001\u5408\u5e76\u4e0e\u5176\u4ed6\u5e38\u7528 PDF \u5904\u7406\u64cd\u4f5c\u3002',
+        },
+        {
+          title: '\u8d26\u53f7\u4e0e\u5957\u9910',
+          description: '\u67e5\u770b\u5f53\u524d\u72b6\u6001\u3001\u5957\u9910\u6743\u9650\u548c\u4e0e\u4f60\u76f8\u5173\u7684\u5904\u7406\u914d\u989d\u3002',
+        },
+      ],
+    }
+  }
+
+  if (locale.value === 'es') {
+    return {
+      heroTitle: 'Vuelve a tu espacio PDF y sigue trabajando',
+      heroDescription: 'Retoma OCR, conversiones, descargas y ajustes desde un mismo lugar.',
+      panelTitle: 'Al iniciar sesion podras',
+      panelDescription: 'Tus herramientas, resultados recientes y estado de cuenta quedan conectados en una experiencia mas clara.',
+      highlights: [
+        {
+          title: 'Resultados recientes',
+          description: 'Vuelve rapido a tus ultimos archivos procesados, descargas y salidas.',
+        },
+        {
+          title: 'Herramientas habituales',
+          description: 'Continua con OCR, conversion, fusion y otras tareas PDF sin rodeos.',
+        },
+        {
+          title: 'Cuenta y plan',
+          description: 'Consulta permisos, estado de cuenta y funciones disponibles en un mismo lugar.',
+        },
+      ],
+    }
+  }
+
+  return {
+    heroTitle: 'Sign in and continue your PDF workflow',
+    heroDescription: 'Open recent jobs, continue OCR or conversion work, and check downloads from one calmer workspace.',
+    panelTitle: 'After signing in you can',
+    panelDescription: 'Your tools, recent results, and account status stay connected so it is easier to pick up where you left off.',
+    highlights: [
+      {
+        title: 'Recent results',
+        description: 'Jump back to your latest processed files, downloads, and finished outputs.',
+      },
+      {
+        title: 'Familiar tools',
+        description: 'Continue OCR, conversion, merge, and other common PDF tasks without hunting for the next step.',
+      },
+      {
+        title: 'Account and plan',
+        description: 'Review your account status, plan access, and available processing capacity in one place.',
+      },
+    ],
+  }
+})
 
 const validateForm = () => {
   errors.email = ''

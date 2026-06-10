@@ -40,6 +40,7 @@ const progress = ref(0)
 const errorState = ref<FormattedUserError | null>(null)
 const resultJobId = ref('')
 const isChinese = computed(() => locale.value.toLowerCase().startsWith('zh'))
+const stepText = (value: number) => isChinese.value ? `步骤 ${value}` : `Step ${value}`
 
 const textAnnotation = ref({
   text: '',
@@ -295,10 +296,10 @@ const handleReset = () => {
       </ToolAccessPanel>
 
       <div class="mt-6 space-y-6">
-      <div
-        v-if="step === 1 && canUseTool"
-        class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
-      >
+        <div
+          v-if="step === 1 && canUseTool"
+          class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
+        >
           <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
               <div class="space-y-2">
@@ -334,36 +335,12 @@ const handleReset = () => {
 
           <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
-              <div class="flex flex-wrap gap-2">
-                <span class="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-200">
-                  <MessageSquare class="h-4 w-4" />
-                  {{ t('tools.annotate.textNotes') }}
-                </span>
-                <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                  <Highlighter class="h-4 w-4" />
-                  {{ t('tools.annotate.highlights') }}
-                </span>
-                <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                  <FileType class="h-4 w-4" />
-                  {{ t('tools.annotate.pdfOutput') }}
-                </span>
-              </div>
-
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
                   {{ t('tools.annotate.workspaceTitle') }}
                 </h3>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                   {{ t('tools.annotate.workspaceDescription') }}
-                </p>
-              </div>
-
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50">
-                <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  {{ userStore.isAuthenticated ? t('tools.annotate.accountReady') : t('tools.annotate.accountGuest') }}
-                </p>
-                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {{ userStore.isAuthenticated ? t('tools.annotate.accountReadyDescription') : t('tools.annotate.accountGuestDescription') }}
                 </p>
               </div>
 
@@ -403,7 +380,7 @@ const handleReset = () => {
           <div class="space-y-6">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                {{ isChinese ? '步骤 2' : 'Step 2' }}
+                {{ stepText(2) }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
                 {{ t('tools.annotate.configureTitle') }}
@@ -675,7 +652,7 @@ const handleReset = () => {
             <div class="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-purple-100 border-t-purple-500 dark:border-purple-950 dark:border-t-purple-400" />
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                {{ isChinese ? '步骤 3' : 'Step 3' }}
+                {{ stepText(3) }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
                 {{ t('tools.annotate.stepGenerating') }}

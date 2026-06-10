@@ -21,14 +21,29 @@
           </p>
         </div>
 
-        <div class="mt-10 rounded-[32px] border border-white/80 bg-white/82 p-6 shadow-xl shadow-teal-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/58 dark:shadow-none">
-          <div class="space-y-3">
+        <div class="mt-10 space-y-4">
+          <div class="rounded-[32px] border border-white/80 bg-white/82 p-6 shadow-xl shadow-teal-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/58 dark:shadow-none">
             <p class="text-sm font-semibold uppercase tracking-[0.22em] text-teal-700 dark:text-teal-300">
-              {{ marketingCopy.supportTitle }}
+              {{ marketingCopy.panelTitle }}
             </p>
-            <p class="text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {{ marketingCopy.supportDescription }}
+            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+              {{ marketingCopy.panelDescription }}
             </p>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-3">
+            <article
+              v-for="item in marketingCopy.highlights"
+              :key="item.title"
+              class="rounded-[24px] border border-white/80 bg-white/76 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/50"
+            >
+              <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                {{ item.title }}
+              </p>
+              <p class="mt-2 text-xs leading-6 text-slate-600 dark:text-slate-300">
+                {{ item.description }}
+              </p>
+            </article>
           </div>
         </div>
       </section>
@@ -254,27 +269,69 @@ const errorState = ref<FormattedUserError | null>(null)
 const marketingCopy = computed(() => {
   if (locale.value === 'zh') {
     return {
-      heroTitle: '\u51e0\u5206\u949f\u5185\u5f00\u59cb\u4f60\u7684 PDF \u5de5\u4f5c\u53f0',
-      heroDescription: '\u521b\u5efa\u8d26\u53f7\u540e\uff0c\u4f60\u53ef\u4ee5\u66f4\u987a\u5730\u7ba1\u7406\u6587\u6863\u4efb\u52a1\u3001\u67e5\u770b\u5904\u7406\u7ed3\u679c\uff0c\u5e76\u5728\u9700\u8981\u65f6\u5f00\u542f\u8fdb\u9636\u529f\u80fd\u3002',
-      supportTitle: '\u7b80\u5355\u5f00\u59cb',
-      supportDescription: '\u6ce8\u518c\u53ea\u9700\u8981\u51e0\u9879\u5fc5\u8981\u4fe1\u606f\u3002\u5b8c\u6210\u540e\uff0c\u4f60\u5c31\u53ef\u4ee5\u7528\u66f4\u5b8c\u6574\u7684\u65b9\u5f0f\u7ee7\u7eed\u4f7f\u7528 PDF-Flow\u3002',
+      heroTitle: '\u51e0\u5206\u949f\u5185\u5f00\u542f\u4f60\u7684 PDF \u5de5\u4f5c\u53f0',
+      heroDescription: '\u521b\u5efa\u8d26\u53f7\u540e\uff0c\u4f60\u53ef\u4ee5\u7ba1\u7406\u4efb\u52a1\u3001\u67e5\u770b\u7ed3\u679c\uff0c\u5e76\u5728\u9700\u8981\u65f6\u5f00\u542f\u66f4\u9ad8\u7ea7\u7684\u4e91\u7aef\u80fd\u529b\u3002',
+      panelTitle: '\u6ce8\u518c\u540e\u4f1a\u66f4\u987a',
+      panelDescription: '\u8d26\u53f7\u4f1a\u628a\u5de5\u5177\u3001\u8bb0\u5f55\u548c\u5957\u9910\u72b6\u6001\u4e32\u5728\u4e00\u8d77\uff0c\u8ba9\u540e\u7eed\u5904\u7406\u66f4\u7701\u5fc3\u3002',
+      highlights: [
+        {
+          title: '\u5de5\u5177\u66f4\u597d\u7ba1\u7406',
+          description: '\u5c06\u5e38\u7528 PDF \u5de5\u5177\u3001\u4efb\u52a1\u4e0e\u5904\u7406\u7ed3\u679c\u653e\u5728\u540c\u4e00\u5957\u8d26\u53f7\u4f53\u7cfb\u91cc\u3002',
+        },
+        {
+          title: '\u4fdd\u7559\u6700\u8fd1\u8fdb\u5ea6',
+          description: '\u65b9\u4fbf\u56de\u770b\u6700\u8fd1\u7684\u4e0b\u8f7d\u3001\u5386\u53f2\u7ed3\u679c\u548c\u4f60\u5f53\u524d\u7684\u5904\u7406\u8282\u594f\u3002',
+        },
+        {
+          title: '\u6309\u9700\u5f00\u542f\u9ad8\u7ea7\u80fd\u529b',
+          description: '\u5f53\u4f60\u9700\u8981 OCR\u3001Office \u8f6c PDF \u6216\u5176\u4ed6\u8fdb\u9636\u529f\u80fd\u65f6\uff0c\u53ef\u4ee5\u518d\u5b8c\u6210\u5347\u7ea7\u3002',
+        },
+      ],
     }
   }
 
   if (locale.value === 'es') {
     return {
       heroTitle: 'Empieza tu espacio de trabajo PDF en minutos',
-      heroDescription: 'Crea tu cuenta para gestionar tareas, revisar resultados y abrir funciones avanzadas solo cuando de verdad las necesites.',
-      supportTitle: 'Inicio simple',
-      supportDescription: 'El registro pide solo lo necesario para que puedas entrar rapido y seguir trabajando sin rodeos.',
+      heroDescription: 'Crea tu cuenta para gestionar tareas, revisar resultados y activar funciones avanzadas solo cuando las necesites.',
+      panelTitle: 'Despues de registrarte',
+      panelDescription: 'Tu cuenta conecta herramientas, historial y estado del plan para que el flujo se sienta mas continuo.',
+      highlights: [
+        {
+          title: 'Herramientas organizadas',
+          description: 'Reune tareas PDF, resultados y accesos en una misma cuenta.',
+        },
+        {
+          title: 'Progreso reciente',
+          description: 'Vuelve a tus ultimas descargas y archivos procesados con menos friccion.',
+        },
+        {
+          title: 'Funciones bajo demanda',
+          description: 'Activa OCR, Office a PDF y otras funciones avanzadas solo cuando haga falta.',
+        },
+      ],
     }
   }
 
   return {
     heroTitle: 'Start your PDF workspace in minutes',
-    heroDescription: 'Create an account to manage document tasks, review results, and unlock advanced features only when you actually need them.',
-    supportTitle: 'Simple start',
-    supportDescription: 'Registration only asks for what is needed so you can get in quickly and continue with a cleaner workflow.',
+    heroDescription: 'Create an account to manage document tasks, review results, and unlock advanced tools only when you actually need them.',
+    panelTitle: 'After you register',
+    panelDescription: 'Your account keeps tools, recent activity, and plan access connected so the workflow feels more complete from the start.',
+    highlights: [
+      {
+        title: 'Organized tools',
+        description: 'Keep your core PDF tools, tasks, and results connected inside one account.',
+      },
+      {
+        title: 'Recent progress',
+        description: 'Return to your latest downloads and processed files with less friction.',
+      },
+      {
+        title: 'Advanced features on demand',
+        description: 'Turn on OCR, Office to PDF, and other advanced workflows only when the job calls for them.',
+      },
+    ],
   }
 })
 
