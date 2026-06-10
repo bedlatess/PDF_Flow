@@ -14,20 +14,20 @@
 
         <div class="mt-8 max-w-xl">
           <h1 class="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            Sign in and keep working.
+            {{ $t('auth.loginHeroTitle') }}
           </h1>
           <p class="mt-5 text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
-            Access your document tools, recent activity, and account settings from one place without extra noise.
+            {{ $t('auth.loginHeroDescription') }}
           </p>
         </div>
 
         <div class="mt-10 rounded-[32px] border border-white/80 bg-white/82 p-6 shadow-xl shadow-sky-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/58 dark:shadow-none">
           <div class="space-y-3">
             <p class="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
-              Secure account access
+              {{ $t('auth.loginSupportTitle') }}
             </p>
             <p class="text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Use your account to continue across supported tools. If something fails, the page shows a short support-friendly message instead of internal system details.
+              {{ $t('auth.loginSupportDescription') }}
             </p>
           </div>
         </div>

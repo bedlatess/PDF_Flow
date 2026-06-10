@@ -12,7 +12,7 @@
 
       <template #extra>
         <p class="mx-auto max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-          Sign in first, then use AI summary, Q&A, and structured extraction from one unified analysis surface.
+          {{ t('ai.pageExtra') }}
         </p>
       </template>
     </ToolHeader>
@@ -22,7 +22,7 @@
         <template #icon>
           <Sparkles class="h-5 w-5" />
         </template>
-        AI PDF Analyzer follows the same rule as OCR: guests sign in first, then the app checks whether your account includes Pro AI access.
+        {{ t('ai.notice') }}
       </ToolNoticeBar>
 
       <DiagnosticAlert
@@ -42,15 +42,13 @@
           <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <div class="space-y-4">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-500">
-                Access
+                {{ t('ai.accessLabel') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ userStore.isAuthenticated ? 'Upgrade required after login' : 'Sign in before AI analysis' }}
+                {{ userStore.isAuthenticated ? t('ai.accessMemberTitle') : t('ai.accessGuestTitle') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ userStore.isAuthenticated
-                  ? 'Your account is active, but AI analysis is a Pro capability. Upgrade only when you need AI-assisted document work.'
-                  : 'Please sign in first so the app can verify your account and only show upgrade guidance if it is actually needed.' }}
+                {{ userStore.isAuthenticated ? t('ai.accessMemberDescription') : t('ai.accessGuestDescription') }}
               </p>
 
               <Button
@@ -58,20 +56,20 @@
                 @click="ensureAccess()"
               >
                 <LockKeyhole class="mr-2 h-4 w-4" />
-                {{ userStore.isAuthenticated ? 'Go to upgrade' : 'Go to sign in' }}
+                {{ userStore.isAuthenticated ? t('ai.goToUpgrade') : t('ai.goToSignIn') }}
               </Button>
             </div>
 
             <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
               <div class="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  1. Sign in first
+                  1. {{ t('ai.accessStep1') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  2. Upload one PDF for AI analysis
+                  2. {{ t('ai.accessStep2') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  3. Summarize, ask, or extract using the same file
+                  3. {{ t('ai.accessStep3') }}
                 </div>
               </div>
             </div>
@@ -84,13 +82,13 @@
           <div class="space-y-6">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-500">
-                Upload
+                {{ t('ai.uploadLabel') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ selectedFile ? 'Current analysis file' : 'Upload a PDF for AI analysis' }}
+                {{ selectedFile ? t('ai.uploadTitleSelected') : t('ai.uploadTitleIdle') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ selectedFile ? 'The same file can be reused across summary, Q&A, and structured extraction.' : 'Use one PDF at a time to keep AI context and diagnostics easier to understand.' }}
+                {{ selectedFile ? t('ai.uploadDescriptionSelected') : t('ai.uploadDescriptionIdle') }}
               </p>
             </div>
 
@@ -104,10 +102,10 @@
                 <FileText class="h-12 w-12" />
               </template>
               <template #title>
-                Drop a PDF for AI analysis
+                {{ t('ai.dropPDF') }}
               </template>
               <template #subtitle>
-                Sign in first, then summarize, ask questions, or extract structured data.
+                {{ t('ai.dropSubtitle') }}
               </template>
             </DragDropZone>
 
@@ -135,17 +133,17 @@
                     @click="clearFile"
                   >
                     <X class="mr-2 h-4 w-4" />
-                    Replace
+                    {{ t('common.replace') }}
                   </Button>
                 </div>
               </div>
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 text-sm leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300">
                 <p class="font-semibold text-slate-900 dark:text-white">
-                  Suggested flow
+                  {{ t('ai.suggestedFlowTitle') }}
                 </p>
                 <p class="mt-2">
-                  Start with summary for a quick overview, use Q&amp;A for targeted checks, then switch to structured extraction when you need machine-readable output.
+                  {{ t('ai.suggestedFlowDescription') }}
                 </p>
               </div>
             </div>

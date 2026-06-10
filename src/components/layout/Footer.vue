@@ -15,7 +15,6 @@ const socialLinks = [
   <footer class="border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
     <div class="container mx-auto px-4 py-8">
       <div class="grid gap-8 md:grid-cols-3">
-        <!-- Brand -->
         <div>
           <div class="mb-4 flex items-center gap-2">
             <div
@@ -42,10 +41,9 @@ const socialLinks = [
           </p>
         </div>
 
-        <!-- Links -->
         <div>
           <h3 class="mb-3 text-sm font-semibold uppercase text-gray-900 dark:text-white">
-            工具
+            {{ t('footer.tools') }}
           </h3>
           <ul class="space-y-2 text-sm">
             <li>
@@ -75,10 +73,9 @@ const socialLinks = [
           </ul>
         </div>
 
-        <!-- Social -->
         <div>
           <h3 class="mb-3 text-sm font-semibold uppercase text-gray-900 dark:text-white">
-            关注我们
+            {{ t('footer.followUs') }}
           </h3>
           <div class="flex gap-3">
             <a
@@ -109,21 +106,20 @@ const socialLinks = [
         </div>
       </div>
 
-      <!-- Copyright -->
       <div
         class="mt-8 border-t border-gray-200 pt-8 text-center text-sm text-gray-600 dark:border-gray-700 dark:text-gray-400"
       >
-        <p>© {{ currentYear }} {{ t('app.title') }}. Made with ❤️ by PDF-Flow Team.</p>
+        <p>© {{ currentYear }} {{ t('app.title') }}. {{ t('footer.madeWith') }}</p>
         <p class="mt-2">
           <a
             href="#"
             class="hover:text-primary"
-          >Privacy Policy</a>
+          >{{ t('footer.privacyPolicy') }}</a>
           <span class="mx-2">·</span>
           <a
             href="#"
             class="hover:text-primary"
-          >Terms of Service</a>
+          >{{ t('footer.termsOfService') }}</a>
         </p>
       </div>
     </div>

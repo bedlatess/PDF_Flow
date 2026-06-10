@@ -107,6 +107,17 @@ const helperText = computed(() => {
       : `Files up to ${props.maxSize}MB`
 })
 
+const getLocalizedMessage = (messages: { zh: string; en: string; es: string }) => {
+  const language = locale.value.toLowerCase()
+  if (language.startsWith('zh')) {
+    return messages.zh
+  }
+  if (language.startsWith('es')) {
+    return messages.es
+  }
+  return messages.en
+}
+
 const matchesAccept = (file: File) => {
   if (acceptTokens.value.length === 0) {
     return true
@@ -187,7 +198,11 @@ const processFiles = async (files: File[]) => {
   }
 
   if (files.length > props.maxFiles) {
-    emit('error', `You can upload up to ${props.maxFiles} files at a time.`)
+    emit('error', getLocalizedMessage({
+      zh: `单次最多可上传 ${props.maxFiles} 个文件。`,
+      en: `You can upload up to ${props.maxFiles} files at a time.`,
+      es: `Puedes subir hasta ${props.maxFiles} archivos a la vez.`,
+    }))
     return
   }
 
@@ -196,13 +211,21 @@ const processFiles = async (files: File[]) => {
   for (const file of files) {
     const fileSizeMB = file.size / (1024 * 1024)
     if (fileSizeMB > props.maxSize) {
-      emit('error', `${file.name} is larger than ${props.maxSize}MB.`)
+      emit('error', getLocalizedMessage({
+        zh: `${file.name} 超过了 ${props.maxSize}MB 限制。`,
+        en: `${file.name} is larger than ${props.maxSize}MB.`,
+        es: `${file.name} supera el límite de ${props.maxSize}MB.`,
+      }))
       continue
     }
 
     const isValid = await validateFile(file)
     if (!isValid) {
-      emit('error', `${file.name} is not a supported file type.`)
+      emit('error', getLocalizedMessage({
+        zh: `${file.name} 的文件类型暂不受支持。`,
+        en: `${file.name} is not a supported file type.`,
+        es: `${file.name} no es un tipo de archivo compatible.`,
+      }))
       continue
     }
 

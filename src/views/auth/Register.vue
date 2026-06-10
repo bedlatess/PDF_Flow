@@ -14,20 +14,20 @@
 
         <div class="mt-8 max-w-xl">
           <h1 class="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            Create an account and start clean.
+            {{ $t('auth.registerHeroTitle') }}
           </h1>
           <p class="mt-5 text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
-            Set up your access for document tools, downloads, and account settings in a simpler flow.
+            {{ $t('auth.registerHeroDescription') }}
           </p>
         </div>
 
         <div class="mt-10 rounded-[32px] border border-white/80 bg-white/82 p-6 shadow-xl shadow-teal-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/58 dark:shadow-none">
           <div class="space-y-3">
             <p class="text-sm font-semibold uppercase tracking-[0.22em] text-teal-700 dark:text-teal-300">
-              Simple setup
+              {{ $t('auth.registerSupportTitle') }}
             </p>
             <p class="text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Registration only asks for the basics. If something goes wrong, the page returns a short support-friendly message without exposing internal implementation details.
+              {{ $t('auth.registerSupportDescription') }}
             </p>
           </div>
         </div>
@@ -341,7 +341,7 @@ const handleRegister = async () => {
   } catch (error) {
     errorState.value = formatUserFacingError(error, {
       area: 'AUTH',
-      fallbackTitle: 'Registration failed',
+      fallbackTitle: t('auth.registerFailedTitle'),
       fallbackMessage: t('auth.registerFailed'),
     })
   } finally {

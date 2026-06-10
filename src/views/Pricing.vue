@@ -9,6 +9,7 @@ const router = useRouter()
 const userStore = useUserStore()
 
 interface PricingTier {
+  id: 'free' | 'pro' | 'enterprise'
   name: string
   price: string
   priceDetail: string
@@ -26,7 +27,8 @@ const currentTier = computed(() => userStore.user?.role || 'free')
 
 const pricingTiers: PricingTier[] = [
   {
-    name: 'Free',
+    id: 'free',
+    name: '免费版',
     price: '$0',
     priceDetail: '永久免费',
     description: '适合个人偶尔使用',
@@ -47,6 +49,7 @@ const pricingTiers: PricingTier[] = [
     current: currentTier.value === 'free',
   },
   {
+    id: 'pro',
     name: 'Pro',
     price: '$9.9',
     priceDetail: '/月 或 $79/年',
@@ -67,7 +70,8 @@ const pricingTiers: PricingTier[] = [
     current: currentTier.value === 'pro',
   },
   {
-    name: 'Enterprise',
+    id: 'enterprise',
+    name: '企业版',
     price: '按需定价',
     priceDetail: '联系销售',
     description: '适合企业级应用',
@@ -94,13 +98,13 @@ const handleCTA = async (tier: PricingTier) => {
     return
   }
 
-  if (tier.name === 'Free') {
+  if (tier.id === 'free') {
     // 免费套餐，跳转到首页开始使用
     router.push('/')
     return
   }
 
-  if (tier.name === 'Pro') {
+  if (tier.id === 'pro') {
     // Pro套餐，检查登录状态
     if (!isLoggedIn.value) {
       // 未登录，跳转到登录页面
@@ -122,12 +126,12 @@ const handleCTA = async (tier: PricingTier) => {
       window.location.href = response.checkout_url
     } catch (error) {
       console.error('Failed to create checkout session:', error)
-      alert('Failed to start payment process. Please try again.')
+      alert('暂时无法发起支付，请稍后重试或联系管理员。')
     }
     return
   }
 
-  if (tier.name === 'Enterprise') {
+  if (tier.id === 'enterprise') {
     // Enterprise套餐，联系销售
     window.location.href = 'mailto:sales@pdf-flow.com?subject=Enterprise Plan Inquiry'
     return

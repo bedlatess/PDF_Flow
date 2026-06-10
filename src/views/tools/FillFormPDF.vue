@@ -50,11 +50,11 @@ const canUseTool = computed(() => userStore.isAuthenticated && userStore.canUseC
 
 const primaryActionLabel = computed(() => {
   if (!userStore.isAuthenticated) {
-    return 'Sign in to use Fill Form'
+    return t('tools.fillForm.useAfterLogin')
   }
 
   if (!userStore.canUseCloudFeatures) {
-    return 'Upgrade to Pro to use Fill Form'
+    return t('tools.fillForm.upgradeAfterLogin')
   }
 
   return t('tools.fillForm.fillForm')
@@ -214,7 +214,7 @@ const handleReset = () => {
 
       <template #extra>
         <p class="mx-auto max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-          Upload one structured PDF, review detected fields, then generate a completed version in a single cloud flow.
+          {{ t('tools.fillForm.pageExtra') }}
         </p>
       </template>
     </ToolHeader>
@@ -224,7 +224,7 @@ const handleReset = () => {
         <template #icon>
           <Sparkles class="h-5 w-5" />
         </template>
-        Guests are asked to sign in first. Pro access is checked only after login, matching the OCR experience and avoiding premature paywalls.
+        {{ t('tools.fillForm.notice') }}
       </ToolNoticeBar>
 
       <DiagnosticAlert
@@ -244,15 +244,13 @@ const handleReset = () => {
           <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <div class="space-y-4">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-500">
-                Access
+                {{ t('tools.fillForm.accessLabel') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ userStore.isAuthenticated ? 'Upgrade required after login' : 'Sign in before using this tool' }}
+                {{ userStore.isAuthenticated ? t('tools.fillForm.accessMemberTitle') : t('tools.fillForm.accessGuestTitle') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ userStore.isAuthenticated
-                  ? 'Your account is signed in, but form filling is a Pro cloud capability. Upgrade only when you are ready to run this flow.'
-                  : 'Fill Form uses cloud processing. Please sign in first so the app can check your account access and route you correctly.' }}
+                {{ userStore.isAuthenticated ? t('tools.fillForm.accessMemberDescription') : t('tools.fillForm.accessGuestDescription') }}
               </p>
 
               <div class="flex flex-col gap-3 sm:flex-row">
@@ -261,7 +259,7 @@ const handleReset = () => {
                   @click="ensureAccess()"
                 >
                   <LockKeyhole class="mr-2 h-4 w-4" />
-                  {{ userStore.isAuthenticated ? 'Go to upgrade' : 'Go to sign in' }}
+                  {{ userStore.isAuthenticated ? t('tools.fillForm.goToUpgrade') : t('tools.fillForm.goToSignIn') }}
                 </Button>
               </div>
             </div>
@@ -269,13 +267,13 @@ const handleReset = () => {
             <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
               <div class="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  1. Sign in first
+                  1. {{ t('tools.fillForm.accessStep1') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  2. Check if your account includes Pro cloud features
+                  2. {{ t('tools.fillForm.accessStep2') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  3. Upload a fillable PDF and complete fields
+                  3. {{ t('tools.fillForm.accessStep3') }}
                 </div>
               </div>
             </div>
@@ -292,13 +290,13 @@ const handleReset = () => {
             <div class="space-y-6">
               <div class="space-y-2">
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-500">
-                  Upload
+                  {{ t('tools.fillForm.uploadLabel') }}
                 </p>
                 <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                  Upload a fillable PDF form
+                  {{ t('tools.fillForm.uploadTitle') }}
                 </h2>
                 <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Detect editable fields first, then complete them from a single workspace that mirrors the AI analyzer layout.
+                  {{ t('tools.fillForm.uploadDescription') }}
                 </p>
               </div>
 
@@ -312,10 +310,10 @@ const handleReset = () => {
                   <FileText class="h-12 w-12" />
                 </template>
                 <template #title>
-                  Upload a structured PDF form
+                  {{ t('tools.fillForm.dropTitle') }}
                 </template>
                 <template #subtitle>
-                  Sign in first, then this tool will guide you through field detection and completion.
+                  {{ t('tools.fillForm.dropSubtitle') }}
                 </template>
               </DragDropZone>
             </div>
@@ -335,45 +333,43 @@ const handleReset = () => {
 
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
-                  Form workspace
+                  {{ t('tools.fillForm.workspaceTitle') }}
                 </h3>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Keep access status, supported field types, and the fillable workflow summary inside one aligned panel instead of a separate step-only screen.
+                  {{ t('tools.fillForm.workspaceDescription') }}
                 </p>
               </div>
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  {{ userStore.isAuthenticated ? 'Signed-in account detected' : 'Not signed in yet' }}
+                  {{ userStore.isAuthenticated ? t('tools.fillForm.accountReady') : t('tools.fillForm.accountGuest') }}
                 </p>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {{ userStore.isAuthenticated
-                    ? 'This account can continue to Pro-only field detection and filling once access is confirmed.'
-                    : 'Please sign in first, then the app will decide whether an upgrade is actually needed.' }}
+                  {{ userStore.isAuthenticated ? t('tools.fillForm.accountReadyDescription') : t('tools.fillForm.accountGuestDescription') }}
                 </p>
               </div>
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  Fill flow
+                  {{ t('tools.fillForm.flowTitle') }}
                 </p>
                 <div class="mt-4 space-y-3">
                   <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-sm font-semibold text-white">1</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Sign in first and upload one fillable PDF.
+                      {{ t('tools.fillForm.flowStep1') }}
                     </p>
                   </div>
                   <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-sm font-semibold text-white">2</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Detect fields, review required inputs, and complete values in one pass.
+                      {{ t('tools.fillForm.flowStep2') }}
                     </p>
                   </div>
                   <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-500 text-sm font-semibold text-white">3</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Generate the completed PDF and download the result.
+                      {{ t('tools.fillForm.flowStep3') }}
                     </p>
                   </div>
                 </div>
@@ -396,7 +392,7 @@ const handleReset = () => {
                 Step 2
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                Detecting form fields
+                {{ t('tools.fillForm.stepDetecting') }}
               </h2>
               <p class="text-sm text-slate-600 dark:text-slate-300">
                 {{ t('tools.fillForm.analyzing') }}
@@ -413,7 +409,7 @@ const handleReset = () => {
                 Step 2
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                Review and complete fields
+                {{ t('tools.fillForm.stepReview') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {{ t('tools.fillForm.foundFields', { count: formFields.length }) }}
@@ -546,7 +542,7 @@ const handleReset = () => {
                 {{ t('tools.fillForm.noFields') }}
               </h2>
               <p class="text-sm text-slate-600 dark:text-slate-300">
-                Try another PDF that contains real editable form fields.
+                {{ t('tools.fillForm.noFieldsHelp') }}
               </p>
             </div>
             <Button
@@ -570,7 +566,7 @@ const handleReset = () => {
                 Step 3
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                Generating the completed PDF
+                {{ t('tools.fillForm.stepGenerating') }}
               </h2>
               <p class="text-sm text-slate-600 dark:text-slate-300">
                 {{ t('tools.fillForm.filling') }}
@@ -579,7 +575,7 @@ const handleReset = () => {
 
             <ProgressBar
               :progress="progress"
-              label="Preparing your completed PDF..."
+              :label="t('tools.fillForm.preparingResult')"
               variant="primary"
               size="md"
             />
@@ -594,7 +590,7 @@ const handleReset = () => {
             <CheckCircle2 class="mx-auto h-16 w-16 text-emerald-500" />
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-500">
-                Ready
+                {{ t('tools.fillForm.ready') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
                 {{ t('tools.fillForm.success') }}

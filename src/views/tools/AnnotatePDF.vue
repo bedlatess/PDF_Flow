@@ -74,11 +74,11 @@ const canUseTool = computed(() => userStore.isAuthenticated && userStore.canUseC
 
 const primaryActionLabel = computed(() => {
   if (!userStore.isAuthenticated) {
-    return 'Sign in to annotate'
+    return t('tools.annotate.useAfterLogin')
   }
 
   if (!userStore.canUseCloudFeatures) {
-    return 'Upgrade to Pro to annotate'
+    return t('tools.annotate.upgradeAfterLogin')
   }
 
   return t('tools.annotate.addAnnotation')
@@ -228,7 +228,7 @@ const handleReset = () => {
 
       <template #extra>
         <p class="mx-auto max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-          Upload once, configure either text notes or highlight regions, then export a clean annotated PDF from a single focused layout.
+          {{ t('tools.annotate.pageExtra') }}
         </p>
       </template>
     </ToolHeader>
@@ -238,7 +238,7 @@ const handleReset = () => {
         <template #icon>
           <Crown class="h-5 w-5" />
         </template>
-        This annotation flow uses cloud processing. Guests are sent to sign in first, and only signed-in users see the Pro upgrade path.
+        {{ t('tools.annotate.notice') }}
       </ToolNoticeBar>
 
       <DiagnosticAlert
@@ -258,15 +258,13 @@ const handleReset = () => {
           <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <div class="space-y-4">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                Access
+                {{ t('tools.annotate.accessLabel') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ userStore.isAuthenticated ? 'Upgrade required after login' : 'Sign in before annotating PDFs' }}
+                {{ userStore.isAuthenticated ? t('tools.annotate.accessMemberTitle') : t('tools.annotate.accessGuestTitle') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ userStore.isAuthenticated
-                  ? 'Your account is active, but annotation is a Pro cloud feature. Upgrade only when you actually need this workflow.'
-                  : 'Please sign in first so the system can check your account and route you to the right access step.' }}
+                {{ userStore.isAuthenticated ? t('tools.annotate.accessMemberDescription') : t('tools.annotate.accessGuestDescription') }}
               </p>
 
               <Button
@@ -274,20 +272,20 @@ const handleReset = () => {
                 @click="ensureAccess()"
               >
                 <LockKeyhole class="mr-2 h-4 w-4" />
-                {{ userStore.isAuthenticated ? 'Go to upgrade' : 'Go to sign in' }}
+                {{ userStore.isAuthenticated ? t('tools.annotate.goToUpgrade') : t('tools.annotate.goToSignIn') }}
               </Button>
             </div>
 
             <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
               <div class="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  1. Sign in first
+                  1. {{ t('tools.annotate.accessStep1') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  2. Choose text note or highlight mode
+                  2. {{ t('tools.annotate.accessStep2') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  3. Export the annotated PDF
+                  3. {{ t('tools.annotate.accessStep3') }}
                 </div>
               </div>
             </div>
@@ -304,13 +302,13 @@ const handleReset = () => {
             <div class="space-y-6">
               <div class="space-y-2">
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                  Upload
+                  {{ t('tools.annotate.uploadLabel') }}
                 </p>
                 <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                  Upload a PDF to annotate
+                  {{ t('tools.annotate.uploadTitle') }}
                 </h2>
                 <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Start with one PDF, then configure text notes or highlight regions inside the same workspace style used by the AI analyzer.
+                  {{ t('tools.annotate.uploadDescription') }}
                 </p>
               </div>
 
@@ -324,10 +322,10 @@ const handleReset = () => {
                   <FileText class="h-12 w-12" />
                 </template>
                 <template #title>
-                  Upload the PDF you want to annotate
+                  {{ t('tools.annotate.dropTitle') }}
                 </template>
                 <template #subtitle>
-                  Sign in first, then continue with text notes or highlight regions.
+                  {{ t('tools.annotate.dropSubtitle') }}
                 </template>
               </DragDropZone>
             </div>
@@ -338,59 +336,57 @@ const handleReset = () => {
               <div class="flex flex-wrap gap-2">
                 <span class="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-200">
                   <MessageSquare class="h-4 w-4" />
-                  Text notes
+                  {{ t('tools.annotate.textNotes') }}
                 </span>
                 <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
                   <Highlighter class="h-4 w-4" />
-                  Highlights
+                  {{ t('tools.annotate.highlights') }}
                 </span>
                 <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                   <FileType class="h-4 w-4" />
-                  PDF output
+                  {{ t('tools.annotate.pdfOutput') }}
                 </span>
               </div>
 
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
-                  Annotation workspace
+                  {{ t('tools.annotate.workspaceTitle') }}
                 </h3>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Keep access state, annotation modes, and export intent aligned inside one workspace instead of a separate step-only intro screen.
+                  {{ t('tools.annotate.workspaceDescription') }}
                 </p>
               </div>
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  {{ userStore.isAuthenticated ? 'Signed-in account detected' : 'Not signed in yet' }}
+                  {{ userStore.isAuthenticated ? t('tools.annotate.accountReady') : t('tools.annotate.accountGuest') }}
                 </p>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {{ userStore.isAuthenticated
-                    ? 'This account can continue to Pro-only annotation processing once access is confirmed.'
-                    : 'Please sign in first, then the system can decide whether annotation access needs an upgrade.' }}
+                  {{ userStore.isAuthenticated ? t('tools.annotate.accountReadyDescription') : t('tools.annotate.accountGuestDescription') }}
                 </p>
               </div>
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  Annotation flow
+                  {{ t('tools.annotate.flowTitle') }}
                 </p>
                 <div class="mt-4 space-y-3">
                   <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500 text-sm font-semibold text-white">1</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Sign in first and upload one PDF.
+                      {{ t('tools.annotate.flowStep1') }}
                     </p>
                   </div>
                   <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-fuchsia-500 text-sm font-semibold text-white">2</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Choose text note or highlight mode and set page coordinates.
+                      {{ t('tools.annotate.flowStep2') }}
                     </p>
                   </div>
                   <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500 text-sm font-semibold text-white">3</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Export a clean annotated PDF and download the result.
+                      {{ t('tools.annotate.flowStep3') }}
                     </p>
                   </div>
                 </div>
@@ -409,10 +405,10 @@ const handleReset = () => {
                 Step 2
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                Configure annotation
+                {{ t('tools.annotate.configureTitle') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Choose the annotation mode first, then define page, coordinates, and color before exporting.
+                {{ t('tools.annotate.configureDescription') }}
               </p>
             </div>
 
@@ -426,7 +422,7 @@ const handleReset = () => {
               <div class="space-y-6">
                 <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                   <label class="block text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Annotation mode
+                    {{ t('tools.annotate.modeLabel') }}
                   </label>
 
                   <div class="mt-4 space-y-3">
@@ -478,10 +474,10 @@ const handleReset = () => {
 
                 <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 text-sm leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300">
                   <p class="font-semibold text-slate-900 dark:text-white">
-                    Coordinate hint
+                    {{ t('tools.annotate.coordinateHintTitle') }}
                   </p>
                   <p class="mt-2">
-                    Use page coordinates from the original PDF space. Start with the page number, then adjust X and Y values gradually for a faster setup loop.
+                    {{ t('tools.annotate.coordinateHintDescription') }}
                   </p>
                 </div>
               </div>
@@ -681,7 +677,7 @@ const handleReset = () => {
                 Step 3
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                Generating the annotated PDF
+                {{ t('tools.annotate.stepGenerating') }}
               </h2>
               <p class="text-sm text-slate-600 dark:text-slate-300">
                 {{ t('tools.annotate.processing') }}
@@ -690,7 +686,7 @@ const handleReset = () => {
 
             <ProgressBar
               :progress="progress"
-              label="Preparing the annotated PDF..."
+              :label="t('tools.annotate.preparingResult')"
               variant="primary"
               size="md"
             />
@@ -705,7 +701,7 @@ const handleReset = () => {
             <CheckCircle2 class="mx-auto h-16 w-16 text-emerald-500" />
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-500">
-                Ready
+                {{ t('tools.annotate.ready') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
                 {{ t('tools.annotate.success') }}

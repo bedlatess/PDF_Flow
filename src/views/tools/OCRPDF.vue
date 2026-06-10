@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Copy,
@@ -23,6 +24,7 @@ import { useUserStore } from '@/stores/user'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 import { redirectForFeatureAccess } from '@/utils/feature-access'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
@@ -40,27 +42,27 @@ const copyMessage = ref('')
 
 const canUseOCR = computed(() => userStore.isAuthenticated && userStore.canUseCloudFeatures)
 
-const languageOptions = [
-  { value: 'eng', label: 'English', code: 'EN' },
-  { value: 'chi_sim', label: 'Simplified Chinese', code: 'ZH-CN' },
-  { value: 'chi_tra', label: 'Traditional Chinese', code: 'ZH-TW' },
-  { value: 'jpn', label: 'Japanese', code: 'JP' },
-  { value: 'kor', label: 'Korean', code: 'KR' },
-  { value: 'fra', label: 'French', code: 'FR' },
-  { value: 'deu', label: 'German', code: 'DE' },
-  { value: 'spa', label: 'Spanish', code: 'ES' },
-]
+const languageOptions = computed(() => [
+  { value: 'eng', label: t('tools.ocr.languageOptions.eng'), code: 'EN' },
+  { value: 'chi_sim', label: t('tools.ocr.languageOptions.chi_sim'), code: 'ZH-CN' },
+  { value: 'chi_tra', label: t('tools.ocr.languageOptions.chi_tra'), code: 'ZH-TW' },
+  { value: 'jpn', label: t('tools.ocr.languageOptions.jpn'), code: 'JP' },
+  { value: 'kor', label: t('tools.ocr.languageOptions.kor'), code: 'KR' },
+  { value: 'fra', label: t('tools.ocr.languageOptions.fra'), code: 'FR' },
+  { value: 'deu', label: t('tools.ocr.languageOptions.deu'), code: 'DE' },
+  { value: 'spa', label: t('tools.ocr.languageOptions.spa'), code: 'ES' },
+])
 
 const primaryActionLabel = computed(() => {
   if (!userStore.isAuthenticated) {
-    return 'Sign in to use OCR'
+    return t('tools.ocr.signInToUse')
   }
 
   if (!userStore.canUseCloudFeatures) {
-    return 'Upgrade to Pro for OCR'
+    return t('tools.ocr.upgradeToUse')
   }
 
-  return isProcessing.value ? 'Running OCR...' : 'Start OCR'
+  return isProcessing.value ? t('tools.ocr.running') : t('tools.ocr.start')
 })
 
 const ensureAccess = () => redirectForFeatureAccess({
@@ -110,18 +112,18 @@ const performOCR = async () => {
 
   isProcessing.value = true
   processingProgress.value = 0
-  processingStatus.value = 'Uploading file...'
+  processingStatus.value = t('tools.ocr.uploading')
   errorState.value = null
   copyMessage.value = ''
 
   try {
     const uploaded = await fileAPI.uploadFile(selectedFile.value)
     processingProgress.value = 25
-    processingStatus.value = 'Submitting OCR job...'
+    processingStatus.value = t('tools.ocr.submitting')
 
     const job = await fileAPI.extractTextOCR(uploaded.file_id, selectedLanguage.value)
     processingProgress.value = 38
-    processingStatus.value = 'Recognizing text...'
+    processingStatus.value = t('tools.ocr.recognizing')
 
     const finalStatus = await fileAPI.pollJobUntilDone(job.job_id, (status) => {
       if (typeof status.progress === 'number') {
@@ -129,8 +131,8 @@ const performOCR = async () => {
       }
 
       processingStatus.value = status.status === 'pending'
-        ? 'Waiting in queue...'
-        : 'Recognizing text...'
+        ? t('tools.ocr.waiting')
+        : t('tools.ocr.recognizing')
     })
 
     if (finalStatus.status === 'failed') {
@@ -138,7 +140,7 @@ const performOCR = async () => {
     }
 
     processingProgress.value = 96
-    processingStatus.value = 'Preparing results...'
+    processingStatus.value = t('tools.ocr.preparingResults')
 
     const blob = await fileAPI.downloadResult(job.job_id)
     const text = await blob.text()
@@ -159,12 +161,12 @@ const performOCR = async () => {
     }
 
     processingProgress.value = 100
-    processingStatus.value = 'OCR complete'
+    processingStatus.value = t('tools.ocr.completed')
     showResultModal.value = true
   } catch (error) {
     errorState.value = formatUserFacingError(error, {
       area: 'OCR',
-      fallbackMessage: 'OCR could not finish successfully. Please try again.',
+      fallbackMessage: t('tools.ocr.failed'),
     })
   } finally {
     isProcessing.value = false
@@ -188,11 +190,11 @@ const downloadText = () => {
 const copyToClipboard = async () => {
   try {
     await navigator.clipboard.writeText(extractedText.value)
-    copyMessage.value = 'Copied to clipboard.'
+    copyMessage.value = t('tools.ocr.copied')
   } catch (error) {
     errorState.value = formatUserFacingError(error, {
       area: 'OCR',
-      fallbackMessage: 'Copy failed. Please select the text manually and copy it.',
+      fallbackMessage: t('tools.ocr.copyFailed'),
     })
   }
 }
@@ -205,9 +207,9 @@ const closeResultModal = () => {
 <template>
   <div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-950 dark:to-purple-950/20">
     <ToolHeader
-      title="OCR Text Recognition"
-      subtitle="Extract text from PDFs and images with a login-first cloud workflow and clearer diagnostic feedback."
-      badge="Pro cloud feature"
+      :title="t('tools.ocr.title')"
+      :subtitle="t('tools.ocr.subtitle')"
+      :badge="t('tools.ocr.badge')"
       accent="purple"
     >
       <template #badgeIcon>
@@ -216,7 +218,7 @@ const closeResultModal = () => {
 
       <template #extra>
         <p class="mx-auto max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-          One upload area, one language selector, and one result view so users can finish OCR without bouncing between duplicate panels.
+          {{ t('tools.ocr.pageExtra') }}
         </p>
       </template>
     </ToolHeader>
@@ -226,7 +228,7 @@ const closeResultModal = () => {
         <template #icon>
           <Crown class="h-5 w-5" />
         </template>
-        OCR follows the same access pattern as the rest of the premium tools: sign in first, then check whether your account includes Pro cloud access.
+        {{ t('tools.ocr.notice') }}
       </ToolNoticeBar>
 
       <DiagnosticAlert
@@ -246,15 +248,13 @@ const closeResultModal = () => {
           <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <div class="space-y-4">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                Access
+                {{ t('tools.ocr.accessLabel') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ userStore.isAuthenticated ? 'Upgrade required after login' : 'Sign in before text recognition' }}
+                {{ userStore.isAuthenticated ? t('tools.ocr.accessMemberTitle') : t('tools.ocr.accessGuestTitle') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ userStore.isAuthenticated
-                  ? 'Your account is active, but OCR runs as a Pro cloud workflow. Upgrade only when you need cloud text extraction.'
-                  : 'Please sign in first so the app can verify your account before deciding whether an upgrade is actually required.' }}
+                {{ userStore.isAuthenticated ? t('tools.ocr.accessMemberDescription') : t('tools.ocr.accessGuestDescription') }}
               </p>
 
               <Button
@@ -262,20 +262,20 @@ const closeResultModal = () => {
                 @click="ensureAccess()"
               >
                 <Crown class="mr-2 h-4 w-4" />
-                {{ userStore.isAuthenticated ? 'Go to upgrade' : 'Go to sign in' }}
+                {{ userStore.isAuthenticated ? t('tools.ocr.goToUpgrade') : t('tools.ocr.goToSignIn') }}
               </Button>
             </div>
 
             <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
               <div class="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  1. Sign in first
+                  1. {{ t('tools.ocr.accessStep1') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  2. Upload one PDF or image source
+                  2. {{ t('tools.ocr.accessStep2') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  3. Run OCR and export plain text
+                  3. {{ t('tools.ocr.accessStep3') }}
                 </div>
               </div>
             </div>
@@ -288,13 +288,13 @@ const closeResultModal = () => {
           <div class="space-y-6">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
-                Upload
+                {{ t('tools.ocr.uploadLabel') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ selectedFile ? 'Current OCR source file' : 'Upload a PDF or image' }}
+                {{ selectedFile ? t('tools.ocr.uploadTitleSelected') : t('tools.ocr.uploadTitleIdle') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ selectedFile ? 'Switch language after upload, then run one OCR task from the same workspace.' : 'Supports PDF, PNG, JPG, JPEG, and WEBP. Single-file OCR keeps the result easier to validate.' }}
+                {{ selectedFile ? t('tools.ocr.uploadDescriptionSelected') : t('tools.ocr.uploadDescriptionIdle') }}
               </p>
             </div>
 
@@ -310,10 +310,10 @@ const closeResultModal = () => {
                 <FileSearch class="h-12 w-12" />
               </template>
               <template #title>
-                Drop a file to start OCR
+                {{ t('tools.ocr.dropTitle') }}
               </template>
               <template #subtitle>
-                PDFs and common image formats are supported in the same flow.
+                {{ t('tools.ocr.dropSubtitle') }}
               </template>
             </DragDropZone>
 
@@ -348,25 +348,25 @@ const closeResultModal = () => {
             <div class="flex flex-wrap gap-2">
               <span class="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-200">
                 <Languages class="h-4 w-4" />
-                Language
+                {{ t('tools.ocr.workspaceLanguage') }}
               </span>
               <span class="inline-flex items-center gap-2 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-4 py-2 text-sm font-medium text-fuchsia-700 dark:border-fuchsia-800 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
                 <Sparkles class="h-4 w-4" />
-                Cloud OCR
+                {{ t('tools.ocr.cloudOcr') }}
               </span>
               <span class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-200">
                 <Download class="h-4 w-4" />
-                TXT export
+                {{ t('tools.ocr.txtExport') }}
               </span>
             </div>
 
             <div class="space-y-5">
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
-                  OCR workspace
+                  {{ t('tools.ocr.workspaceTitle') }}
                 </h3>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Keep recognition language, account state, and export actions in one aligned workspace instead of splitting them into unrelated cards.
+                  {{ t('tools.ocr.workspaceDescription') }}
                 </p>
               </div>
 
@@ -374,7 +374,7 @@ const closeResultModal = () => {
                 <div class="flex items-center gap-2">
                   <Languages class="h-5 w-5 text-purple-500" />
                   <label class="text-sm font-semibold text-slate-900 dark:text-white">
-                    Recognition language
+                    {{ t('tools.ocr.workspaceLanguage') }}
                   </label>
                 </div>
 
@@ -406,10 +406,10 @@ const closeResultModal = () => {
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  {{ userStore.isAuthenticated ? 'Signed-in account detected' : 'Not signed in yet' }}
+                  {{ canUseOCR ? t('tools.ocr.accountReady') : t('tools.ocr.accountGuest') }}
                 </p>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {{ canUseOCR ? 'This account can start OCR jobs right away.' : 'Please sign in first, then upgrade to Pro if you want to unlock OCR cloud processing.' }}
+                  {{ canUseOCR ? t('tools.ocr.accountReadyDescription') : t('tools.ocr.accountGuestDescription') }}
                 </p>
               </div>
 
@@ -420,30 +420,30 @@ const closeResultModal = () => {
                 full-width
                 @click="ensureAccess()"
               >
-                {{ userStore.isAuthenticated ? 'Go to upgrade' : 'Go to sign in' }}
+                {{ userStore.isAuthenticated ? t('tools.ocr.goToUpgrade') : t('tools.ocr.goToSignIn') }}
               </Button>
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  Recognition flow
+                  {{ t('tools.ocr.flowTitle') }}
                 </p>
                 <div class="mt-4 space-y-3">
                   <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500 text-sm font-semibold text-white">1</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Upload a PDF or image and confirm the source file looks correct.
+                      {{ t('tools.ocr.flowStep1') }}
                     </p>
                   </div>
                   <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-fuchsia-500 text-sm font-semibold text-white">2</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Choose the nearest language to improve recognition quality.
+                      {{ t('tools.ocr.flowStep2') }}
                     </p>
                   </div>
                   <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500 text-sm font-semibold text-white">3</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Copy the extracted text or download it as a plain text file.
+                      {{ t('tools.ocr.flowStep3') }}
                     </p>
                   </div>
                 </div>
@@ -455,18 +455,18 @@ const closeResultModal = () => {
 
       <Modal
         v-model="showResultModal"
-        title="OCR result"
+        :title="t('tools.ocr.resultTitle')"
         size="lg"
       >
         <div class="space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-4 dark:bg-slate-800">
             <div class="text-sm text-slate-600 dark:text-slate-300">
-              <span v-if="ocrResult?.page_count">Pages: {{ ocrResult.page_count }}</span>
+              <span v-if="ocrResult?.page_count">{{ t('tools.ocr.pages') }}: {{ ocrResult.page_count }}</span>
               <span
                 v-if="ocrResult?.average_confidence"
                 class="ml-4"
               >
-                Confidence: {{ ocrResult.average_confidence }}%
+                {{ t('tools.ocr.confidence') }}: {{ ocrResult.average_confidence }}%
               </span>
             </div>
 
@@ -477,7 +477,7 @@ const closeResultModal = () => {
                 @click="copyToClipboard"
               >
                 <Copy class="mr-2 h-4 w-4" />
-                Copy
+                {{ t('tools.ocr.copy') }}
               </Button>
               <Button
                 variant="outline"
@@ -485,7 +485,7 @@ const closeResultModal = () => {
                 @click="downloadText"
               >
                 <Download class="mr-2 h-4 w-4" />
-                Download
+                {{ t('tools.ocr.download') }}
               </Button>
             </div>
           </div>
@@ -507,13 +507,13 @@ const closeResultModal = () => {
               size="md"
               @click="closeResultModal"
             >
-              Close
+              {{ t('common.close') }}
             </Button>
             <Button
               size="md"
               @click="clearAll(); closeResultModal()"
             >
-              Recognize another file
+              {{ t('tools.ocr.recognizeAnother') }}
             </Button>
           </div>
         </div>

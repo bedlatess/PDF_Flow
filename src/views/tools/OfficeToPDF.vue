@@ -102,7 +102,7 @@ const convertFile = async () => {
   errorState.value = null
   revokeResultUrl()
   progress.value = 15
-  status.value = 'Uploading file...'
+  status.value = t('tools.officeToPdf.uploading')
 
   try {
     const formData = new FormData()
@@ -110,13 +110,13 @@ const convertFile = async () => {
 
     const response = await fileAPI.officeToPDF(formData)
     progress.value = 45
-    status.value = 'Queued for conversion...'
+    status.value = t('tools.officeToPdf.queued')
 
     const finalStatus = await fileAPI.pollJobUntilDone(response.job_id, (jobStatus) => {
       if (jobStatus.status === 'processing') {
-        status.value = 'Converting on the server...'
+        status.value = t('tools.officeToPdf.serverProcessing')
       } else if (jobStatus.status === 'pending') {
-        status.value = 'Queued for conversion...'
+        status.value = t('tools.officeToPdf.queued')
       }
 
       if (typeof jobStatus.progress === 'number') {
@@ -128,13 +128,13 @@ const convertFile = async () => {
       throw new Error(finalStatus.error || 'Conversion failed.')
     }
 
-    status.value = 'Preparing PDF download...'
+    status.value = t('tools.officeToPdf.preparingDownload')
     progress.value = 96
 
     const blob = await fileAPI.downloadResult(response.job_id)
     resultUrl.value = URL.createObjectURL(blob)
     progress.value = 100
-    status.value = 'Your PDF is ready.'
+    status.value = t('tools.officeToPdf.resultReady')
   } catch (error) {
     errorState.value = formatUserFacingError(error, {
       area: 'OFFICE',
@@ -166,7 +166,7 @@ onUnmounted(() => {
     <ToolHeader
       :title="t('tools.officeToPdf.title')"
       :subtitle="t('tools.officeToPdf.desc')"
-      badge="Cloud conversion"
+      :badge="t('tools.officeToPdf.badge')"
       accent="blue"
     >
       <template #badgeIcon>
@@ -191,7 +191,7 @@ onUnmounted(() => {
         <template #icon>
           <FileText class="h-5 w-5" />
         </template>
-        Office to PDF requires login first because conversion runs in the cloud. Upgrade prompts are reserved for features that truly need Pro access.
+        {{ t('tools.officeToPdf.pageNotice') }}
       </ToolNoticeBar>
 
       <DiagnosticAlert
@@ -211,13 +211,13 @@ onUnmounted(() => {
           <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <div class="space-y-4">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-blue-500">
-                Access
+                {{ t('tools.officeToPdf.accessLabel') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                Sign in before Office conversion
+                {{ t('tools.officeToPdf.accessGuestTitle') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Office conversion is a cloud workflow, so the app should verify the account first and only surface additional access rules after authentication.
+                {{ t('tools.officeToPdf.accessGuestDescription') }}
               </p>
 
               <Button
@@ -225,20 +225,20 @@ onUnmounted(() => {
                 @click="ensureLogin()"
               >
                 <LogIn class="mr-2 h-4 w-4" />
-                Go to sign in
+                {{ t('tools.officeToPdf.goToSignIn') }}
               </Button>
             </div>
 
             <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
               <div class="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  1. Sign in first
+                  1. {{ t('tools.officeToPdf.accessStep1') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  2. Upload one Office file
+                  2. {{ t('tools.officeToPdf.accessStep2') }}
                 </div>
                 <div class="rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
-                  3. Convert and download the generated PDF
+                  3. {{ t('tools.officeToPdf.accessStep3') }}
                 </div>
               </div>
             </div>
@@ -251,13 +251,13 @@ onUnmounted(() => {
           <div class="space-y-6">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-blue-500">
-                Upload
+                {{ t('tools.officeToPdf.uploadLabel') }}
               </p>
               <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ uploadedFile ? 'Review the selected Office file' : 'Upload an Office document' }}
+                {{ uploadedFile ? t('tools.officeToPdf.uploadTitleSelected') : t('tools.officeToPdf.uploadTitleIdle') }}
               </h2>
               <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ uploadedFile ? 'We keep the original filename and return a matching PDF when the cloud job finishes.' : 'Supports Word, Excel, and PowerPoint files in one shared conversion flow.' }}
+                {{ uploadedFile ? t('tools.officeToPdf.uploadDescriptionSelected') : t('tools.officeToPdf.uploadDescriptionIdle') }}
               </p>
             </div>
 
@@ -275,7 +275,7 @@ onUnmounted(() => {
                 {{ t('tools.officeToPdf.dropFile') }}
               </template>
               <template #subtitle>
-                Sign in first, then upload Word, Excel, or PowerPoint files for server-side conversion.
+                {{ t('tools.officeToPdf.dropSubtitle') }}
               </template>
             </DragDropZone>
 
@@ -320,7 +320,7 @@ onUnmounted(() => {
                   @click="ensureLogin()"
                 >
                   <LogIn class="mr-2 h-4 w-4" />
-                  Sign in to convert
+                  {{ t('tools.officeToPdf.signInToConvert') }}
                 </Button>
 
                 <Button
@@ -333,7 +333,7 @@ onUnmounted(() => {
                   @click="convertFile"
                 >
                   <ArrowRight class="mr-2 h-4 w-4" />
-                  {{ converting ? 'Converting...' : t('tools.officeToPdf.convert') }}
+                  {{ converting ? t('tools.officeToPdf.converting') : t('tools.officeToPdf.convert') }}
                 </Button>
 
                 <Button
@@ -366,21 +366,19 @@ onUnmounted(() => {
 
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
-                  Conversion workspace
+                  {{ t('tools.officeToPdf.workspaceTitle') }}
                 </h3>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Match the AI analyzer rhythm: account state, supported formats, conversion progress, and result download all stay in one aligned panel.
+                  {{ t('tools.officeToPdf.workspaceDescription') }}
                 </p>
               </div>
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                  {{ userStore.isAuthenticated ? 'Signed-in account detected' : 'Not signed in yet' }}
+                  {{ userStore.isAuthenticated ? t('tools.officeToPdf.accountReady') : t('tools.officeToPdf.accountGuest') }}
                 </p>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {{ userStore.isAuthenticated
-                    ? 'This account can submit Office conversion jobs right away.'
-                    : 'Please sign in first before uploading a Word, Excel, or PowerPoint file.' }}
+                  {{ userStore.isAuthenticated ? t('tools.officeToPdf.accountReadyDescription') : t('tools.officeToPdf.accountGuestDescription') }}
                 </p>
               </div>
 
@@ -392,7 +390,7 @@ onUnmounted(() => {
                 @click="ensureLogin()"
               >
                 <LogIn class="mr-2 h-4 w-4" />
-                Go to sign in
+                {{ t('tools.officeToPdf.goToSignIn') }}
               </Button>
 
               <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">

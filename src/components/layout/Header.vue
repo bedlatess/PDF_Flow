@@ -63,7 +63,6 @@ const changeLocale = (newLocale: 'en' | 'zh' | 'es') => {
 }
 
 onMounted(() => {
-  // Restore session on mount (no-op if no token)
   userStore.checkAuth()
 })
 </script>
@@ -72,9 +71,8 @@ onMounted(() => {
   <header class="glass sticky top-0 z-50 border-b border-gray-200/50 dark:border-gray-700/50">
     <div class="container mx-auto px-4">
       <div class="flex h-16 items-center justify-between">
-        <!-- Logo -->
         <div
-          class="flex items-center gap-2 cursor-pointer"
+          class="cursor-pointer flex items-center gap-2"
           @click="navigateHome"
         >
           <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
@@ -95,9 +93,7 @@ onMounted(() => {
           </span>
         </div>
 
-        <!-- Desktop Navigation -->
         <div class="hidden items-center gap-4 md:flex">
-          <!-- Language Selector -->
           <select
             :value="locale"
             class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
@@ -114,7 +110,6 @@ onMounted(() => {
             </option>
           </select>
 
-          <!-- Theme Toggle -->
           <button
             class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
             @click="toggleTheme"
@@ -149,7 +144,6 @@ onMounted(() => {
             </svg>
           </button>
 
-          <!-- Home Button -->
           <Button
             variant="outline"
             size="sm"
@@ -158,25 +152,22 @@ onMounted(() => {
             {{ t('nav.home') }}
           </Button>
 
-          <!-- Features Button -->
           <Button
             variant="ghost"
             size="sm"
             @click="goToFeatures"
           >
-            🚀 功能特性
+            {{ t('nav.features') }}
           </Button>
 
-          <!-- Pricing Button -->
           <Button
             variant="ghost"
             size="sm"
             @click="goToPricing"
           >
-            💎 {{ t('nav.pricing') }}
+            {{ t('nav.pricing') }}
           </Button>
 
-          <!-- Auth: User Menu or Login -->
           <div
             v-if="userStore.isAuthenticated"
             class="relative"
@@ -187,7 +178,6 @@ onMounted(() => {
             >
               {{ userInitial }}
             </button>
-            <!-- Dropdown -->
             <div
               v-if="userMenuOpen"
               class="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
@@ -221,7 +211,6 @@ onMounted(() => {
           </Button>
         </div>
 
-        <!-- Mobile Menu Button -->
         <button
           class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 md:hidden"
           @click="mobileMenuOpen = !mobileMenuOpen"
@@ -250,7 +239,6 @@ onMounted(() => {
         </button>
       </div>
 
-      <!-- Mobile Menu -->
       <div
         v-if="mobileMenuOpen"
         class="border-t border-gray-200 py-4 dark:border-gray-700 md:hidden"
@@ -277,7 +265,7 @@ onMounted(() => {
             full-width
             @click="toggleTheme"
           >
-            {{ settingsStore.theme === 'light' ? '切换到暗黑模式' : '切换到明亮模式' }}
+            {{ settingsStore.theme === 'light' ? t('nav.themeToDark') : t('nav.themeToLight') }}
           </Button>
           <Button
             variant="outline"
@@ -286,6 +274,22 @@ onMounted(() => {
             @click="navigateHome"
           >
             {{ t('nav.home') }}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            full-width
+            @click="goToFeatures"
+          >
+            {{ t('nav.features') }}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            full-width
+            @click="goToPricing"
+          >
+            {{ t('nav.pricing') }}
           </Button>
           <template v-if="userStore.isAuthenticated">
             <Button

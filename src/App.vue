@@ -9,6 +9,7 @@ const settingsStore = useSettingsStore()
 
 onMounted(() => {
   settingsStore.initTheme()
+  settingsStore.initLocale()
 })
 </script>
 
