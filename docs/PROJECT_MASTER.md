@@ -648,3 +648,14 @@ python -m pytest tests/ -q      # 35 通过
 - 新增 `adminAPI`、`adminGuard` 和 `userStore.isAdmin`，前端控制台支持管理功能开关、站点配置、内容块和查看最近审计记录。
 - 当前阶段后台开关已经可保存到后端，但尚未统一接入所有公开工具页和后端业务执行路径；下一阶段需要把工具可见性、维护提示、登录要求、Pro 要求统一改为读取后端配置。
 - 本地验证：`npm run build` 通过；`python -m pytest backend/tests/test_auth.py backend/tests/test_admin.py -q` 通过，17 passed。Windows 本机直接导入 `app.main` 时会被历史监控服务中的 Unicode 控制台输出影响，服务端 Linux/Docker 不受该 GBK 控制台问题影响。
+
+### 2026-06-10 Admin Feature Gate Enforcement / 后台功能开关联动落地
+
+- Hidden admin feature flags now drive both public UI visibility and backend execution, not just the `/control-room` save form.
+- Added `backend/app/services/feature_gate.py` as the shared access gate. If a feature flag row is missing after a fresh migration, the backend now creates the default row and still enforces the default access rule instead of silently allowing the feature.
+- Added unauthenticated public config endpoint `GET /api/v1/admin/public-config` for read-only frontend settings, feature flags, and public content blocks.
+- Backend endpoints now call the shared gate for core tools (`merge_pdf`, `split_pdf`, `compress_pdf`, `rotate_pdf`, `image_to_pdf`, `pdf_to_image`, `ocr_pdf`, `office_to_pdf`), AI analyzer, watermark, form fill, and annotation operations.
+- Frontend now fetches public config through `src/stores/siteConfig.ts`; homepage and footer hide disabled tool entries, and direct tool routes redirect to login, pricing, or the homepage maintenance notice according to the saved backend rule.
+- Admin saves refresh the public config store immediately, so changing a switch in `/control-room` is reflected without needing to guess whether the old SPA cache is still active.
+- Verification target for this step: `python -m pytest backend/tests/test_auth.py backend/tests/test_admin.py -q`, `npm run build`, and `git diff --check` before pushing.
+- Server validation after deploy: turn off `merge_pdf` in `/control-room`, confirm `/tools/merge` disappears or redirects, confirm `POST /api/v1/files/merge` returns `503`, then turn it back on.

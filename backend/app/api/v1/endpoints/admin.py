@@ -12,6 +12,7 @@ from app.models.user import (
     User,
     UserRole,
 )
+from app.services.feature_gate import DEFAULT_FEATURE_FLAGS
 from app.schemas.admin import (
     AdminAuditLogResponse,
     AdminOverviewResponse,
@@ -59,21 +60,6 @@ DEFAULT_SETTINGS = [
         "label": "维护模式",
         "description": "后续可接入前台，用于临时关闭公开服务。",
     },
-]
-
-DEFAULT_FEATURE_FLAGS = [
-    ("merge_pdf", "合并 PDF", "允许用户合并多个 PDF 文件。", True, False, False),
-    ("split_pdf", "拆分 PDF", "允许用户按页码拆分 PDF。", True, False, False),
-    ("compress_pdf", "压缩 PDF", "允许用户压缩 PDF 文件。", True, False, False),
-    ("rotate_pdf", "旋转 PDF", "允许用户旋转 PDF 页面。", True, False, False),
-    ("image_to_pdf", "图片转 PDF", "允许用户将图片转换为 PDF。", True, False, False),
-    ("pdf_to_image", "PDF 转图片", "允许用户将 PDF 页面导出为图片。", True, False, False),
-    ("ocr_pdf", "OCR 文字识别", "允许登录用户提交 OCR 识别任务。", True, True, True),
-    ("office_to_pdf", "Office 转 PDF", "允许登录用户将 Office 文件转换为 PDF。", True, True, False),
-    ("ai_analyzer", "AI PDF 分析器", "允许 Pro 用户进行 PDF 智能分析。", True, True, True),
-    ("fill_form", "PDF 表单填写", "允许 Pro 用户填写 PDF 表单。", True, True, True),
-    ("annotate_pdf", "PDF 标注", "允许 Pro 用户添加 PDF 标注。", True, True, True),
-    ("watermark_pdf", "添加水印", "允许用户为 PDF 添加水印。", True, False, False),
 ]
 
 DEFAULT_CONTENT_BLOCKS = [
@@ -166,6 +152,46 @@ async def get_admin_overview(
         "feature_flags_count": db.query(FeatureFlag).count(),
         "content_blocks_count": db.query(ContentBlock).count(),
         "recent_audit_logs": recent_logs,
+    }
+
+
+@router.get("/public-config")
+async def get_public_config(db: Session = Depends(get_db)):
+    """Public read-only site configuration used by the frontend."""
+    _seed_defaults(db)
+    settings = db.query(SiteSetting).filter(SiteSetting.is_public == True).all()  # noqa: E712
+    feature_flags = db.query(FeatureFlag).order_by(FeatureFlag.key).all()
+    content_blocks = db.query(ContentBlock).filter(ContentBlock.is_public == True).all()  # noqa: E712
+
+    return {
+        "settings": {
+            item.key: {
+                "value": item.value,
+                "value_type": item.value_type,
+                "group": item.group,
+                "label": item.label,
+            }
+            for item in settings
+        },
+        "feature_flags": {
+            item.key: {
+                "label": item.label,
+                "description": item.description,
+                "enabled": item.enabled,
+                "requires_login": item.requires_login,
+                "requires_pro": item.requires_pro,
+                "maintenance_message": item.maintenance_message,
+            }
+            for item in feature_flags
+        },
+        "content_blocks": {
+            f"{item.key}:{item.locale}": {
+                "title": item.title,
+                "content": item.content,
+                "description": item.description,
+            }
+            for item in content_blocks
+        },
     }
 
 

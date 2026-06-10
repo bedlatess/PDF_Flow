@@ -16,6 +16,7 @@ from app.schemas.ai import (
 )
 from app.api.v1.endpoints.auth import get_current_user
 from app.services.ai_service import get_gemini_service
+from app.services.feature_gate import require_feature_access
 from app.utils.pdf_text_extractor import extract_text_from_pdf
 import tempfile
 import os
@@ -61,6 +62,7 @@ async def summarize_pdf(
 
     **Returns**: Summary, key points, topics, and metadata
     """
+    require_feature_access(db, "ai_analyzer", current_user)
     # Validate file type
     if not file.filename.endswith('.pdf'):
         raise HTTPException(
@@ -126,6 +128,7 @@ async def ask_question(
 
     **Returns**: Answer, confidence level, and relevant excerpts
     """
+    require_feature_access(db, "ai_analyzer", current_user)
     # Validate file type
     if not file.filename.endswith('.pdf'):
         raise HTTPException(
@@ -191,6 +194,7 @@ async def extract_data(
 
     **Returns**: Structured data based on document type
     """
+    require_feature_access(db, "ai_analyzer", current_user)
     # Validate file type
     if not file.filename.endswith('.pdf'):
         raise HTTPException(
@@ -264,6 +268,7 @@ async def batch_analyze(
 
     **Returns**: Results of all requested operations
     """
+    require_feature_access(db, "ai_analyzer", current_user)
     # Validate file type
     if not file.filename.endswith('.pdf'):
         raise HTTPException(

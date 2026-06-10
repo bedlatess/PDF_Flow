@@ -20,9 +20,12 @@ from app.schemas.file import (
     ProcessingJobStatusResponse,
 )
 from app.services.file_service import file_processing_service
+from app.core.database import get_db
 from app.core.rate_limiter import rate_limit_middleware
 from app.api.v1.endpoints.auth import get_current_user_optional
 from app.models.user import User
+from app.services.feature_gate import require_feature_access
+from sqlalchemy.orm import Session
 import logging
 
 logger = logging.getLogger(__name__)
@@ -91,6 +94,7 @@ async def merge_pdfs(
     request: Request,
     payload: PDFMergeRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
     _rate_limit: None = Depends(apply_processing_rate_limit)
 ):
     """
@@ -99,6 +103,7 @@ async def merge_pdfs(
     - **file_ids**: 要合并的文件 ID 列表（至少 2 个）
     - **output_filename**: 输出文件名（可选）
     """
+    require_feature_access(db, "merge_pdf", current_user)
     try:
         result = await file_processing_service.merge_pdfs(
             file_ids=payload.file_ids,
@@ -120,6 +125,7 @@ async def split_pdf(
     request: Request,
     payload: PDFSplitRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
     _rate_limit: None = Depends(apply_processing_rate_limit)
 ):
     """
@@ -128,6 +134,7 @@ async def split_pdf(
     - **file_id**: PDF 文件 ID
     - **page_ranges**: 页面范围列表，例如 [[1,3], [5,7]]
     """
+    require_feature_access(db, "split_pdf", current_user)
     try:
         result = await file_processing_service.split_pdf(
             file_id=payload.file_id,
@@ -149,6 +156,7 @@ async def compress_pdf(
     request: Request,
     payload: PDFCompressRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
     _rate_limit: None = Depends(apply_processing_rate_limit)
 ):
     """
@@ -157,6 +165,7 @@ async def compress_pdf(
     - **file_id**: PDF 文件 ID
     - **quality**: 压缩质量（low, medium, high）
     """
+    require_feature_access(db, "compress_pdf", current_user)
     try:
         result = await file_processing_service.compress_pdf(
             file_id=payload.file_id,
@@ -178,6 +187,7 @@ async def rotate_pdf(
     request: Request,
     payload: PDFRotateRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
     _rate_limit: None = Depends(apply_processing_rate_limit)
 ):
     """
@@ -187,6 +197,7 @@ async def rotate_pdf(
     - **rotation**: 旋转角度（90, 180, 270）
     - **pages**: 要旋转的页面（可选，默认所有页面）
     """
+    require_feature_access(db, "rotate_pdf", current_user)
     try:
         result = await file_processing_service.rotate_pdf(
             file_id=payload.file_id,
@@ -208,6 +219,7 @@ async def images_to_pdf(
     request: Request,
     payload: ImageToPDFRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
     _rate_limit: None = Depends(apply_processing_rate_limit)
 ):
     """
@@ -216,6 +228,7 @@ async def images_to_pdf(
     - **file_ids**: 图片文件 ID 列表
     - **output_filename**: 输出文件名（可选）
     """
+    require_feature_access(db, "image_to_pdf", current_user)
     try:
         result = await file_processing_service.images_to_pdf(
             file_ids=payload.file_ids,
@@ -237,6 +250,7 @@ async def pdf_to_images(
     request: Request,
     payload: PDFToImageRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
     _rate_limit: None = Depends(apply_processing_rate_limit)
 ):
     """
@@ -247,6 +261,7 @@ async def pdf_to_images(
     - **pages**: 要转换的页面（可选，默认所有页面）
     - **dpi**: 输出 DPI（72-600）
     """
+    require_feature_access(db, "pdf_to_image", current_user)
     try:
         result = await file_processing_service.pdf_to_images(
             file_id=payload.file_id,
@@ -268,6 +283,7 @@ async def extract_text_ocr(
     request: Request,
     payload: OCRRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
     _rate_limit: None = Depends(apply_processing_rate_limit)
 ):
     """
@@ -279,14 +295,7 @@ async def extract_text_ocr(
 
     **注意**: OCR 功能为 Pro 和 Enterprise 用户专属
     """
-    # 检查用户权限（免费用户不能使用 OCR）
-    user_role = getattr(current_user, "role", None)
-    role_value = user_role.value if hasattr(user_role, "value") else user_role
-    if not current_user or role_value == "free":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="OCR feature is only available for Pro and Enterprise users"
-        )
+    require_feature_access(db, "ocr_pdf", current_user)
 
     try:
         result = await file_processing_service.extract_text_ocr(
@@ -367,6 +376,7 @@ async def office_to_pdf(
     request: Request,
     file: UploadFile = File(..., description="Office文件（DOCX/XLSX/PPTX）"),
     current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
     _rate_limit: None = Depends(apply_processing_rate_limit)
 ):
     """
@@ -379,6 +389,7 @@ async def office_to_pdf(
 
     注意：需要系统安装 LibreOffice
     """
+    require_feature_access(db, "office_to_pdf", current_user)
     try:
         # 验证文件类型
         allowed_extensions = ['.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt']

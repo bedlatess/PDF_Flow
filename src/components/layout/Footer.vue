@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSiteConfigStore } from '@/stores/siteConfig'
 import {
   ArrowUpRight,
   FileStack,
@@ -12,15 +13,20 @@ import {
 } from 'lucide-vue-next'
 
 const { t, locale } = useI18n()
+const siteConfigStore = useSiteConfigStore()
 const activeLocale = computed(() => locale.value)
 const currentYear = new Date().getFullYear()
 
 const toolLinks = computed(() => [
-  { label: t('tools.merge.title'), href: '/tools/merge' },
-  { label: t('tools.split.title'), href: '/tools/split' },
-  { label: t('tools.rotate.title'), href: '/tools/rotate' },
-  { label: t('tools.officeToPdf.title'), href: '/tools/office-to-pdf' },
+  { label: t('tools.merge.title'), href: '/tools/merge', featureKey: 'merge_pdf' },
+  { label: t('tools.split.title'), href: '/tools/split', featureKey: 'split_pdf' },
+  { label: t('tools.rotate.title'), href: '/tools/rotate', featureKey: 'rotate_pdf' },
+  { label: t('tools.officeToPdf.title'), href: '/tools/office-to-pdf', featureKey: 'office_to_pdf' },
 ])
+
+const visibleToolLinks = computed(() =>
+  toolLinks.value.filter((link) => siteConfigStore.getFeatureFlag(link.featureKey, link.label).enabled)
+)
 
 const productLinks = computed(() => [
   { label: t('nav.features'), href: '/features' },
@@ -119,7 +125,7 @@ const quickSections = computed(() => [
   {
     title: footerCopy.value.linksTitle,
     icon: FileStack,
-    links: toolLinks.value,
+    links: visibleToolLinks.value,
   },
   {
     title: footerCopy.value.productTitle,
@@ -127,6 +133,10 @@ const quickSections = computed(() => [
     links: productLinks.value,
   },
 ])
+
+onMounted(() => {
+  siteConfigStore.fetchPublicConfig()
+})
 </script>
 
 <template>

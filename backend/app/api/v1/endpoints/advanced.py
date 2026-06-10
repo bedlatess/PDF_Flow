@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from fastapi.responses import FileResponse
 
 from app.models.user import User, UserRole
+from app.core.database import get_db
 from app.schemas.advanced_pdf import (
     WatermarkRequest,
     FormFillRequest,
@@ -21,6 +22,8 @@ from app.schemas.advanced_pdf import (
 )
 from app.api.v1.endpoints.auth import get_current_user
 from app.services.advanced_pdf_service import get_advanced_pdf_service
+from app.services.feature_gate import require_feature_access
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/advanced", tags=["advanced-pdf"])
 
@@ -72,12 +75,14 @@ async def add_watermark(
     file: UploadFile = File(...),
     request: WatermarkRequest = Body(...),
     current_user: User = Depends(require_pro_user),
+    db: Session = Depends(get_db),
 ):
     """
     Add a text watermark to a PDF (server-side).
 
     **Requires**: Pro or Enterprise subscription
     """
+    require_feature_access(db, "watermark_pdf", current_user)
     _validate_pdf(file)
     input_path = await _save_temp(file)
     output_path = _new_output_path()
@@ -118,12 +123,14 @@ async def add_watermark(
 async def get_form_fields(
     file: UploadFile = File(...),
     current_user: User = Depends(require_pro_user),
+    db: Session = Depends(get_db),
 ):
     """
     Read form field names and types from a PDF.
 
     **Requires**: Pro or Enterprise subscription
     """
+    require_feature_access(db, "fill_form", current_user)
     _validate_pdf(file)
     input_path = await _save_temp(file)
 
@@ -151,12 +158,14 @@ async def fill_form(
     file: UploadFile = File(...),
     request: FormFillRequest = Body(...),
     current_user: User = Depends(require_pro_user),
+    db: Session = Depends(get_db),
 ):
     """
     Fill PDF form fields.
 
     **Requires**: Pro or Enterprise subscription
     """
+    require_feature_access(db, "fill_form", current_user)
     _validate_pdf(file)
     input_path = await _save_temp(file)
     output_path = _new_output_path()
@@ -190,12 +199,14 @@ async def add_text_annotation(
     file: UploadFile = File(...),
     request: AnnotationRequest = Body(...),
     current_user: User = Depends(require_pro_user),
+    db: Session = Depends(get_db),
 ):
     """
     Add a text annotation to a PDF page.
 
     **Requires**: Pro or Enterprise subscription
     """
+    require_feature_access(db, "annotate_pdf", current_user)
     _validate_pdf(file)
     input_path = await _save_temp(file)
     output_path = _new_output_path()
@@ -232,12 +243,14 @@ async def add_highlight(
     file: UploadFile = File(...),
     request: HighlightRequest = Body(...),
     current_user: User = Depends(require_pro_user),
+    db: Session = Depends(get_db),
 ):
     """
     Add a highlight annotation to a PDF page.
 
     **Requires**: Pro or Enterprise subscription
     """
+    require_feature_access(db, "annotate_pdf", current_user)
     _validate_pdf(file)
     input_path = await _save_temp(file)
     output_path = _new_output_path()
@@ -277,6 +290,7 @@ async def add_signature_field(
     file: UploadFile = File(...),
     request: SignatureFieldRequest = Body(...),
     current_user: User = Depends(require_pro_user),
+    db: Session = Depends(get_db),
 ):
     """
     Add a (visual) signature field to a PDF page.
@@ -285,6 +299,7 @@ async def add_signature_field(
 
     **Requires**: Pro or Enterprise subscription
     """
+    require_feature_access(db, "annotate_pdf", current_user)
     _validate_pdf(file)
     input_path = await _save_temp(file)
     output_path = _new_output_path()

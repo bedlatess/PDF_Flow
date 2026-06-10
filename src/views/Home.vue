@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Card from '@/components/common/Card.vue'
+import { useSiteConfigStore } from '@/stores/siteConfig'
 
 const { t, locale } = useI18n()
 const router = useRouter()
+const route = useRoute()
+const siteConfigStore = useSiteConfigStore()
 const activeLocale = computed(() => locale.value)
 
 interface Tool {
@@ -15,6 +18,7 @@ interface Tool {
   icon: string
   route: string
   color: string
+  featureKey: string
 }
 
 const tools = computed<Tool[]>(() => [
@@ -25,6 +29,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12',
     route: '/tools/merge',
     color: 'bg-blue-500',
+    featureKey: 'merge_pdf',
   },
   {
     name: 'split',
@@ -33,6 +38,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5',
     route: '/tools/split',
     color: 'bg-green-500',
+    featureKey: 'split_pdf',
   },
   {
     name: 'rotate',
@@ -41,6 +47,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
     route: '/tools/rotate',
     color: 'bg-purple-500',
+    featureKey: 'rotate_pdf',
   },
   {
     name: 'compress',
@@ -49,6 +56,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4',
     route: '/tools/compress',
     color: 'bg-indigo-500',
+    featureKey: 'compress_pdf',
   },
   {
     name: 'imageToPdf',
@@ -57,6 +65,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
     route: '/tools/image-to-pdf',
     color: 'bg-orange-500',
+    featureKey: 'image_to_pdf',
   },
   {
     name: 'pdfToImage',
@@ -65,6 +74,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
     route: '/tools/pdf-to-image',
     color: 'bg-red-500',
+    featureKey: 'pdf_to_image',
   },
   {
     name: 'ocr',
@@ -73,6 +83,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
     route: '/tools/ocr',
     color: 'bg-pink-500',
+    featureKey: 'ocr_pdf',
   },
   {
     name: 'officeToPdf',
@@ -81,6 +92,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
     route: '/tools/office-to-pdf',
     color: 'bg-teal-500',
+    featureKey: 'office_to_pdf',
   },
   {
     name: 'aiAnalyzer',
@@ -89,6 +101,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M13 10V3L4 14h7v7l9-11h-7z',
     route: '/tools/ai-analyzer',
     color: 'bg-gradient-to-r from-purple-500 to-pink-500',
+    featureKey: 'ai_analyzer',
   },
   {
     name: 'watermark',
@@ -97,6 +110,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01',
     route: '/tools/watermark',
     color: 'bg-cyan-500',
+    featureKey: 'watermark_pdf',
   },
   {
     name: 'fillForm',
@@ -105,6 +119,7 @@ const tools = computed<Tool[]>(() => [
     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
     route: '/tools/fill-form',
     color: 'bg-emerald-500',
+    featureKey: 'fill_form',
   },
   {
     name: 'annotate',
@@ -113,8 +128,21 @@ const tools = computed<Tool[]>(() => [
     icon: 'M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z',
     route: '/tools/annotate',
     color: 'bg-amber-500',
+    featureKey: 'annotate_pdf',
   },
 ])
+
+const visibleTools = computed(() =>
+  tools.value.filter((tool) => siteConfigStore.getFeatureFlag(tool.featureKey, t(tool.titleKey)).enabled)
+)
+
+const disabledFeatureMessage = computed(() => {
+  const featureKey = route.query.disabledFeature
+  if (typeof featureKey !== 'string') return ''
+
+  const flag = siteConfigStore.getFeatureFlag(featureKey)
+  return flag.maintenance_message || '该功能正在维护中，暂时无法使用。'
+})
 
 const featureHighlights = computed(() => [
   {
@@ -143,6 +171,10 @@ const featureHighlights = computed(() => [
 const navigateToTool = (route: string) => {
   router.push(route)
 }
+
+onMounted(() => {
+  siteConfigStore.fetchPublicConfig(true)
+})
 </script>
 
 <template>
@@ -188,9 +220,16 @@ const navigateToTool = (route: string) => {
           {{ t('home.toolsTitle') }}
         </h2>
 
+        <div
+          v-if="disabledFeatureMessage"
+          class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-800 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100"
+        >
+          {{ disabledFeatureMessage }}
+        </div>
+
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <Card
-            v-for="tool in tools"
+            v-for="tool in visibleTools"
             :key="tool.name"
             data-testid="tool-card"
             variant="glass"

@@ -4,6 +4,7 @@
  */
 import { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useSiteConfigStore } from '@/stores/siteConfig'
 
 /**
  * 认证守卫 - 保护需要登录的路由
@@ -129,4 +130,53 @@ export async function adminGuard(
   }
 
   next('/')
+}
+
+export async function featureFlagGuard(
+  to: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
+  next: NavigationGuardNext
+) {
+  const featureKey = to.meta.featureKey as string | undefined
+  if (!featureKey) {
+    next()
+    return
+  }
+
+  const siteConfigStore = useSiteConfigStore()
+  const userStore = useUserStore()
+  await siteConfigStore.fetchPublicConfig(true)
+
+  const flag = siteConfigStore.getFeatureFlag(featureKey, String(to.meta.titleKey || featureKey))
+  if (!flag.enabled) {
+    next({
+      path: '/',
+      query: {
+        disabledFeature: featureKey,
+        message: flag.maintenance_message || 'feature_unavailable',
+      },
+    })
+    return
+  }
+
+  if (flag.requires_login && !userStore.isAuthenticated) {
+    const isLoggedIn = await userStore.checkAuth()
+    if (!isLoggedIn) {
+      next({
+        path: '/auth/login',
+        query: { redirect: to.fullPath },
+      })
+      return
+    }
+  }
+
+  if (flag.requires_pro && !userStore.canUseCloudFeatures) {
+    next({
+      path: '/pricing',
+      query: { feature: featureKey },
+    })
+    return
+  }
+
+  next()
 }

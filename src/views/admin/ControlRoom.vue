@@ -22,9 +22,11 @@ import {
   type FeatureFlag,
   type SiteSetting,
 } from '@/services/api'
+import { useSiteConfigStore } from '@/stores/siteConfig'
 
 type TabId = 'flags' | 'settings' | 'content' | 'audit'
 
+const siteConfigStore = useSiteConfigStore()
 const loading = ref(true)
 const savingKey = ref<string | null>(null)
 const activeTab = ref<TabId>('flags')
@@ -106,6 +108,7 @@ const saveFlag = async (flag: FeatureFlag) => {
     const index = flags.value.findIndex((item) => item.key === updated.key)
     if (index >= 0) flags.value[index] = updated
     auditLogs.value = await adminAPI.listAuditLogs()
+    await siteConfigStore.fetchPublicConfig(true)
     setMessage(`已保存：${updated.label}`)
   } catch {
     error.value = '功能开关保存失败，请检查输入或稍后重试。'
@@ -130,6 +133,7 @@ const saveSetting = async (setting: SiteSetting) => {
     const index = settings.value.findIndex((item) => item.key === updated.key)
     if (index >= 0) settings.value[index] = updated
     auditLogs.value = await adminAPI.listAuditLogs()
+    await siteConfigStore.fetchPublicConfig(true)
     setMessage(`已保存：${updated.label}`)
   } catch {
     error.value = '站点配置保存失败，请检查输入或稍后重试。'
@@ -156,6 +160,7 @@ const saveContentBlock = async (block: ContentBlock) => {
     if (index >= 0) contentBlocks.value[index] = updated
     selectedContent.value = updated
     auditLogs.value = await adminAPI.listAuditLogs()
+    await siteConfigStore.fetchPublicConfig(true)
     setMessage(`已保存：${updated.title}`)
   } catch {
     error.value = '内容块保存失败，请检查输入或稍后重试。'

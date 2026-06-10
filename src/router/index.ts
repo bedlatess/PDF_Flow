@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { watch } from 'vue'
 import i18n from '@/i18n'
-import { guestGuard, authGuard, enterpriseGuard, adminGuard } from './guards'
+import { guestGuard, authGuard, enterpriseGuard, adminGuard, featureFlagGuard } from './guards'
 
 const router = createRouter({
   history: createWebHistory('/'),
@@ -110,67 +110,85 @@ const router = createRouter({
           path: 'merge',
           name: 'merge-pdf',
           component: () => import('@/views/tools/MergePDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.merge.title', featureKey: 'merge_pdf' }
         },
         {
           path: 'split',
           name: 'split-pdf',
           component: () => import('@/views/tools/SplitPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.split.title', featureKey: 'split_pdf' }
         },
         {
           path: 'rotate',
           name: 'rotate-pdf',
           component: () => import('@/views/tools/RotatePDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.rotate.title', featureKey: 'rotate_pdf' }
         },
         {
           path: 'compress',
           name: 'compress-pdf',
           component: () => import('@/views/tools/CompressPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.compress.title', featureKey: 'compress_pdf' }
         },
         {
           path: 'image-to-pdf',
           name: 'image-to-pdf',
           component: () => import('@/views/tools/ImageToPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.imageToPdf.title', featureKey: 'image_to_pdf' }
         },
         {
           path: 'pdf-to-image',
           name: 'pdf-to-image',
           component: () => import('@/views/tools/PDFToImage.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.pdfToImage.title', featureKey: 'pdf_to_image' }
         },
         {
           path: 'ocr',
           name: 'ocr-pdf',
           component: () => import('@/views/tools/OCRPDF.vue'),
-          meta: { titleKey: 'tools.ocr.title' }
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.ocr.title', featureKey: 'ocr_pdf' }
         },
         {
           path: 'office-to-pdf',
           name: 'office-to-pdf',
           component: () => import('@/views/tools/OfficeToPDF.vue'),
-          meta: { titleKey: 'tools.officeToPdf.title' }
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.officeToPdf.title', featureKey: 'office_to_pdf' }
         },
         {
           path: 'ai-analyzer',
           name: 'ai-analyzer',
           component: () => import('@/views/tools/AIPDFAnalyzer.vue'),
-          meta: { titleKey: 'ai.title' }
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'ai.title', featureKey: 'ai_analyzer' }
         },
         {
           path: 'watermark',
           name: 'watermark-pdf',
           component: () => import('@/views/tools/WatermarkPDF.vue'),
-          meta: { titleKey: 'tools.watermark.title' }
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.watermark.title', featureKey: 'watermark_pdf' }
         },
         {
           path: 'fill-form',
           name: 'fill-form-pdf',
           component: () => import('@/views/tools/FillFormPDF.vue'),
-          meta: { titleKey: 'tools.fillForm.title', requiresPro: true }
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.fillForm.title', featureKey: 'fill_form', requiresPro: true }
         },
         {
           path: 'annotate',
           name: 'annotate-pdf',
           component: () => import('@/views/tools/AnnotatePDF.vue'),
-          meta: { titleKey: 'tools.annotate.title', requiresPro: true }
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.annotate.title', featureKey: 'annotate_pdf', requiresPro: true }
         },
       ],
     },
