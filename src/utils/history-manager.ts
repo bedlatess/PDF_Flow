@@ -15,6 +15,8 @@ export type HistoryToolType =
   | 'extractText'
   | 'extractImages'
   | 'watermark'
+  | 'flatten'
+  | 'repair'
 
 export interface HistoryItem {
   id: string
@@ -137,6 +139,8 @@ export function formatToolType(type: HistoryToolType): string {
     extractText: '提取 PDF 文字',
     extractImages: '提取 PDF 图片',
     watermark: '添加水印',
+    flatten: '扁平化 PDF',
+    repair: '修复 PDF',
   }
   return typeNames[type]
 }

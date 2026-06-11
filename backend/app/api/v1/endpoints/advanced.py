@@ -11,6 +11,7 @@ import tempfile
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Body, Form
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
 from app.models.user import User, UserRole
 from app.core.database import get_db
@@ -207,6 +208,47 @@ async def unlock_pdf(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"PDF unlock failed: {str(e)}",
+        )
+    finally:
+        if os.path.exists(input_path):
+            os.unlink(input_path)
+
+
+@router.post("/repair")
+async def repair_pdf(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Rebuild a PDF into a clean copy when its pages are still readable.
+
+    **Requires**: signed-in user
+    """
+    require_feature_access(db, "repair_pdf", current_user)
+    _validate_pdf(file)
+
+    input_path = await _save_temp(file)
+    output_path = _new_output_path()
+
+    try:
+        service = get_advanced_pdf_service()
+        service.repair_pdf(
+            pdf_path=input_path,
+            output_path=output_path,
+        )
+        return FileResponse(
+            output_path,
+            media_type="application/pdf",
+            filename="repaired.pdf",
+            background=BackgroundTask(lambda: os.path.exists(output_path) and os.unlink(output_path)),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"PDF repair failed: {str(e)}",
         )
     finally:
         if os.path.exists(input_path):

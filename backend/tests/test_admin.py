@@ -92,6 +92,12 @@ def test_public_config_exposes_feature_flags(client):
     assert body["feature_flags"]["crop_pdf"]["enabled"] is True
     assert body["feature_flags"]["crop_pdf"]["requires_login"] is False
     assert body["feature_flags"]["crop_pdf"]["requires_pro"] is False
+    assert body["feature_flags"]["flatten_pdf"]["enabled"] is True
+    assert body["feature_flags"]["flatten_pdf"]["requires_login"] is False
+    assert body["feature_flags"]["flatten_pdf"]["requires_pro"] is False
+    assert body["feature_flags"]["repair_pdf"]["enabled"] is True
+    assert body["feature_flags"]["repair_pdf"]["requires_login"] is True
+    assert body["feature_flags"]["repair_pdf"]["requires_pro"] is False
     assert body["feature_flags"]["protect_pdf"]["enabled"] is True
     assert body["feature_flags"]["protect_pdf"]["requires_login"] is True
     assert body["feature_flags"]["protect_pdf"]["requires_pro"] is False

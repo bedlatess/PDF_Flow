@@ -937,3 +937,18 @@ python -m pytest tests/ -q      # 35 通过
 - Wired the tool into the homepage card grid, route guard, translations, history records, and default admin feature flag `crop_pdf` so `/control-room` can hide or maintain it without code changes.
 - Local validation target: `npm run type-check`, `npm run build`, `python -m pytest backend/tests/test_admin.py -q`, and `git diff --check`. Build may still show the known large PDF vendor chunk warning.
 - Server validation when this P2 batch is pushed: open `/tools/crop`, upload a PDF with visible margins, test the light/scan/reset presets, export, and confirm the downloaded PDF opens with a smaller visible page area. Also confirm `/control-room -> feature flags` contains `crop_pdf`.
+
+### 2026-06-11 Flatten PDF / P2 professional tool
+- Continued the P2 professional processing suite after Crop PDF by adding `/tools/flatten`, a local-first tool for turning fillable PDF form fields into fixed page content.
+- Added `src/utils/pdf/flatten.ts` using `pdf-lib` form flattening. Existing field appearances are preserved where possible so completed forms remain visually stable.
+- Added a user-facing Flatten PDF page with upload, local-processing notice, field/page/output stats, no-field guidance, download, and browser history integration.
+- The page clearly explains that flattening locks form appearance but is not encryption, permission protection, or secure redaction.
+- Wired the tool into the homepage card grid, route guard, translations, history records, and default admin feature flag `flatten_pdf` so `/control-room` can hide or maintain it without code changes.
+- Server validation when this P2 batch is pushed: open `/tools/flatten`, upload a filled PDF form, export, and confirm the downloaded copy keeps the visible form values while normal field editing is reduced. Also confirm `/control-room -> feature flags` contains `flatten_pdf`.
+
+### 2026-06-11 Repair PDF / P2 professional tool
+- Continued the P2 professional processing suite after Flatten PDF by adding `/tools/repair`, a signed-in cloud tool for rebuilding readable PDFs into a cleaner copy.
+- Added `repair_pdf` to the backend advanced PDF service. The implementation is conservative: it re-reads readable pages with PyPDF2, copies metadata when possible, and exports a fresh file. It is meant for light structure issues, not severely destroyed files.
+- Added a user-facing Repair PDF page with login gating, upload, cloud-processing notice, progress state, output size, download, and browser history integration.
+- Wired the tool into the homepage card grid, route guard, translations, history records, and default admin feature flag `repair_pdf` so `/control-room` can hide or maintain it without code changes.
+- Server validation when this P2 batch is pushed: open `/tools/repair`, upload a readable but unstable PDF, export, and confirm the new copy opens cleanly. Also confirm `/control-room -> feature flags` contains `repair_pdf`.

@@ -1192,6 +1192,22 @@ export const advancedAPI = {
   },
 
   /**
+   * Rebuild a readable PDF into a clean copy.
+   */
+  async repairPDF(file: File): Promise<Blob> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await apiClient.post('/api/v1/advanced/repair', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      responseType: 'blob',
+    })
+    return response.data as Blob
+  },
+
+  /**
    * 获取 PDF 表单字段
    */
   async getFormFields(file: File): Promise<any> {

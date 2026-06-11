@@ -71,6 +71,8 @@ const getToolIcon = (type: HistoryItem['type']) => {
     extractText: 'T',
     extractImages: 'I',
     watermark: 'W',
+    flatten: 'F',
+    repair: 'R',
   }
   return icons[type]
 }
@@ -93,6 +95,8 @@ const getToolColor = (type: HistoryItem['type']) => {
     extractText: 'bg-cyan-500',
     extractImages: 'bg-rose-500',
     watermark: 'bg-cyan-500',
+    flatten: 'bg-slate-600',
+    repair: 'bg-cyan-600',
   }
   return colors[type]
 }

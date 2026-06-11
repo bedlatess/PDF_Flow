@@ -183,6 +183,20 @@ const router = createRouter({
           meta: { titleKey: 'tools.crop.title', featureKey: 'crop_pdf' }
         },
         {
+          path: 'flatten',
+          name: 'flatten-pdf',
+          component: () => import('@/views/tools/FlattenPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.flatten.title', featureKey: 'flatten_pdf' }
+        },
+        {
+          path: 'repair',
+          name: 'repair-pdf',
+          component: () => import('@/views/tools/RepairPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.repair.title', featureKey: 'repair_pdf' }
+        },
+        {
           path: 'protect',
           name: 'protect-pdf',
           component: () => import('@/views/tools/ProtectPDF.vue'),

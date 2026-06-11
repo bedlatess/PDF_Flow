@@ -17,6 +17,8 @@ DEFAULT_FEATURE_FLAGS = [
     ("organize_pdf", "整理 PDF 页面", "允许用户调整 PDF 页面顺序。", True, False, False),
     ("page_numbers_pdf", "添加 PDF 页码", "允许用户为 PDF 添加页码。", True, False, False),
     ("crop_pdf", "裁剪 PDF", "允许用户在浏览器本地裁剪 PDF 可视区域。", True, False, False),
+    ("flatten_pdf", "扁平化 PDF", "允许用户在浏览器本地将可填写表单固化为普通页面内容。", True, False, False),
+    ("repair_pdf", "修复 PDF", "允许登录用户在服务器上重新整理可读取的 PDF 结构。", True, True, False),
     ("protect_pdf", "保护 PDF", "允许登录用户为 PDF 添加打开密码。", True, True, False),
     ("unlock_pdf", "解锁 PDF", "允许登录用户在知道密码的前提下移除 PDF 打开密码。", True, True, False),
     ("sign_pdf", "签署 PDF", "允许用户在浏览器本地为 PDF 添加可视签名图片。", True, False, False),

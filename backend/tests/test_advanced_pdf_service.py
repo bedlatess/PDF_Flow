@@ -77,3 +77,24 @@ def test_unlock_pdf_rejects_wrong_password(tmp_path: Path):
         assert "password" in str(error).lower()
     else:
         raise AssertionError("Wrong password should not unlock the PDF")
+
+
+def test_repair_pdf_rebuilds_readable_pdf(tmp_path: Path):
+    input_path = tmp_path / "input.pdf"
+    output_path = tmp_path / "repaired.pdf"
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=300, height=300)
+    with input_path.open("wb") as output_file:
+        writer.write(output_file)
+
+    service = AdvancedPDFService()
+    service.repair_pdf(
+        pdf_path=str(input_path),
+        output_path=str(output_path),
+    )
+
+    repaired_reader = PdfReader(str(output_path))
+    assert repaired_reader.is_encrypted is False
+    assert len(repaired_reader.pages) == 2

@@ -228,6 +228,39 @@ class AdvancedPDFService:
 
         return output_path
 
+    def repair_pdf(
+        self,
+        pdf_path: str,
+        output_path: str,
+    ) -> str:
+        """
+        Rebuild a PDF into a clean copy when PyPDF2 can still read its pages.
+
+        This is intentionally conservative: it can help with light structure
+        issues, but severely corrupted PDFs may still fail to open.
+        """
+        reader = PdfReader(pdf_path, strict=False)
+
+        if reader.is_encrypted:
+            raise ValueError("Encrypted PDFs must be unlocked before repair.")
+
+        writer = PdfWriter()
+        page_count = 0
+        for page in reader.pages:
+            writer.add_page(page)
+            page_count += 1
+
+        if page_count == 0:
+            raise ValueError("No readable pages were found in this PDF.")
+
+        if reader.metadata:
+            writer.add_metadata(reader.metadata)
+
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+
+        return output_path
+
     def fill_form(
         self,
         pdf_path: str,
