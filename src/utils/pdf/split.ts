@@ -5,6 +5,7 @@
 
 import { PDFDocument } from 'pdf-lib'
 import type { PDFSplitOptions } from '@/types/pdf'
+import { pdfBytesToBlob } from './blob'
 
 /**
  * 拆分 PDF 文件
@@ -47,7 +48,7 @@ export async function splitPDF(
       newPdf.addPage(copiedPage)
 
       const pdfBytes = await newPdf.save()
-      results.push(new Blob([pdfBytes as Uint8Array], { type: 'application/pdf' }))
+      results.push(pdfBytesToBlob(pdfBytes))
     }
 
     return results
@@ -99,7 +100,7 @@ export async function extractPDFPages(
     })
 
     const pdfBytes = await newPdf.save()
-    return new Blob([pdfBytes as Uint8Array], { type: 'application/pdf' })
+    return pdfBytesToBlob(pdfBytes)
   } catch (error) {
     console.error('PDF extract error:', error)
     throw new Error(`Failed to extract PDF pages: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -190,7 +191,7 @@ export async function deletePDFPages(
     })
 
     const pdfBytes = await newPdf.save()
-    return new Blob([pdfBytes as Uint8Array], { type: 'application/pdf' })
+    return pdfBytesToBlob(pdfBytes)
   } catch (error) {
     console.error('Delete pages error:', error)
     throw new Error(`Failed to delete pages: ${error instanceof Error ? error.message : 'Unknown error'}`)

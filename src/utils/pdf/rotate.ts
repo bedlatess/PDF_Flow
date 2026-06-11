@@ -5,6 +5,7 @@
 
 import { PDFDocument, degrees } from 'pdf-lib'
 import type { PDFRotateOptions } from '@/types/pdf'
+import { pdfBytesToBlob } from './blob'
 
 /**
  * 旋转 PDF 页面
@@ -54,7 +55,7 @@ export async function rotatePDF(
 
     // 保存 PDF
     const pdfBytes = await pdf.save()
-    return new Blob([pdfBytes as Uint8Array], { type: 'application/pdf' })
+    return pdfBytesToBlob(pdfBytes)
   } catch (error) {
     console.error('PDF rotate error:', error)
     throw new Error(`Failed to rotate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -115,7 +116,7 @@ export async function resetRotation(file: File, pages?: number[]): Promise<Blob>
     })
 
     const pdfBytes = await pdf.save()
-    return new Blob([pdfBytes as Uint8Array], { type: 'application/pdf' })
+    return pdfBytesToBlob(pdfBytes)
   } catch (error) {
     console.error('Reset rotation error:', error)
     throw new Error(`Failed to reset rotation: ${error instanceof Error ? error.message : 'Unknown error'}`)

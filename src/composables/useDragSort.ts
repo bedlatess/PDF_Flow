@@ -3,7 +3,7 @@
  * 提供拖拽排序的完整逻辑
  */
 
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 
 export interface DragItem<T = unknown> {
   index: number
@@ -13,7 +13,7 @@ export interface DragItem<T = unknown> {
 export function useDragSort<T = unknown>() {
   const draggingIndex = ref<number | null>(null)
   const dragOverIndex = ref<number | null>(null)
-  const items = ref<T[]>([])
+  const items = shallowRef<T[]>([])
 
   /**
    * 初始化数据

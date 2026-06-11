@@ -706,3 +706,10 @@ python -m pytest tests/ -q      # 35 通过
 - Enhanced `任务观察` with keyword search across `job_id`, user email, status, task type, file name, and error summary, plus clearer empty-state guidance.
 - Local validation: `python -m pytest backend/tests/test_auth.py backend/tests/test_admin.py -q` and `npm run build` pass. `npm run type-check` still reports pre-existing frontend type debt in history, enterprise modal props, PDF BlobPart helpers, and old tool-key names.
 - Server validation after deploy: open `/control-room`, confirm `运营总览` loads without errors, run a smoke test, refresh `任务观察`, and search by the new `job_*` id.
+
+### 2026-06-11 Type-Check Stabilization / 前端类型检查稳定化
+- Cleared the historical `npm run type-check` failures across history records, enterprise modal usage, drag-sort generics, browser WebSocket timers, PDF Blob helpers, and stale history tool keys.
+- Repaired visible mojibake in the local history panel and history utility so future UI work does not inherit corrupted copy.
+- Added a shared `pdfBytesToBlob()` helper to safely convert `pdf-lib` byte output into browser `Blob` objects under stricter TypeScript DOM typings.
+- Aligned AI Q&A and batch analysis multipart requests by sending `question` and `operations` as form fields, with matching FastAPI `Form(...)` parameters.
+- Local validation: `npm run type-check`, `npm run build`, and `python -m pytest backend/tests -q` pass. Continue running type-check before build for future frontend changes.

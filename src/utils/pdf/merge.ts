@@ -5,6 +5,7 @@
 
 import { PDFDocument } from 'pdf-lib'
 import type { PDFMergeOptions } from '@/types/pdf'
+import { pdfBytesToBlob } from './blob'
 
 /**
  * 合并多个 PDF 文件
@@ -52,7 +53,7 @@ export async function mergePDFs(
     const pdfBytes = await mergedPdf.save()
 
     // 返回 Blob
-    return new Blob([pdfBytes as Uint8Array], { type: 'application/pdf' })
+    return pdfBytesToBlob(pdfBytes)
   } catch (error) {
     console.error('PDF merge error:', error)
     throw new Error(`Failed to merge PDFs: ${error instanceof Error ? error.message : 'Unknown error'}`)

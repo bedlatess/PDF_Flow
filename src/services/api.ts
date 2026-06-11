@@ -927,12 +927,12 @@ export const aiAPI = {
   async ask(file: File, question: string): Promise<any> {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('question', question)
 
     const response = await apiClient.post('/api/v1/ai/ask', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      },
-      data: { question }
+      }
     })
     return response.data
   },
@@ -959,12 +959,14 @@ export const aiAPI = {
   async batchAnalyze(file: File, operations: string[]): Promise<any> {
     const formData = new FormData()
     formData.append('file', file)
+    operations.forEach((operation) => {
+      formData.append('operations', operation)
+    })
 
     const response = await apiClient.post('/api/v1/ai/batch-analyze', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      },
-      data: { operations }
+      }
     })
     return response.data
   }

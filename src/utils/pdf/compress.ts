@@ -4,6 +4,7 @@
  */
 
 import { PDFDocument } from 'pdf-lib'
+import { pdfBytesToBlob } from './blob'
 
 export type CompressionQuality = 'high' | 'medium' | 'low'
 
@@ -60,7 +61,7 @@ export async function compressPDF(
     })
 
     const compressedSize = pdfBytes.length
-    const compressedBlob = new Blob([pdfBytes], { type: 'application/pdf' })
+    const compressedBlob = pdfBytesToBlob(pdfBytes)
     const compressionRatio = ((originalSize - compressedSize) / originalSize) * 100
 
     return {
@@ -129,7 +130,7 @@ function getOptimizationLevel(quality: CompressionQuality): number {
  * @returns 估算的压缩比例（百分比）
  */
 export function estimateCompressionRatio(
-  fileSize: number,
+  _fileSize: number,
   quality: CompressionQuality
 ): number {
   // 基于经验的估算值

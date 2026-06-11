@@ -102,7 +102,7 @@ const convertToImages = async () => {
     }))
 
     historyManager.addHistory({
-      type: 'pdf-to-image',
+      type: 'pdfToImage',
       fileName: selectedFile.value.name,
       fileSize: selectedFile.value.size,
       resultSize: blobs.reduce((sum, blob) => sum + blob.size, 0),
@@ -135,7 +135,7 @@ const convertInCloud = async () => {
     setTimeout(() => URL.revokeObjectURL(url), 100)
 
     historyManager.addHistory({
-      type: 'pdf-to-image',
+      type: 'pdfToImage',
       fileName: selectedFile.value.name,
       fileSize: selectedFile.value.size,
       resultSize: blob.size,

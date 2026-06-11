@@ -162,7 +162,7 @@ const loadDashboardStats = async () => {
 
 onMounted(() => {
   // Check if user is enterprise
-  if (!userStore.isEnterprise) {
+  if (!userStore.isEnterpriseTier) {
     router.push('/pricing')
     return
   }

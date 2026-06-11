@@ -112,7 +112,7 @@ const convertToPDF = async () => {
     resultUrl.value = memoryManager.createTemporaryURL(blob)
 
     historyManager.addHistory({
-      type: 'image-to-pdf',
+      type: 'imageToPdf',
       fileName: `${selectedFiles.value.length} images`,
       fileSize: selectedFiles.value.reduce((sum, file) => sum + file.size, 0),
       resultSize: blob.size,
@@ -147,7 +147,7 @@ const convertInCloud = async () => {
     resultUrl.value = memoryManager.createTemporaryURL(blob)
 
     historyManager.addHistory({
-      type: 'image-to-pdf',
+      type: 'imageToPdf',
       fileName: `${selectedFiles.value.length} images`,
       fileSize: selectedFiles.value.reduce((sum, file) => sum + file.size, 0),
       resultSize: blob.size,

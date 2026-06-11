@@ -97,9 +97,7 @@
     </div>
 
     <!-- Create Webhook Modal -->
-    <Modal :open="showCreateModal" @close="showCreateModal = false">
-      <template #title>{{ t('enterprise.webhooks.createModal.title') }}</template>
-      <template #content>
+    <Modal v-model="showCreateModal" :title="t('enterprise.webhooks.createModal.title')">
         <form @submit.prevent="createWebhook" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -159,7 +157,6 @@
             </Button>
           </div>
         </form>
-      </template>
     </Modal>
   </div>
 </template>

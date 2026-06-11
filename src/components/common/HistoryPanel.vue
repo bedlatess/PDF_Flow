@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { historyManager, formatToolType, formatHistoryTime, type HistoryItem } from '@/utils/history-manager'
+import { computed, onMounted, ref } from 'vue'
+import {
+  formatHistoryTime,
+  formatToolType,
+  historyManager,
+  type HistoryItem,
+} from '@/utils/history-manager'
 import { formatFileSize } from '@/utils/file-validator'
 import Button from '@/components/common/Button.vue'
 
@@ -23,11 +28,8 @@ const clearAll = () => {
   }
 }
 
-onMounted(() => {
-  loadHistory()
-})
+onMounted(loadHistory)
 
-// 按日期分组
 const groupedHistory = computed(() => {
   const today: HistoryItem[] = []
   const yesterday: HistoryItem[] = []
@@ -38,7 +40,7 @@ const groupedHistory = computed(() => {
   const yesterdayStart = new Date(todayStart)
   yesterdayStart.setDate(yesterdayStart.getDate() - 1)
 
-  history.value.forEach(item => {
+  history.value.forEach((item) => {
     if (item.timestamp >= todayStart.getTime()) {
       today.push(item)
     } else if (item.timestamp >= yesterdayStart.getTime()) {
@@ -53,12 +55,13 @@ const groupedHistory = computed(() => {
 
 const getToolIcon = (type: HistoryItem['type']) => {
   const icons: Record<HistoryItem['type'], string> = {
-    merge: '📄',
-    split: '✂️',
-    rotate: '🔄',
-    compress: '📦',
-    imageToPdf: '🖼️',
-    pdfToImage: '🎨',
+    merge: 'M',
+    split: 'S',
+    rotate: 'R',
+    compress: 'C',
+    imageToPdf: 'I',
+    pdfToImage: 'P',
+    watermark: 'W',
   }
   return icons[type]
 }
@@ -71,6 +74,7 @@ const getToolColor = (type: HistoryItem['type']) => {
     compress: 'bg-indigo-500',
     imageToPdf: 'bg-orange-500',
     pdfToImage: 'bg-red-500',
+    watermark: 'bg-cyan-500',
   }
   return colors[type]
 }
@@ -78,7 +82,6 @@ const getToolColor = (type: HistoryItem['type']) => {
 
 <template>
   <div class="history-panel">
-    <!-- Stats -->
     <div v-if="history.length > 0" class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
       <div class="rounded-lg bg-white p-4 dark:bg-gray-800">
         <p class="text-sm text-gray-500 dark:text-gray-400">总文件</p>
@@ -95,7 +98,7 @@ const getToolColor = (type: HistoryItem['type']) => {
       <div class="rounded-lg bg-white p-4 dark:bg-gray-800">
         <p class="text-sm text-gray-500 dark:text-gray-400">最常用</p>
         <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
-          {{ formatToolType(stats.mostUsedTool as any) }}
+          {{ stats.mostUsedTool ? formatToolType(stats.mostUsedTool) : '暂无' }}
         </p>
       </div>
       <div v-if="stats.totalSaved" class="rounded-lg bg-white p-4 dark:bg-gray-800">
@@ -106,7 +109,6 @@ const getToolColor = (type: HistoryItem['type']) => {
       </div>
     </div>
 
-    <!-- History List -->
     <div v-if="history.length === 0" class="rounded-lg bg-white p-8 text-center dark:bg-gray-800">
       <svg
         class="mx-auto h-12 w-12 text-gray-400"
@@ -123,12 +125,11 @@ const getToolColor = (type: HistoryItem['type']) => {
       </svg>
       <p class="mt-4 text-gray-600 dark:text-gray-400">暂无历史记录</p>
       <p class="mt-2 text-sm text-gray-500 dark:text-gray-500">
-        处理 PDF 文件后，历史记录会显示在这里
+        处理 PDF 文件后，历史记录会显示在这里。
       </p>
     </div>
 
     <div v-else class="space-y-6">
-      <!-- Today -->
       <div v-if="groupedHistory.today.length > 0">
         <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
           今天
@@ -140,7 +141,7 @@ const getToolColor = (type: HistoryItem['type']) => {
             class="group flex items-center gap-3 rounded-lg bg-white p-3 transition-all hover:shadow-md dark:bg-gray-800"
           >
             <div :class="['flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-white', getToolColor(item.type)]">
-              <span class="text-xl">{{ getToolIcon(item.type) }}</span>
+              <span class="text-xl font-bold">{{ getToolIcon(item.type) }}</span>
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
@@ -162,7 +163,6 @@ const getToolColor = (type: HistoryItem['type']) => {
         </div>
       </div>
 
-      <!-- Yesterday -->
       <div v-if="groupedHistory.yesterday.length > 0">
         <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
           昨天
@@ -174,7 +174,7 @@ const getToolColor = (type: HistoryItem['type']) => {
             class="group flex items-center gap-3 rounded-lg bg-white p-3 transition-all hover:shadow-md dark:bg-gray-800"
           >
             <div :class="['flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-white', getToolColor(item.type)]">
-              <span class="text-xl">{{ getToolIcon(item.type) }}</span>
+              <span class="text-xl font-bold">{{ getToolIcon(item.type) }}</span>
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
@@ -196,7 +196,6 @@ const getToolColor = (type: HistoryItem['type']) => {
         </div>
       </div>
 
-      <!-- Older -->
       <div v-if="groupedHistory.older.length > 0">
         <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
           更早
@@ -208,7 +207,7 @@ const getToolColor = (type: HistoryItem['type']) => {
             class="group flex items-center gap-3 rounded-lg bg-white p-3 transition-all hover:shadow-md dark:bg-gray-800"
           >
             <div :class="['flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-white', getToolColor(item.type)]">
-              <span class="text-xl">{{ getToolIcon(item.type) }}</span>
+              <span class="text-xl font-bold">{{ getToolIcon(item.type) }}</span>
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
@@ -230,7 +229,6 @@ const getToolColor = (type: HistoryItem['type']) => {
         </div>
       </div>
 
-      <!-- Clear All -->
       <div class="pt-4">
         <Button
           variant="ghost"

@@ -5,6 +5,7 @@
  */
 
 import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib'
+import { pdfBytesToBlob } from './blob'
 
 export type WatermarkPosition = 'center' | 'tile' | 'top' | 'bottom'
 
@@ -115,7 +116,7 @@ export async function addWatermark(
     }
 
     const pdfBytes = await pdf.save()
-    return new Blob([pdfBytes as Uint8Array], { type: 'application/pdf' })
+    return pdfBytesToBlob(pdfBytes)
   } catch (error) {
     console.error('PDF watermark error:', error)
     throw new Error(

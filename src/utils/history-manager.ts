@@ -1,11 +1,15 @@
-/**
- * 历史记录管理
- * 保存最近处理的文件记录
- */
+export type HistoryToolType =
+  | 'merge'
+  | 'split'
+  | 'rotate'
+  | 'compress'
+  | 'imageToPdf'
+  | 'pdfToImage'
+  | 'watermark'
 
 export interface HistoryItem {
   id: string
-  type: 'merge' | 'split' | 'rotate' | 'compress' | 'imageToPdf' | 'pdfToImage' | 'watermark'
+  type: HistoryToolType
   fileName: string
   timestamp: number
   fileSize?: number
@@ -16,21 +20,17 @@ const STORAGE_KEY = 'pdf-flow-history'
 const MAX_HISTORY_ITEMS = 20
 
 class HistoryManager {
-  /**
-   * 添加历史记录
-   */
   addHistory(item: Omit<HistoryItem, 'id' | 'timestamp'>): void {
     const history = this.getHistory()
 
     const newItem: HistoryItem = {
       ...item,
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       timestamp: Date.now(),
     }
 
     history.unshift(newItem)
 
-    // 限制历史记录数量
     if (history.length > MAX_HISTORY_ITEMS) {
       history.splice(MAX_HISTORY_ITEMS)
     }
@@ -38,9 +38,6 @@ class HistoryManager {
     this.saveHistory(history)
   }
 
-  /**
-   * 获取历史记录
-   */
   getHistory(): HistoryItem[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY)
@@ -52,25 +49,55 @@ class HistoryManager {
     }
   }
 
-  /**
-   * 清除单条历史记录
-   */
   removeHistory(id: string): void {
     const history = this.getHistory()
-    const filtered = history.filter(item => item.id !== id)
-    this.saveHistory(filtered)
+    this.saveHistory(history.filter((item) => item.id !== id))
   }
 
-  /**
-   * 清除所有历史记录
-   */
   clearHistory(): void {
     localStorage.removeItem(STORAGE_KEY)
   }
 
-  /**
-   * 保存历史记录
-   */
+  getHistoryByType(type: HistoryToolType): HistoryItem[] {
+    return this.getHistory().filter((item) => item.type === type)
+  }
+
+  getTodayHistory(): HistoryItem[] {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return this.getHistory().filter((item) => item.timestamp >= today.getTime())
+  }
+
+  getStats(): {
+    totalFiles: number
+    todayFiles: number
+    mostUsedTool: HistoryToolType | null
+    totalSaved?: number
+  } {
+    const history = this.getHistory()
+    const todayHistory = this.getTodayHistory()
+
+    const toolCount: Partial<Record<HistoryToolType, number>> = {}
+    history.forEach((item) => {
+      toolCount[item.type] = (toolCount[item.type] || 0) + 1
+    })
+
+    const mostUsedTool = Object.entries(toolCount).sort((a, b) => b[1] - a[1])[0]?.[0] as
+      | HistoryToolType
+      | undefined
+
+    const totalSaved = history
+      .filter((item) => item.type === 'compress' && item.fileSize && item.resultSize)
+      .reduce((sum, item) => sum + (item.fileSize! - item.resultSize!), 0)
+
+    return {
+      totalFiles: history.length,
+      todayFiles: todayHistory.length,
+      mostUsedTool: mostUsedTool || null,
+      totalSaved: totalSaved > 0 ? totalSaved : undefined,
+    }
+  }
+
   private saveHistory(history: HistoryItem[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history))
@@ -78,66 +105,12 @@ class HistoryManager {
       console.error('Failed to save history:', error)
     }
   }
-
-  /**
-   * 获取按类型分组的历史记录
-   */
-  getHistoryByType(type: HistoryItem['type']): HistoryItem[] {
-    return this.getHistory().filter(item => item.type === type)
-  }
-
-  /**
-   * 获取今天的历史记录
-   */
-  getTodayHistory(): HistoryItem[] {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayTimestamp = today.getTime()
-
-    return this.getHistory().filter(item => item.timestamp >= todayTimestamp)
-  }
-
-  /**
-   * 获取统计信息
-   */
-  getStats(): {
-    totalFiles: number
-    todayFiles: number
-    mostUsedTool: string
-    totalSaved?: number
-  } {
-    const history = this.getHistory()
-    const todayHistory = this.getTodayHistory()
-
-    // 统计最常用工具
-    const toolCount: Record<string, number> = {}
-    history.forEach(item => {
-      toolCount[item.type] = (toolCount[item.type] || 0) + 1
-    })
-
-    const mostUsedTool = Object.entries(toolCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'none'
-
-    // 计算节省的总空间（仅压缩功能）
-    const totalSaved = history
-      .filter(item => item.type === 'compress' && item.fileSize && item.resultSize)
-      .reduce((sum, item) => sum + (item.fileSize! - item.resultSize!), 0)
-
-    return {
-      totalFiles: history.length,
-      todayFiles: todayHistory.length,
-      mostUsedTool,
-      totalSaved: totalSaved > 0 ? totalSaved : undefined,
-    }
-  }
 }
 
 export const historyManager = new HistoryManager()
 
-/**
- * 格式化工具类型名称
- */
-export function formatToolType(type: HistoryItem['type']): string {
-  const typeNames: Record<HistoryItem['type'], string> = {
+export function formatToolType(type: HistoryToolType): string {
+  const typeNames: Record<HistoryToolType, string> = {
     merge: '合并 PDF',
     split: '拆分 PDF',
     rotate: '旋转 PDF',
@@ -149,12 +122,8 @@ export function formatToolType(type: HistoryItem['type']): string {
   return typeNames[type]
 }
 
-/**
- * 格式化时间
- */
 export function formatHistoryTime(timestamp: number): string {
-  const now = Date.now()
-  const diff = now - timestamp
+  const diff = Date.now() - timestamp
 
   const minutes = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)

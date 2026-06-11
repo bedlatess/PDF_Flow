@@ -2,7 +2,7 @@
 AI endpoints for PDF intelligence
 Summarization, Q&A, and structured data extraction
 """
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, Form, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
@@ -112,8 +112,8 @@ async def summarize_pdf(
 
 @router.post("/ask", response_model=QuestionResponse)
 async def ask_question(
-    request: QuestionRequest,
     file: UploadFile = File(...),
+    question: str = Form(..., min_length=5, max_length=500),
     current_user: User = Depends(require_pro_user),
     db: Session = Depends(get_db)
 ):
@@ -129,6 +129,7 @@ async def ask_question(
     **Returns**: Answer, confidence level, and relevant excerpts
     """
     require_feature_access(db, "ai_analyzer", current_user)
+    request = QuestionRequest(question=question)
     # Validate file type
     if not file.filename.endswith('.pdf'):
         raise HTTPException(
@@ -252,8 +253,8 @@ async def extract_data(
 
 @router.post("/batch-analyze", response_model=BatchAnalyzeResponse)
 async def batch_analyze(
-    request: BatchAnalyzeRequest,
     file: UploadFile = File(...),
+    operations: List[str] = Form(...),
     current_user: User = Depends(require_pro_user),
     db: Session = Depends(get_db)
 ):
@@ -269,6 +270,7 @@ async def batch_analyze(
     **Returns**: Results of all requested operations
     """
     require_feature_access(db, "ai_analyzer", current_user)
+    request = BatchAnalyzeRequest(operations=operations)
     # Validate file type
     if not file.filename.endswith('.pdf'):
         raise HTTPException(

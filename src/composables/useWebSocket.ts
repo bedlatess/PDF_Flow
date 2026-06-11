@@ -29,7 +29,7 @@ export function useWebSocket() {
   const jobId = ref('')
 
   // 心跳定时器
-  let heartbeatInterval: NodeJS.Timeout | null = null
+  let heartbeatInterval: ReturnType<typeof setInterval> | null = null
 
   /**
    * 连接到 WebSocket

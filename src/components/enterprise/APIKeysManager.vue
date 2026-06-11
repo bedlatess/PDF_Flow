@@ -93,9 +93,7 @@
     </div>
 
     <!-- Create API Key Modal -->
-    <Modal :open="showCreateModal" @close="showCreateModal = false">
-      <template #title>{{ t('enterprise.apiKeys.createModal.title') }}</template>
-      <template #content>
+    <Modal v-model="showCreateModal" :title="t('enterprise.apiKeys.createModal.title')">
         <form @submit.prevent="createAPIKey" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -151,17 +149,19 @@
             </Button>
           </div>
         </form>
-      </template>
     </Modal>
 
     <!-- Show API Key Modal (after creation) -->
-    <Modal :open="!!newlyCreatedKey" @close="newlyCreatedKey = null">
-      <template #title>{{ t('enterprise.apiKeys.createdModal.title') }}</template>
-      <template #content>
+    <Modal
+      :model-value="!!newlyCreatedKey"
+      :title="t('enterprise.apiKeys.createdModal.title')"
+      @update:model-value="(value) => { if (!value) newlyCreatedKey = null }"
+      @close="newlyCreatedKey = null"
+    >
         <div class="space-y-4">
           <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
             <p class="text-sm text-yellow-800 dark:text-yellow-200 font-medium mb-2">
-              ⚠️ {{ t('enterprise.apiKeys.createdModal.warning') }}
+              注意：{{ t('enterprise.apiKeys.createdModal.warning') }}
             </p>
             <p class="text-xs text-yellow-700 dark:text-yellow-300">
               {{ t('enterprise.apiKeys.createdModal.warningDetail') }}
@@ -188,7 +188,6 @@
             </Button>
           </div>
         </div>
-      </template>
     </Modal>
   </div>
 </template>
