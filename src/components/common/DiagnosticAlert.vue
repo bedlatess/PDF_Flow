@@ -12,7 +12,7 @@ const props = withDefaults(defineProps<{
   tone?: Tone
 }>(), {
   diagnosticCode: '',
-  supportHint: 'If this keeps happening, please screenshot this message and send it to the administrator.',
+  supportHint: 'If this keeps happening, please screenshot this message and send it through feedback or support.',
   tone: 'danger',
 })
 

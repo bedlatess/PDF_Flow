@@ -51,8 +51,8 @@ export const localeOverrides = {
       trustWorkflowTitle: '流程更连贯',
       trustWorkflowDescription: '上传、权限、处理、下载在同一套节奏里完成，不再到处跳转。',
       contactTitle: '联系支持',
-      contactDescription: '如果你在上线测试中发现问题，可以把页面截图和简短操作步骤发给管理员或支持邮箱。',
-      bottomLine: '适合继续做真实环境测试与上线前验收。',
+      contactDescription: '如果你在使用中遇到问题，可以把页面截图、简短操作步骤和大致时间发给支持邮箱。',
+      bottomLine: '为日常 PDF 工作、云端增强和隐私优先体验而设计。',
     },
     home: {
       badges: {
@@ -297,7 +297,7 @@ export const localeOverrides = {
         bottomPrompt: '还没有账号？',
         bottomAction: '注册后继续测试',
         alerts: {
-          paymentStartFailed: '暂时无法发起支付，请稍后重试或联系管理员。',
+          paymentStartFailed: '暂时无法发起支付，请稍后重试或联系支持渠道。',
         },
       },
       legal: {
@@ -325,7 +325,7 @@ export const localeOverrides = {
             },
             contact: {
               title: '5. 隐私相关联系',
-              body: '如果你对账户信息、文件处理或日志保留有疑问，可以通过支持渠道联系管理员。提交问题时，建议附带页面截图、时间点和简短复现步骤，便于更快定位，而不需要主动发送额外敏感文件。',
+              body: '如果你对账户信息、文件处理或日志保留有疑问，可以通过支持渠道联系我们。提交问题时，建议附带页面截图、时间点和简短复现步骤，便于更快定位，而不需要主动发送额外敏感文件。',
             },
           },
         },
@@ -341,7 +341,7 @@ export const localeOverrides = {
             },
             accounts: {
               title: '2. 账户与安全责任',
-              body: '你需要对自己的登录凭据、第三方登录授权和账户下的操作负责。若发现未授权访问、异常订阅行为或可疑任务记录，应尽快联系管理员或支持渠道。平台会尽量提供防护，但无法替代用户自身的账户安全管理。',
+              body: '你需要对自己的登录凭据、第三方登录授权和账户下的操作负责。若发现未授权访问、异常订阅行为或可疑任务记录，应尽快联系支持渠道。平台会尽量提供防护，但无法替代用户自身的账户安全管理。',
             },
             usage: {
               title: '3. 允许与禁止的使用方式',
@@ -775,12 +775,12 @@ export const localeOverrides = {
       trustPrivacyTitle: 'Local-first',
       trustPrivacyDescription: 'Core PDF handling stays in the browser wherever possible to reduce unnecessary file exposure.',
       trustSupportTitle: 'Debuggable',
-      trustSupportDescription: 'User-facing errors stay readable while short diagnostic codes help admins trace issues faster.',
+      trustSupportDescription: 'User-facing errors stay readable while short diagnostic codes help support trace issues faster.',
       trustWorkflowTitle: 'One workflow',
       trustWorkflowDescription: 'Upload, access, processing, and download live in one clearer rhythm instead of scattered steps.',
       contactTitle: 'Contact support',
-      contactDescription: 'If you find problems during staging or production-style testing, send a screenshot and short reproduction notes to your admin or support contact.',
-      bottomLine: 'Built to support real-environment validation before wider rollout.',
+      contactDescription: 'If you run into a problem, send a screenshot, short reproduction notes, and approximate time to support.',
+      bottomLine: 'Built for everyday PDF work, cloud enhancements, and privacy-first workflows.',
     },
     home: {
       badges: {
@@ -1025,7 +1025,7 @@ export const localeOverrides = {
         bottomPrompt: 'No account yet?',
         bottomAction: 'Sign up and keep testing',
         alerts: {
-          paymentStartFailed: 'Unable to start checkout right now. Please try again later or contact an administrator.',
+          paymentStartFailed: 'Unable to start checkout right now. Please try again later or contact support.',
         },
       },
       legal: {
@@ -1053,7 +1053,7 @@ export const localeOverrides = {
             },
             contact: {
               title: '5. Privacy questions',
-              body: 'If you have questions about account data, file handling, or operational logs, contact your administrator or support channel. When reporting a privacy concern, a screenshot, timestamp, and short reproduction summary are usually more useful than sending additional sensitive documents.',
+              body: 'If you have questions about account data, file handling, or operational logs, contact support. When reporting a privacy concern, a screenshot, timestamp, and short reproduction summary are usually more useful than sending additional sensitive documents.',
             },
           },
         },
@@ -1069,7 +1069,7 @@ export const localeOverrides = {
             },
             accounts: {
               title: '2. Accounts and security',
-              body: 'You are responsible for your login credentials, third-party sign-in authorizations, and activity performed through your account. If you notice unauthorized access, suspicious billing behavior, or unusual task history, you should contact your administrator or support path promptly. Platform protections help, but they do not replace basic account hygiene.',
+              body: 'You are responsible for your login credentials, third-party sign-in authorizations, and activity performed through your account. If you notice unauthorized access, suspicious billing behavior, or unusual task history, you should contact support promptly. Platform protections help, but they do not replace basic account hygiene.',
             },
             usage: {
               title: '3. Allowed and prohibited use',

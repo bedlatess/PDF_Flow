@@ -170,6 +170,66 @@ const homeHeroBlock = computed(() =>
   })
 )
 
+const isChinese = computed(() => locale.value.toLowerCase().startsWith('zh'))
+const isSpanish = computed(() => locale.value.toLowerCase().startsWith('es'))
+
+const homeCopy = computed(() => {
+  if (isChinese.value) {
+    return {
+      eyebrow: '隐私优先的 PDF 工作台',
+      heroTitle: '把常用 PDF 工具、云端增强和 AI 能力放进一个清爽工作区',
+      heroDescription: '小文件优先本地快速处理，大文件、OCR、Office、AI 等任务按需交给云端。免费功能和 Pro 能力清楚区分，使用路径更直观。',
+      start: '开始处理文件',
+      pricing: '查看 Pro 能力',
+      localLabel: '本地优先',
+      localText: '合并、拆分、旋转等日常任务尽量留在浏览器完成。',
+      cloudLabel: '云端增强',
+      cloudText: '大文件、长任务和专业格式转换更稳定。',
+      proLabel: 'Pro 能力',
+      proText: 'OCR、AI、表单和标注等高级工作流清楚标识。',
+      workspaceLabel: 'PDF Workspace',
+      toolsHint: '常用工具保持轻快，专业能力用 Pro 角标清楚区分。',
+      whyTitle: '一个更安静、更清楚的 PDF 工作流',
+    }
+  }
+
+  if (isSpanish.value) {
+    return {
+      eyebrow: 'Espacio PDF con privacidad primero',
+      heroTitle: 'Herramientas PDF, nube avanzada e IA en un espacio claro',
+      heroDescription: 'Los archivos pequeños se procesan localmente cuando conviene. Archivos grandes, OCR, Office e IA usan la nube cuando aporta más estabilidad.',
+      start: 'Empezar',
+      pricing: 'Ver Pro',
+      localLabel: 'Local primero',
+      localText: 'Fusionar, dividir y rotar permanecen en el navegador cuando es posible.',
+      cloudLabel: 'Nube avanzada',
+      cloudText: 'Archivos grandes y tareas largas son más estables en la nube.',
+      proLabel: 'Funciones Pro',
+      proText: 'OCR, IA, formularios y anotaciones se distinguen con claridad.',
+      workspaceLabel: 'PDF Workspace',
+      toolsHint: 'Herramientas diarias rápidas, funciones Pro claramente marcadas.',
+      whyTitle: 'Un flujo PDF más claro y tranquilo',
+    }
+  }
+
+  return {
+    eyebrow: 'Privacy-first PDF workspace',
+    heroTitle: 'Everyday PDF tools, cloud boosts, and AI in one calmer workspace',
+    heroDescription: 'Small files stay fast locally when possible. Large files, OCR, Office, and AI workflows use the cloud when it adds stability.',
+    start: 'Start processing',
+    pricing: 'View Pro',
+    localLabel: 'Local first',
+    localText: 'Merge, split, and rotate stay in the browser whenever possible.',
+    cloudLabel: 'Cloud boost',
+    cloudText: 'Large files and long jobs are more stable in the cloud.',
+    proLabel: 'Pro features',
+    proText: 'OCR, AI, forms, and annotation are clearly marked.',
+    workspaceLabel: 'PDF Workspace',
+    toolsHint: 'Everyday tools stay fast, while Pro capabilities are clearly marked.',
+    whyTitle: 'A calmer, clearer PDF workflow',
+  }
+})
+
 const featureHighlights = computed(() => [
   {
     title: t('home.highlights.privacy.title'),
@@ -209,31 +269,109 @@ onMounted(() => {
     :data-locale="activeLocale"
   >
     <!-- Hero Section -->
-    <section class="hero py-20">
-      <div class="container mx-auto px-4">
-        <div class="text-center">
-          <h1 class="mb-4 text-5xl font-bold text-gray-900 dark:text-white">
-            {{ homeHeroBlock?.title || t('app.title') }}
+    <section class="relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8">
+      <div class="absolute left-1/2 top-0 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-sky-200/30 blur-3xl dark:bg-sky-500/10" />
+      <div class="absolute right-0 top-10 h-72 w-72 rounded-full bg-amber-200/30 blur-3xl dark:bg-amber-500/10" />
+
+      <div class="relative mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div class="rounded-[42px] border border-white/70 bg-white/86 p-8 shadow-2xl shadow-sky-100/60 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/74 dark:shadow-none sm:p-10">
+          <div class="inline-flex items-center rounded-full border border-sky-200 bg-white/78 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700 shadow-sm backdrop-blur dark:border-sky-400/20 dark:bg-slate-950/50 dark:text-sky-200">
+            {{ homeCopy.eyebrow }}
+          </div>
+          <h1 class="mt-6 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl lg:text-6xl">
+            {{ homeHeroBlock?.title || homeCopy.heroTitle }}
           </h1>
-          <p class="mb-8 text-xl text-gray-600 dark:text-gray-300">
-            {{ homeHeroBlock?.content || t('app.tagline') }}
+          <p class="mt-5 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
+            {{ homeHeroBlock?.content || homeCopy.heroDescription }}
           </p>
-          <div class="flex justify-center gap-4">
-            <span
-              class="inline-flex items-center rounded-lg bg-primary/10 px-4 py-2 text-sm font-medium text-primary"
+
+          <div class="mt-8 flex flex-wrap gap-3">
+            <button
+              class="inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-primary dark:bg-white dark:text-slate-950"
+              type="button"
+              @click="router.push('/tools/merge')"
             >
+              {{ homeCopy.start }}
+            </button>
+            <button
+              class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/70 px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-200 hover:text-sky-700 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200"
+              type="button"
+              @click="router.push('/pricing')"
+            >
+              {{ homeCopy.pricing }}
+            </button>
+          </div>
+
+          <div class="mt-8 flex flex-wrap gap-3">
+            <span class="inline-flex items-center rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
               {{ t('common.privacyBadge') }}
             </span>
-            <span
-              class="inline-flex items-center rounded-lg bg-success/10 px-4 py-2 text-sm font-medium text-success"
-            >
+            <span class="inline-flex items-center rounded-full bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
               {{ t('home.badges.fast') }}
             </span>
-            <span
-              class="inline-flex items-center rounded-lg bg-warning/10 px-4 py-2 text-sm font-medium text-warning"
-            >
+            <span class="inline-flex items-center rounded-full bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
               {{ t('home.badges.languages') }}
             </span>
+          </div>
+        </div>
+
+        <div class="relative rounded-[42px] border border-white/70 bg-white/72 p-4 shadow-2xl shadow-slate-200/70 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 dark:shadow-none">
+          <div class="rounded-[34px] bg-[linear-gradient(135deg,#0f172a_0%,#164e63_48%,#92400e_100%)] p-6 text-white shadow-2xl shadow-slate-900/20">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-white/60">
+                  {{ homeCopy.workspaceLabel }}
+                </p>
+                <h2 class="mt-2 text-2xl font-semibold">
+                  PDF-Flow
+                </h2>
+              </div>
+              <ProBadge tone="dark" />
+            </div>
+
+            <div class="mt-7 grid gap-4">
+              <article class="rounded-[26px] border border-white/10 bg-white/10 p-5 backdrop-blur">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 class="font-semibold">{{ homeCopy.localLabel }}</h3>
+                    <p class="mt-2 text-sm leading-6 text-white/70">{{ homeCopy.localText }}</p>
+                  </div>
+                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-300/15 text-emerald-100">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </span>
+                </div>
+              </article>
+
+              <article class="rounded-[26px] border border-white/10 bg-white/10 p-5 backdrop-blur">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 class="font-semibold">{{ homeCopy.cloudLabel }}</h3>
+                    <p class="mt-2 text-sm leading-6 text-white/70">{{ homeCopy.cloudText }}</p>
+                  </div>
+                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-300/15 text-sky-100">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 10-.8-7.9A6 6 0 105 15" />
+                    </svg>
+                  </span>
+                </div>
+              </article>
+
+              <article class="rounded-[26px] border border-amber-200/20 bg-amber-100/10 p-5 backdrop-blur">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 class="font-semibold">{{ homeCopy.proLabel }}</h3>
+                    <p class="mt-2 text-sm leading-6 text-white/70">{{ homeCopy.proText }}</p>
+                  </div>
+                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-300/15 text-amber-100">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm1 4h12" />
+                    </svg>
+                  </span>
+                </div>
+              </article>
+            </div>
           </div>
         </div>
       </div>
@@ -250,7 +388,7 @@ onMounted(() => {
             {{ t('home.toolsTitle') }}
           </h2>
           <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            {{ locale.startsWith('zh') ? '常用工具保持轻快，专业能力用 Pro 角标清楚区分。' : 'Everyday tools stay fast, while Pro capabilities are clearly marked.' }}
+            {{ homeCopy.toolsHint }}
           </p>
         </div>
 
@@ -340,20 +478,20 @@ onMounted(() => {
     </section>
 
     <!-- Features Section -->
-    <section class="features bg-white py-16 dark:bg-gray-900">
-      <div class="container mx-auto px-4">
-        <h2 class="mb-12 text-center text-3xl font-bold text-gray-900 dark:text-white">
-          {{ t('home.whyTitle') }}
+    <section class="features px-4 pb-20 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-7xl rounded-[42px] border border-white/70 bg-white/80 p-6 shadow-2xl shadow-slate-200/60 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 dark:shadow-none sm:p-8">
+        <h2 class="mb-8 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          {{ homeCopy.whyTitle }}
         </h2>
 
-        <div class="grid gap-8 md:grid-cols-3">
+        <div class="grid gap-5 md:grid-cols-3">
           <div
             v-for="highlight in featureHighlights"
             :key="highlight.title"
-            class="text-center"
+            class="rounded-[28px] border border-slate-200/70 bg-slate-50/80 p-6 text-center shadow-sm dark:border-white/10 dark:bg-slate-950/45"
           >
             <div class="mb-4 flex justify-center">
-              <div :class="['rounded-full p-4', highlight.accent]">
+              <div :class="['rounded-2xl p-4 shadow-sm', highlight.accent]">
                 <svg
                   :class="['h-8 w-8', highlight.textColor]"
                   fill="none"
