@@ -752,3 +752,8 @@ python -m pytest tests/ -q      # 35 通过
 - Backend feedback creation now truncates oversized URL, diagnostic, email, category, severity, diagnostic code, and user-agent fields before storage while still preserving the useful summary; unapproved diagnostic keys remain filtered out.
 - Added regression coverage for 4000-character accepted feedback, 4001-character rejected feedback, long URL truncation, and diagnostic allowlist filtering.
 - Local validation: `npm run type-check`, `npm run build`, `python -m pytest backend/tests/test_admin.py -q`, and `git diff --check` pass. Build still shows the known large PDF vendor chunk warning.
+### 2026-06-11 Feedback Triage Copy And Refresh / 反馈排查复制与统计刷新
+- Added a `复制诊断摘要` action to each `/control-room -> 问题反馈` report. The copied text includes feedback id, status, category, severity, title, page URL, diagnostic code, contact, submitted time, user description, formatted diagnostics, browser user agent, and admin note when present.
+- Feedback diagnostics in the admin detail view now render as formatted JSON when possible, making screenshots and copied context easier to read.
+- Saving a feedback status now refreshes admin overview, diagnostics, API error summaries, and audit logs together, so `待处理反馈` counts in the header and `错误观察` stay current after closing or resolving reports.
+- Local validation: `npm run type-check`, `npm run build`, and `git diff --check` pass. Build still shows the known large PDF vendor chunk warning.

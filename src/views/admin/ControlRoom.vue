@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   CircleDot,
+  ClipboardCopy,
   ClipboardList,
   EyeOff,
   FileText,
@@ -61,6 +62,7 @@ const jobStatusFilter = ref('')
 const jobSearch = ref('')
 const feedbackStatusFilter = ref('')
 const highlightedFeedbackId = ref<number | null>(null)
+const copiedFeedbackId = ref<number | null>(null)
 
 const tabs = [
   { id: 'overview' as const, label: '运营总览', icon: GaugeCircle },
@@ -113,6 +115,62 @@ const setMessage = (message: string) => {
       success.value = ''
     }
   }, 2200)
+}
+
+const parseDiagnostics = (value: string | null) => {
+  if (!value) return ''
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2)
+  } catch {
+    return value
+  }
+}
+
+const buildFeedbackSummary = (report: AdminFeedback) => {
+  const lines = [
+    `PDF-Flow 反馈 #${report.id}`,
+    `状态：${report.status}`,
+    `类型：${report.category}`,
+    `影响程度：${report.severity}`,
+    `标题：${report.title}`,
+    `页面：${report.page_url || '未记录'}`,
+    `诊断码：${report.diagnostic_code || '未记录'}`,
+    `联系：${report.email || '未提供'}`,
+    `提交时间：${formatDate(report.created_at)}`,
+    '',
+    '用户描述：',
+    report.message,
+  ]
+
+  const diagnostics = parseDiagnostics(report.diagnostics)
+  if (diagnostics) {
+    lines.push('', '诊断信息：', diagnostics)
+  }
+
+  if (report.user_agent) {
+    lines.push('', `浏览器：${report.user_agent}`)
+  }
+
+  if (report.admin_note) {
+    lines.push('', '管理员备注：', report.admin_note)
+  }
+
+  return lines.join('\n')
+}
+
+const copyFeedbackSummary = async (report: AdminFeedback) => {
+  try {
+    await navigator.clipboard?.writeText(buildFeedbackSummary(report))
+    copiedFeedbackId.value = report.id
+    setMessage(`已复制反馈 #${report.id} 摘要`)
+    window.setTimeout(() => {
+      if (copiedFeedbackId.value === report.id) {
+        copiedFeedbackId.value = null
+      }
+    }, 1800)
+  } catch {
+    error.value = '复制失败，请手动选中反馈内容复制。'
+  }
 }
 
 const serviceTone = (status?: string) => {
@@ -360,8 +418,15 @@ const saveFeedback = async (report: AdminFeedback) => {
     })
     const index = feedbackReports.value.findIndex((item) => item.id === updated.id)
     if (index >= 0) feedbackReports.value[index] = updated
-    auditLogs.value = await adminAPI.listAuditLogs()
-    overview.value = await adminAPI.getOverview()
+    const [overviewData, diagnosticsData, auditData] = await Promise.all([
+      adminAPI.getOverview(),
+      adminAPI.getDiagnostics(),
+      adminAPI.listAuditLogs(),
+    ])
+    overview.value = overviewData
+    diagnostics.value = diagnosticsData
+    apiErrors.value = diagnosticsData.recent_errors
+    auditLogs.value = auditData
     setMessage(`已更新反馈 #${updated.id}`)
   } catch {
     error.value = '反馈状态保存失败，请稍后重试。'
@@ -1049,7 +1114,7 @@ onMounted(loadAdminData)
                       <p v-if="report.diagnostic_code">诊断码：{{ report.diagnostic_code }}</p>
                       <p v-if="report.user_agent" class="break-all">浏览器：{{ report.user_agent }}</p>
                       <div v-if="report.diagnostics" class="max-h-36 overflow-y-auto rounded-2xl border border-white/5 bg-black/20 p-3">
-                        <p class="break-all">诊断信息：{{ report.diagnostics }}</p>
+                        <pre class="whitespace-pre-wrap break-words font-mono text-[11px] leading-5 text-slate-400">{{ parseDiagnostics(report.diagnostics) }}</pre>
                       </div>
                     </div>
                   </div>
@@ -1070,6 +1135,14 @@ onMounted(loadAdminData)
                       placeholder="内部备注，例如：已复现 / 等截图 / 已修复待上线"
                       class="w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-2 text-sm leading-6 text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
                     />
+                    <button
+                      type="button"
+                      class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                      @click="copyFeedbackSummary(report)"
+                    >
+                      <ClipboardCopy class="h-4 w-4" />
+                      {{ copiedFeedbackId === report.id ? '已复制摘要' : '复制诊断摘要' }}
+                    </button>
                     <button
                       type="button"
                       class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
