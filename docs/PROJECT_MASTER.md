@@ -785,3 +785,10 @@ python -m pytest tests/ -q      # 35 通过
 - Added `/control-room -> 问题反馈` action `关闭验收反馈` for manually cleaning accumulated acceptance probes from the admin console.
 - Local validation target: `python -m pytest backend/tests/test_admin.py -q`, `bash -n scripts/live-acceptance-test.sh`, `npm run type-check`, `npm run build`, and `git diff --check`. Build may still show the known large PDF vendor chunk warning.
 - Server validation after deploy: run the live acceptance script with admin credentials, or click `/control-room -> 问题反馈 -> 关闭验收反馈`, then copy the health report and confirm `待处理反馈` no longer includes synthetic acceptance probes.
+### 2026-06-11 Admin Manual Cleanup Panel / 后台手动维护清理
+- Added admin-only `GET /api/v1/admin/maintenance` to summarize safe cleanup counts for test users, live-acceptance feedback, open feedback, API errors, failed jobs, and running jobs.
+- Added admin-only `POST /api/v1/admin/users/cleanup-test-users` so routine smoke/OCR/Office/example test accounts can be cleaned from `/control-room` without SSH access.
+- Test-account cleanup is intentionally conservative: it excludes the current admin, excludes all admin-role users, excludes accounts referenced by admin audit logs, deletes related processing jobs/webhooks, and only detaches feedback/API-error user references so diagnostic records are not lost.
+- Added `/control-room -> 维护清理` with refresh, close live-acceptance feedback, and delete test-account actions. The panel explains which records are safe to clean and which records are retained for troubleshooting.
+- Added regression coverage confirming test-account cleanup removes only synthetic accounts, keeps admin/real accounts, and preserves feedback reports by detaching the deleted user id.
+- Server validation after deploy: open `/control-room -> 维护清理`, click `刷新维护数据`, close acceptance feedback if any, then delete test accounts if the count is non-zero. Copy the health report afterward and confirm user/feedback counts changed as expected.

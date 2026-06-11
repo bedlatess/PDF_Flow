@@ -187,6 +187,21 @@ class AdminFeedbackCleanupResponse(BaseModel):
     remaining_open_count: int
 
 
+class AdminMaintenanceResponse(BaseModel):
+    test_users_count: int
+    live_acceptance_feedback_count: int
+    open_feedback_count: int
+    api_error_count: int
+    failed_jobs_count: int
+    running_jobs_count: int
+
+
+class AdminCleanupTestUsersResponse(BaseModel):
+    deleted_count: int
+    deleted_emails: list[str]
+    remaining_test_users_count: int
+
+
 class AdminHealthReportResponse(BaseModel):
     generated_at: datetime
     app_version: str

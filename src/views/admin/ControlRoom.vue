@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import {
   Activity,
@@ -29,6 +29,7 @@ import {
   type AdminFeedback,
   type AdminHealthReport,
   type AdminJob,
+  type AdminMaintenance,
   type AdminOperations,
   type AdminOverview,
   type AdminUser,
@@ -38,7 +39,7 @@ import {
 } from '@/services/api'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 
-type TabId = 'overview' | 'flags' | 'settings' | 'content' | 'users' | 'jobs' | 'feedback' | 'errors' | 'audit'
+type TabId = 'overview' | 'flags' | 'settings' | 'content' | 'users' | 'jobs' | 'feedback' | 'errors' | 'maintenance' | 'audit'
 
 const siteConfigStore = useSiteConfigStore()
 const loading = ref(true)
@@ -59,6 +60,7 @@ const feedbackReports = ref<AdminFeedback[]>([])
 const apiErrors = ref<AdminApiError[]>([])
 const diagnostics = ref<AdminDiagnostics | null>(null)
 const healthReport = ref<AdminHealthReport | null>(null)
+const maintenance = ref<AdminMaintenance | null>(null)
 const userSearch = ref('')
 const jobStatusFilter = ref('')
 const jobSearch = ref('')
@@ -76,6 +78,7 @@ const tabs = [
   { id: 'jobs' as const, label: '任务观察', icon: GaugeCircle },
   { id: 'feedback' as const, label: '问题反馈', icon: ClipboardList },
   { id: 'errors' as const, label: '错误观察', icon: Flame },
+  { id: 'maintenance' as const, label: '维护清理', icon: Trash2 },
   { id: 'audit' as const, label: '审计日志', icon: Activity },
 ]
 
@@ -96,15 +99,17 @@ const filteredJobs = computed(() => {
 })
 
 const refreshAdminMeta = async () => {
-  const [overviewData, operationsData, healthReportData, auditData] = await Promise.all([
+  const [overviewData, operationsData, healthReportData, maintenanceData, auditData] = await Promise.all([
     adminAPI.getOverview(),
     adminAPI.getOperations(),
     adminAPI.getHealthReport(),
+    adminAPI.getMaintenance(),
     adminAPI.listAuditLogs(),
   ])
   overview.value = overviewData
   operations.value = operationsData
   healthReport.value = healthReportData
+  maintenance.value = maintenanceData
   auditLogs.value = auditData
 }
 
@@ -250,7 +255,7 @@ const loadAdminData = async () => {
   error.value = ''
 
   try {
-    const [overviewData, operationsData, settingsData, flagsData, contentData, usersData, jobsData, feedbackData, diagnosticsData, healthReportData, auditData] = await Promise.all([
+    const [overviewData, operationsData, settingsData, flagsData, contentData, usersData, jobsData, feedbackData, diagnosticsData, healthReportData, maintenanceData, auditData] = await Promise.all([
       adminAPI.getOverview(),
       adminAPI.getOperations(),
       adminAPI.listSettings(),
@@ -261,6 +266,7 @@ const loadAdminData = async () => {
       adminAPI.listFeedback(),
       adminAPI.getDiagnostics(),
       adminAPI.getHealthReport(),
+      adminAPI.getMaintenance(),
       adminAPI.listAuditLogs(),
     ])
 
@@ -274,6 +280,7 @@ const loadAdminData = async () => {
     feedbackReports.value = feedbackData
     diagnostics.value = diagnosticsData
     healthReport.value = healthReportData
+    maintenance.value = maintenanceData
     apiErrors.value = diagnosticsData.recent_errors
     auditLogs.value = auditData
     selectedContent.value = contentData[0] ?? null
@@ -508,13 +515,14 @@ const cleanupLiveAcceptanceFeedback = async () => {
 
   try {
     const result = await adminAPI.cleanupLiveAcceptanceFeedback()
-    const [feedbackData, overviewData, diagnosticsData, healthReportData, auditData] = await Promise.all([
+    const [feedbackData, overviewData, diagnosticsData, healthReportData, maintenanceData, auditData] = await Promise.all([
       adminAPI.listFeedback({
         status_filter: feedbackStatusFilter.value || undefined,
       }),
       adminAPI.getOverview(),
       adminAPI.getDiagnostics(),
       adminAPI.getHealthReport(),
+      adminAPI.getMaintenance(),
       adminAPI.listAuditLogs(),
     ])
     feedbackReports.value = feedbackData
@@ -522,10 +530,63 @@ const cleanupLiveAcceptanceFeedback = async () => {
     diagnostics.value = diagnosticsData
     apiErrors.value = diagnosticsData.recent_errors
     healthReport.value = healthReportData
+    maintenance.value = maintenanceData
     auditLogs.value = auditData
     setMessage(`已关闭 ${result.closed_count} 条验收反馈，剩余待处理 ${result.remaining_open_count} 条`)
   } catch {
     error.value = '验收反馈清理失败，请稍后重试。'
+  } finally {
+    savingKey.value = null
+  }
+}
+
+const refreshMaintenance = async () => {
+  savingKey.value = 'maintenance:refresh'
+  error.value = ''
+
+  try {
+    await refreshAdminMeta()
+    diagnostics.value = await adminAPI.getDiagnostics()
+    apiErrors.value = diagnostics.value.recent_errors
+    setMessage('维护清理数据已刷新')
+  } catch {
+    error.value = '维护清理数据加载失败，请稍后重试。'
+  } finally {
+    savingKey.value = null
+  }
+}
+
+const cleanupTestUsers = async () => {
+  const count = maintenance.value?.test_users_count ?? 0
+  const confirmed = window.confirm(`确认删除 ${count} 个测试账号？只会删除 smoke-、ocr-、office- 和 @example.com 测试账号，不会删除管理员或真实用户。`)
+  if (!confirmed) return
+
+  savingKey.value = 'maintenance:cleanup-users'
+  error.value = ''
+
+  try {
+    const result = await adminAPI.cleanupTestUsers()
+    const [usersData, jobsData, feedbackData, diagnosticsData] = await Promise.all([
+      adminAPI.listUsers({
+        search: userSearch.value.trim() || undefined,
+      }),
+      adminAPI.listJobs({
+        status_filter: jobStatusFilter.value || undefined,
+      }),
+      adminAPI.listFeedback({
+        status_filter: feedbackStatusFilter.value || undefined,
+      }),
+      adminAPI.getDiagnostics(),
+    ])
+    users.value = usersData
+    jobs.value = jobsData
+    feedbackReports.value = feedbackData
+    diagnostics.value = diagnosticsData
+    apiErrors.value = diagnosticsData.recent_errors
+    await refreshAdminMeta()
+    setMessage(`已删除 ${result.deleted_count} 个测试账号，剩余 ${result.remaining_test_users_count} 个`)
+  } catch (err: any) {
+    error.value = err?.response?.data?.detail || '测试账号清理失败，请稍后重试。'
   } finally {
     savingKey.value = null
   }
@@ -1429,6 +1490,105 @@ onMounted(loadAdminData)
                   </div>
                 </article>
               </div>
+            </section>
+          </div>
+
+          <div v-else-if="activeTab === 'maintenance'" class="space-y-5">
+            <section class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p class="text-xl font-semibold">维护清理</p>
+                  <p class="mt-2 text-sm leading-6 text-slate-400">
+                    把常见上线测试收尾动作放在后台完成，减少登录服务器执行命令的次数。批量动作只处理明确的测试数据，并会写入审计日志。
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="savingKey === 'maintenance:refresh'"
+                  @click="refreshMaintenance"
+                >
+                  <Loader2 v-if="savingKey === 'maintenance:refresh'" class="h-4 w-4 animate-spin" />
+                  刷新维护数据
+                </button>
+              </div>
+
+              <div class="mt-5 grid gap-4 md:grid-cols-3">
+                <div class="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-4">
+                  <p class="text-sm text-amber-100/70">测试账号</p>
+                  <p class="mt-2 text-3xl font-semibold text-amber-50">{{ maintenance?.test_users_count ?? operations?.test_users ?? 0 }}</p>
+                  <p class="mt-2 text-xs text-amber-100/60">smoke / ocr / office / @example.com</p>
+                </div>
+                <div class="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+                  <p class="text-sm text-cyan-100/70">验收反馈</p>
+                  <p class="mt-2 text-3xl font-semibold text-cyan-50">{{ maintenance?.live_acceptance_feedback_count ?? 0 }}</p>
+                  <p class="mt-2 text-xs text-cyan-100/60">标题以 live acceptance 开头</p>
+                </div>
+                <div class="rounded-3xl border border-rose-300/20 bg-rose-500/10 p-4">
+                  <p class="text-sm text-rose-100/70">需要关注</p>
+                  <p class="mt-2 text-3xl font-semibold text-rose-50">{{ maintenance?.failed_jobs_count ?? diagnostics?.failed_jobs_count ?? 0 }}</p>
+                  <p class="mt-2 text-xs text-rose-100/60">失败任务暂不自动删除，保留排查线索</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="grid gap-5 xl:grid-cols-2">
+              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <p class="text-lg font-semibold">关闭验收反馈</p>
+                    <p class="mt-2 text-sm leading-6 text-slate-400">
+                      将上线验收脚本生成的 `live acceptance...` 反馈标记为 closed，不删除真实用户留言。
+                    </p>
+                  </div>
+                  <ClipboardList class="h-5 w-5 text-cyan-200" />
+                </div>
+                <div class="mt-5 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+                  <p class="text-sm text-cyan-100/70">当前可关闭</p>
+                  <p class="mt-2 text-3xl font-semibold text-cyan-50">{{ maintenance?.live_acceptance_feedback_count ?? 0 }}</p>
+                </div>
+                <button
+                  type="button"
+                  class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="savingKey === 'feedback:cleanup-live' || (maintenance?.live_acceptance_feedback_count ?? 0) === 0"
+                  @click="cleanupLiveAcceptanceFeedback"
+                >
+                  <Loader2 v-if="savingKey === 'feedback:cleanup-live'" class="h-4 w-4 animate-spin" />
+                  关闭验收反馈
+                </button>
+              </article>
+
+              <article class="rounded-[28px] border border-rose-300/20 bg-rose-500/10 p-5 backdrop-blur-xl">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <p class="text-lg font-semibold">删除测试账号</p>
+                    <p class="mt-2 text-sm leading-6 text-rose-100/75">
+                      删除 smoke-、ocr-、office- 和 @example.com 测试账号；管理员和真实邮箱账号不会被批量删除。
+                    </p>
+                  </div>
+                  <Trash2 class="h-5 w-5 text-rose-100" />
+                </div>
+                <div class="mt-5 rounded-3xl border border-rose-300/20 bg-black/20 p-4">
+                  <p class="text-sm text-rose-100/70">当前可删除</p>
+                  <p class="mt-2 text-3xl font-semibold text-rose-50">{{ maintenance?.test_users_count ?? operations?.test_users ?? 0 }}</p>
+                </div>
+                <button
+                  type="button"
+                  class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-200 px-4 py-3 text-sm font-semibold text-rose-950 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="savingKey === 'maintenance:cleanup-users' || (maintenance?.test_users_count ?? operations?.test_users ?? 0) === 0"
+                  @click="cleanupTestUsers"
+                >
+                  <Loader2 v-if="savingKey === 'maintenance:cleanup-users'" class="h-4 w-4 animate-spin" />
+                  删除测试账号
+                </button>
+              </article>
+            </section>
+
+            <section class="rounded-[28px] border border-white/10 bg-black/20 p-5 text-sm leading-7 text-slate-300">
+              <p class="font-semibold text-white">暂不自动清理的内容</p>
+              <p class="mt-2">
+                API 错误、失败任务和真实用户反馈会保留，用于后续排查。等线上稳定后，可以再补“按时间归档/清理旧日志”的独立策略。
+              </p>
             </section>
           </div>
 

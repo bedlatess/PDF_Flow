@@ -583,6 +583,21 @@ export interface AdminFeedbackCleanup {
   remaining_open_count: number
 }
 
+export interface AdminMaintenance {
+  test_users_count: number
+  live_acceptance_feedback_count: number
+  open_feedback_count: number
+  api_error_count: number
+  failed_jobs_count: number
+  running_jobs_count: number
+}
+
+export interface AdminCleanupTestUsers {
+  deleted_count: number
+  deleted_emails: string[]
+  remaining_test_users_count: number
+}
+
 export const adminAPI = {
   async getOverview(): Promise<AdminOverview> {
     const response = await apiClient.get<AdminOverview>('/api/v1/admin/overview')
@@ -645,6 +660,11 @@ export const adminAPI = {
     await apiClient.delete(`/api/v1/admin/users/${userId}`)
   },
 
+  async cleanupTestUsers(): Promise<AdminCleanupTestUsers> {
+    const response = await apiClient.post<AdminCleanupTestUsers>('/api/v1/admin/users/cleanup-test-users')
+    return response.data
+  },
+
   async listJobs(params?: { status_filter?: string; limit?: number }): Promise<AdminJob[]> {
     const response = await apiClient.get<AdminJob[]>('/api/v1/admin/jobs', { params })
     return response.data
@@ -657,6 +677,11 @@ export const adminAPI = {
 
   async getDiagnostics(): Promise<AdminDiagnostics> {
     const response = await apiClient.get<AdminDiagnostics>('/api/v1/admin/diagnostics')
+    return response.data
+  },
+
+  async getMaintenance(): Promise<AdminMaintenance> {
+    const response = await apiClient.get<AdminMaintenance>('/api/v1/admin/maintenance')
     return response.data
   },
 

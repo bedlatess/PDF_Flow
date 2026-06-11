@@ -241,6 +241,52 @@ def test_admin_can_delete_non_current_user(client):
     assert all(user["email"] != "remove-me@example.com" for user in remaining.json())
 
 
+def test_admin_can_cleanup_test_users_without_touching_real_accounts(client):
+    from app.core.database import get_db
+    from app.models.user import FeedbackReport, User
+
+    _register(client)
+    _promote_to_admin(client)
+    _register(client, email="smoke-clean@example.com")
+    real_register = _register(client, email="real-user@pdf-flow.com")
+    assert real_register.status_code in (200, 201)
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    db = next(client.app.dependency_overrides[get_db]())
+    try:
+        test_user = db.query(User).filter(User.email == "smoke-clean@example.com").first()
+        db.add(FeedbackReport(
+            user_id=test_user.id,
+            title="test owned feedback",
+            message="keep the report but detach user",
+        ))
+        db.commit()
+    finally:
+        db.close()
+
+    summary = client.get("/api/v1/admin/maintenance", headers=headers)
+    cleaned = client.post("/api/v1/admin/users/cleanup-test-users", headers=headers)
+    remaining = client.get("/api/v1/admin/users", headers=headers)
+
+    assert summary.status_code == 200
+    assert summary.json()["test_users_count"] == 1
+    assert cleaned.status_code == 200
+    assert cleaned.json()["deleted_count"] == 1
+    emails = [user["email"] for user in remaining.json()]
+    assert "smoke-clean@example.com" not in emails
+    assert "admin@example.com" in emails
+    assert "real-user@pdf-flow.com" in emails
+
+    db = next(client.app.dependency_overrides[get_db]())
+    try:
+        report = db.query(FeedbackReport).filter(FeedbackReport.title == "test owned feedback").first()
+        assert report is not None
+        assert report.user_id is None
+    finally:
+        db.close()
+
+
 def test_admin_cannot_delete_self(client):
     _register(client)
     _promote_to_admin(client)

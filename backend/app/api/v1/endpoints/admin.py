@@ -19,6 +19,7 @@ from app.models.user import (
     SiteSetting,
     User,
     UserRole,
+    Webhook,
 )
 from app.services.feature_gate import DEFAULT_FEATURE_FLAGS
 from app.services.file_service import file_processing_service
@@ -26,10 +27,12 @@ from app.celery_worker import celery_app
 from app.schemas.admin import (
     AdminAuditLogResponse,
     AdminApiErrorResponse,
+    AdminCleanupTestUsersResponse,
     AdminDiagnosticsResponse,
     AdminFeedbackCleanupResponse,
     AdminHealthReportResponse,
     AdminJobResponse,
+    AdminMaintenanceResponse,
     AdminOperationsResponse,
     AdminOverviewResponse,
     AdminUserResponse,
@@ -159,6 +162,20 @@ def _is_test_account(user: User) -> bool:
         or email.startswith("ocr-")
         or email.startswith("office-")
         or email.endswith("@example.com")
+    )
+
+
+def _test_user_query(db: Session, admin: User | None = None):
+    query = db.query(User).filter(User.role != UserRole.ADMIN)
+    if admin is not None:
+        query = query.filter(User.id != admin.id)
+    audited_admin_ids = db.query(AdminAuditLog.admin_user_id)
+    query = query.filter(~User.id.in_(audited_admin_ids))
+    return query.filter(
+        (User.email.ilike("smoke-%"))
+        | (User.email.ilike("ocr-%"))
+        | (User.email.ilike("office-%"))
+        | (User.email.ilike("%@example.com"))
     )
 
 
@@ -739,6 +756,54 @@ async def delete_user(
     return None
 
 
+@router.post("/users/cleanup-test-users", response_model=AdminCleanupTestUsersResponse)
+async def cleanup_test_users(
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete synthetic test accounts while preserving admin and real user accounts."""
+    users = _test_user_query(db, admin).all()
+    user_ids = [user.id for user in users]
+    deleted_emails = [user.email for user in users]
+
+    if user_ids:
+        db.query(FeedbackReport).filter(FeedbackReport.user_id.in_(user_ids)).update(
+            {FeedbackReport.user_id: None},
+            synchronize_session=False,
+        )
+        db.query(ApiErrorLog).filter(ApiErrorLog.user_id.in_(user_ids)).update(
+            {ApiErrorLog.user_id: None},
+            synchronize_session=False,
+        )
+        db.query(ProcessingJob).filter(ProcessingJob.user_id.in_(user_ids)).delete(
+            synchronize_session=False
+        )
+        db.query(Webhook).filter(Webhook.user_id.in_(user_ids)).delete(
+            synchronize_session=False
+        )
+
+        for user in users:
+            db.delete(user)
+
+    _write_audit(
+        db,
+        request,
+        admin,
+        "cleanup",
+        "user",
+        "test_accounts",
+        detail=f"deleted={len(users)}",
+    )
+    db.commit()
+
+    return {
+        "deleted_count": len(users),
+        "deleted_emails": deleted_emails,
+        "remaining_test_users_count": _test_user_query(db, admin).count(),
+    }
+
+
 @router.get("/jobs", response_model=list[AdminJobResponse])
 async def list_jobs(
     status_filter: str | None = None,
@@ -822,6 +887,28 @@ async def get_diagnostics(
         "open_feedback_count": db.query(FeedbackReport).filter(FeedbackReport.status.in_(["new", "reviewing"])).count(),
         "failed_jobs_count": len([job for job in jobs if job["status"] == "failed"]),
         "api_error_count": db.query(ApiErrorLog).count(),
+    }
+
+
+@router.get("/maintenance", response_model=AdminMaintenanceResponse)
+async def get_maintenance_summary(
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Return safe cleanup counts for hidden admin maintenance actions."""
+    jobs = _list_all_jobs_for_admin(db, limit=50)
+    return {
+        "test_users_count": _test_user_query(db, admin).count(),
+        "live_acceptance_feedback_count": db.query(FeedbackReport).filter(
+            FeedbackReport.status.in_(["new", "reviewing"]),
+            FeedbackReport.title.ilike("live acceptance%"),
+        ).count(),
+        "open_feedback_count": db.query(FeedbackReport).filter(
+            FeedbackReport.status.in_(["new", "reviewing"])
+        ).count(),
+        "api_error_count": db.query(ApiErrorLog).count(),
+        "failed_jobs_count": len([job for job in jobs if job["status"] == "failed"]),
+        "running_jobs_count": len([job for job in jobs if job["status"] in ("pending", "processing")]),
     }
 
 
