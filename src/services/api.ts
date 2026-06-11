@@ -445,9 +445,9 @@ export interface AdminUserUpdate {
 }
 
 export interface AdminJob {
-  id: number
+  id: number | null
   job_id: string
-  user_id: number
+  user_id: number | null
   user_email: string | null
   job_type: string
   status: string
@@ -460,9 +460,35 @@ export interface AdminJob {
   completed_at: string | null
 }
 
+export interface AdminServiceStatus {
+  status: string
+  detail: string | null
+}
+
+export interface AdminOperations {
+  generated_at: string
+  services: Record<string, AdminServiceStatus>
+  total_users: number
+  active_users: number
+  banned_users: number
+  test_users: number
+  total_jobs: number
+  visible_jobs: number
+  failed_jobs: number
+  running_jobs: number
+  recent_users: AdminUser[]
+  recent_failed_jobs: AdminJob[]
+  recent_jobs: AdminJob[]
+}
+
 export const adminAPI = {
   async getOverview(): Promise<AdminOverview> {
     const response = await apiClient.get<AdminOverview>('/api/v1/admin/overview')
+    return response.data
+  },
+
+  async getOperations(): Promise<AdminOperations> {
+    const response = await apiClient.get<AdminOperations>('/api/v1/admin/operations')
     return response.data
   },
 

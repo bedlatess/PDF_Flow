@@ -317,3 +317,35 @@ def test_admin_can_list_redis_jobs(client):
     assert redis_job["job_type"] == "merge_pdf"
     assert redis_job["status"] == "completed"
     assert redis_job["input_file_size"] == 2048
+
+
+def test_admin_operations_overview_returns_health_and_recent_activity(client):
+    from app.services.file_service import file_processing_service
+
+    _register(client)
+    _promote_to_admin(client)
+    _register(client, email="smoke-ops@example.com")
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    file_processing_service._save_job_status("job_ops_failed", {
+        "job_id": "job_ops_failed",
+        "status": "failed",
+        "progress": 40,
+        "message": "OCR job queued",
+        "created_at": 1780998443.0,
+        "updated_at": 1780998444.0,
+        "error": "sample ops failure",
+    })
+
+    response = client.get("/api/v1/admin/operations", headers=headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["services"]["database"]["status"] == "healthy"
+    assert body["services"]["redis"]["status"] == "healthy"
+    assert body["total_users"] == 2
+    assert body["test_users"] == 2
+    assert body["visible_jobs"] >= 1
+    assert body["failed_jobs"] >= 1
+    assert body["recent_failed_jobs"][0]["job_id"] == "job_ops_failed"

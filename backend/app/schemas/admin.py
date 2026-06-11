@@ -117,6 +117,27 @@ class AdminJobResponse(BaseModel):
     completed_at: Optional[datetime]
 
 
+class AdminServiceStatus(BaseModel):
+    status: str
+    detail: Optional[str] = None
+
+
+class AdminOperationsResponse(BaseModel):
+    generated_at: datetime
+    services: dict[str, AdminServiceStatus]
+    total_users: int
+    active_users: int
+    banned_users: int
+    test_users: int
+    total_jobs: int
+    visible_jobs: int
+    failed_jobs: int
+    running_jobs: int
+    recent_users: list[AdminUserResponse]
+    recent_failed_jobs: list[AdminJobResponse]
+    recent_jobs: list[AdminJobResponse]
+
+
 class AdminOverviewResponse(BaseModel):
     settings_count: int
     feature_flags_count: int

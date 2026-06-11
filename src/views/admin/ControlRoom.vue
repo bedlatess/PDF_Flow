@@ -4,6 +4,7 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle2,
+  CircleDot,
   EyeOff,
   FileText,
   Flag,
@@ -21,6 +22,7 @@ import {
   adminAPI,
   type AdminAuditLog,
   type AdminJob,
+  type AdminOperations,
   type AdminOverview,
   type AdminUser,
   type ContentBlock,
@@ -29,16 +31,17 @@ import {
 } from '@/services/api'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 
-type TabId = 'flags' | 'settings' | 'content' | 'users' | 'jobs' | 'audit'
+type TabId = 'overview' | 'flags' | 'settings' | 'content' | 'users' | 'jobs' | 'audit'
 
 const siteConfigStore = useSiteConfigStore()
 const loading = ref(true)
 const savingKey = ref<string | null>(null)
-const activeTab = ref<TabId>('flags')
+const activeTab = ref<TabId>('overview')
 const error = ref('')
 const success = ref('')
 
 const overview = ref<AdminOverview | null>(null)
+const operations = ref<AdminOperations | null>(null)
 const settings = ref<SiteSetting[]>([])
 const flags = ref<FeatureFlag[]>([])
 const contentBlocks = ref<ContentBlock[]>([])
@@ -47,8 +50,10 @@ const users = ref<AdminUser[]>([])
 const jobs = ref<AdminJob[]>([])
 const userSearch = ref('')
 const jobStatusFilter = ref('')
+const jobSearch = ref('')
 
 const tabs = [
+  { id: 'overview' as const, label: '运营总览', icon: GaugeCircle },
   { id: 'flags' as const, label: '功能开关', icon: Flag },
   { id: 'settings' as const, label: '站点配置', icon: Settings2 },
   { id: 'content' as const, label: '内容块', icon: FileText },
@@ -60,13 +65,27 @@ const tabs = [
 const enabledFlagCount = computed(() => flags.value.filter((flag) => flag.enabled).length)
 const lockedFlagCount = computed(() => flags.value.filter((flag) => flag.requires_login || flag.requires_pro).length)
 const selectedContent = ref<ContentBlock | null>(null)
+const filteredJobs = computed(() => {
+  const keyword = jobSearch.value.trim().toLowerCase()
+  if (!keyword) return jobs.value
+  return jobs.value.filter((job) => [
+    job.job_id,
+    job.job_type,
+    job.status,
+    job.user_email || '',
+    job.input_file_name,
+    job.error_message || '',
+  ].some((value) => value.toLowerCase().includes(keyword)))
+})
 
 const refreshAdminMeta = async () => {
-  const [overviewData, auditData] = await Promise.all([
+  const [overviewData, operationsData, auditData] = await Promise.all([
     adminAPI.getOverview(),
+    adminAPI.getOperations(),
     adminAPI.listAuditLogs(),
   ])
   overview.value = overviewData
+  operations.value = operationsData
   auditLogs.value = auditData
 }
 
@@ -84,13 +103,21 @@ const setMessage = (message: string) => {
   }, 2200)
 }
 
+const serviceTone = (status?: string) => {
+  if (status === 'healthy') return 'border-emerald-300/20 bg-emerald-300/10 text-emerald-100'
+  if (status === 'unhealthy') return 'border-rose-300/20 bg-rose-500/10 text-rose-100'
+  if (status === 'degraded') return 'border-amber-300/20 bg-amber-300/10 text-amber-100'
+  return 'border-slate-300/20 bg-white/10 text-slate-200'
+}
+
 const loadAdminData = async () => {
   loading.value = true
   error.value = ''
 
   try {
-    const [overviewData, settingsData, flagsData, contentData, usersData, jobsData, auditData] = await Promise.all([
+    const [overviewData, operationsData, settingsData, flagsData, contentData, usersData, jobsData, auditData] = await Promise.all([
       adminAPI.getOverview(),
+      adminAPI.getOperations(),
       adminAPI.listSettings(),
       adminAPI.listFeatureFlags(),
       adminAPI.listContentBlocks(),
@@ -100,6 +127,7 @@ const loadAdminData = async () => {
     ])
 
     overview.value = overviewData
+    operations.value = operationsData
     settings.value = settingsData
     flags.value = flagsData
     contentBlocks.value = contentData
@@ -280,6 +308,7 @@ const loadJobs = async () => {
     jobs.value = await adminAPI.listJobs({
       status_filter: jobStatusFilter.value || undefined,
     })
+    operations.value = await adminAPI.getOperations()
   } catch {
     error.value = '任务列表加载失败，请稍后重试。'
   } finally {
@@ -380,7 +409,142 @@ onMounted(loadAdminData)
         </aside>
 
         <div class="min-w-0">
-          <div v-if="activeTab === 'flags'" class="grid gap-4 xl:grid-cols-2">
+          <div v-if="activeTab === 'overview'" class="space-y-5">
+            <section class="grid gap-4 xl:grid-cols-4">
+              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                <p class="text-sm text-slate-400">全部用户</p>
+                <p class="mt-3 text-3xl font-semibold">{{ operations?.total_users ?? overview?.users_count ?? 0 }}</p>
+                <p class="mt-2 text-xs text-slate-500">测试账号 {{ operations?.test_users ?? 0 }} 个</p>
+              </article>
+              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                <p class="text-sm text-slate-400">可登录用户</p>
+                <p class="mt-3 text-3xl font-semibold">{{ operations?.active_users ?? overview?.active_users_count ?? 0 }}</p>
+                <p class="mt-2 text-xs text-slate-500">封禁 {{ operations?.banned_users ?? 0 }} 个</p>
+              </article>
+              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                <p class="text-sm text-slate-400">近期可见任务</p>
+                <p class="mt-3 text-3xl font-semibold">{{ operations?.visible_jobs ?? jobs.length }}</p>
+                <p class="mt-2 text-xs text-slate-500">处理中 {{ operations?.running_jobs ?? 0 }} 个</p>
+              </article>
+              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                <p class="text-sm text-slate-400">失败任务</p>
+                <p class="mt-3 text-3xl font-semibold text-rose-100">{{ operations?.failed_jobs ?? overview?.failed_jobs_count ?? 0 }}</p>
+                <p class="mt-2 text-xs text-slate-500">优先排查最近错误</p>
+              </article>
+            </section>
+
+            <section class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-lg font-semibold">服务状态</p>
+                    <p class="mt-1 text-sm text-slate-400">数据库、Redis 和任务队列线索。</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="rounded-2xl bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+                    @click="loadAdminData"
+                  >
+                    刷新
+                  </button>
+                </div>
+                <div class="space-y-3">
+                  <div
+                    v-for="(service, name) in operations?.services"
+                    :key="name"
+                    class="rounded-2xl border p-4"
+                    :class="serviceTone(service.status)"
+                  >
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="flex items-center gap-2">
+                        <CircleDot class="h-4 w-4" />
+                        <span class="font-semibold">{{ name }}</span>
+                      </div>
+                      <span class="text-xs uppercase tracking-[0.18em]">{{ service.status }}</span>
+                    </div>
+                    <p class="mt-2 text-sm opacity-80">{{ service.detail }}</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                <div class="mb-4 flex items-center justify-between">
+                  <div>
+                    <p class="text-lg font-semibold">最近失败任务</p>
+                    <p class="mt-1 text-sm text-slate-400">这里有内容时，优先看错误摘要和 job_id。</p>
+                  </div>
+                </div>
+                <div class="space-y-3">
+                  <div
+                    v-for="job in operations?.recent_failed_jobs"
+                    :key="job.job_id"
+                    class="rounded-2xl border border-rose-300/20 bg-rose-500/10 p-4"
+                  >
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="rounded-full bg-rose-300/15 px-3 py-1 text-xs font-semibold text-rose-100">{{ job.job_type }}</span>
+                      <span class="text-xs text-rose-100/70">{{ formatDate(job.created_at) }}</span>
+                    </div>
+                    <p class="mt-2 break-all font-semibold text-white">{{ job.job_id }}</p>
+                    <p class="mt-2 text-sm text-rose-100">{{ job.error_message || '暂无错误摘要' }}</p>
+                  </div>
+                  <div v-if="!operations?.recent_failed_jobs?.length" class="rounded-2xl border border-white/10 bg-black/20 p-6 text-center text-sm text-slate-400">
+                    最近没有失败任务，状态不错。
+                  </div>
+                </div>
+              </article>
+            </section>
+
+            <section class="grid gap-5 xl:grid-cols-2">
+              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                <p class="text-lg font-semibold">最近注册用户</p>
+                <div class="mt-4 space-y-3">
+                  <div
+                    v-for="user in operations?.recent_users"
+                    :key="user.id"
+                    class="flex items-center justify-between gap-3 rounded-2xl bg-black/20 p-3"
+                  >
+                    <div>
+                      <p class="font-semibold text-white">{{ user.email }}</p>
+                      <p class="mt-1 text-xs text-slate-500">{{ user.role }} · {{ user.is_test_account ? '测试账号' : '真实用户' }}</p>
+                    </div>
+                    <span
+                      class="rounded-full px-3 py-1 text-xs font-semibold"
+                      :class="user.is_active ? 'bg-emerald-400/15 text-emerald-100' : 'bg-rose-400/15 text-rose-100'"
+                    >
+                      {{ user.is_active ? '正常' : '已封禁' }}
+                    </span>
+                  </div>
+                </div>
+              </article>
+
+              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                <p class="text-lg font-semibold">最近任务</p>
+                <div class="mt-4 space-y-3">
+                  <div
+                    v-for="job in operations?.recent_jobs"
+                    :key="job.job_id"
+                    class="rounded-2xl bg-black/20 p-3"
+                  >
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="font-semibold text-white">{{ job.job_type }}</span>
+                      <span
+                        class="rounded-full px-3 py-1 text-xs font-semibold"
+                        :class="job.status === 'failed' ? 'bg-rose-400/15 text-rose-100' : job.status === 'completed' ? 'bg-emerald-400/15 text-emerald-100' : 'bg-amber-300/15 text-amber-100'"
+                      >
+                        {{ job.status }}
+                      </span>
+                    </div>
+                    <p class="mt-2 break-all text-xs text-slate-500">{{ job.job_id }}</p>
+                  </div>
+                  <div v-if="!operations?.recent_jobs?.length" class="rounded-2xl border border-white/10 bg-black/20 p-6 text-center text-sm text-slate-400">
+                    暂无近期任务。
+                  </div>
+                </div>
+              </article>
+            </section>
+          </div>
+
+          <div v-else-if="activeTab === 'flags'" class="grid gap-4 xl:grid-cols-2">
             <article
               v-for="flag in flags"
               :key="flag.key"
@@ -666,6 +830,12 @@ onMounted(loadAdminData)
                 </p>
               </div>
               <div class="flex flex-col gap-2 sm:flex-row">
+                <input
+                  v-model="jobSearch"
+                  type="search"
+                  placeholder="搜索 job_id / 用户 / 类型 / 错误"
+                  class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
+                />
                 <select
                   v-model="jobStatusFilter"
                   class="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/60"
@@ -690,8 +860,8 @@ onMounted(loadAdminData)
 
             <div class="mt-5 space-y-3">
               <article
-                v-for="job in jobs"
-                :key="job.id"
+                v-for="job in filteredJobs"
+                :key="job.job_id"
                 class="rounded-3xl border border-white/10 bg-black/20 p-4"
               >
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -708,7 +878,7 @@ onMounted(loadAdminData)
                     <p class="mt-3 font-semibold text-white">{{ job.input_file_name }}</p>
                     <p class="mt-1 break-all text-sm text-slate-400">{{ job.job_id }}</p>
                     <p class="mt-2 text-sm text-slate-400">
-                      用户：{{ job.user_email || `#${job.user_id}` }} · 大小：{{ formatBytes(job.input_file_size) }} · 创建：{{ formatDate(job.created_at) }}
+                      用户：{{ job.user_email || (job.user_id ? `#${job.user_id}` : '未记录') }} · 大小：{{ formatBytes(job.input_file_size) }} · 创建：{{ formatDate(job.created_at) }}
                     </p>
                     <p v-if="job.error_message" class="mt-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
                       {{ job.error_message }}
@@ -725,8 +895,8 @@ onMounted(loadAdminData)
                   </div>
                 </div>
               </article>
-              <div v-if="jobs.length === 0" class="rounded-3xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-slate-400">
-                当前没有匹配任务。运行一次业务、OCR 或 Office smoke test 后，再点刷新即可看到最近任务。
+              <div v-if="filteredJobs.length === 0" class="rounded-3xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-slate-400">
+                当前没有匹配任务。运行一次业务、OCR 或 Office smoke test 后，再点刷新；如果已刷新仍为空，说明最近 1 小时 Redis 状态和数据库任务里都没有匹配记录。
               </div>
             </div>
           </div>

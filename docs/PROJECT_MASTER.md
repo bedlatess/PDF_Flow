@@ -697,3 +697,12 @@ python -m pytest tests/ -q      # 35 通过
 - Updated task observation to merge database `processing_jobs` with recent Redis `job:*` status records, fixing the empty admin task list after smoke tests that only stored task state in Redis/Celery.
 - Kept `is_verified` as a read-only email-status hint in the UI because the full email verification product flow is not complete yet.
 - Server validation after deploy: run any smoke test, open `/control-room -> 任务观察`, click refresh, and confirm recent `job_*` items appear; then search `smoke-` in `用户管理` and delete old smoke accounts if desired.
+
+### 2026-06-11 Admin Operations Dashboard V2 / 后台运营仪表盘 V2
+- Added `GET /api/v1/admin/operations` as a one-shot hidden dashboard endpoint for service status, user counts, test-account counts, recent users, recent jobs, and recent failed jobs.
+- The operations endpoint checks database and Redis health directly, and exposes Celery worker status as an inferred/unknown signal so the admin UI does not pretend to know more than the container can safely verify.
+- Reused the same merged Redis + database job source for `/admin/jobs` and `/admin/operations`, preventing task counts and task lists from drifting apart.
+- Added `/control-room` `运营总览` as the default admin tab, showing service cards, user/account health, recent failed jobs, recent users, and recent tasks.
+- Enhanced `任务观察` with keyword search across `job_id`, user email, status, task type, file name, and error summary, plus clearer empty-state guidance.
+- Local validation: `python -m pytest backend/tests/test_auth.py backend/tests/test_admin.py -q` and `npm run build` pass. `npm run type-check` still reports pre-existing frontend type debt in history, enterprise modal props, PDF BlobPart helpers, and old tool-key names.
+- Server validation after deploy: open `/control-room`, confirm `运营总览` loads without errors, run a smoke test, refresh `任务观察`, and search by the new `job_*` id.

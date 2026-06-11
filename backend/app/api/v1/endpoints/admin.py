@@ -2,6 +2,7 @@
 from datetime import datetime
 import time
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.v1.endpoints.auth import get_current_user
@@ -20,6 +21,7 @@ from app.services.file_service import file_processing_service
 from app.schemas.admin import (
     AdminAuditLogResponse,
     AdminJobResponse,
+    AdminOperationsResponse,
     AdminOverviewResponse,
     AdminUserResponse,
     AdminUserUpdate,
@@ -243,6 +245,68 @@ def _list_redis_jobs(limit: int) -> list[dict]:
     return jobs[:limit]
 
 
+def _check_services(db: Session) -> dict:
+    services = {}
+    try:
+        db.execute(text("SELECT 1"))
+        services["database"] = {"status": "healthy", "detail": "Postgres reachable"}
+    except Exception as exc:
+        services["database"] = {"status": "unhealthy", "detail": str(exc)}
+
+    try:
+        file_processing_service.redis_client.ping()
+        services["redis"] = {"status": "healthy", "detail": "Redis reachable"}
+    except Exception as exc:
+        services["redis"] = {"status": "unhealthy", "detail": str(exc)}
+
+    redis_ok = services.get("redis", {}).get("status") == "healthy"
+    services["celery_worker"] = {
+        "status": "unknown" if redis_ok else "unhealthy",
+        "detail": "Worker health is inferred from task movement; run smoke tests for confirmation."
+        if redis_ok else "Redis broker is unavailable.",
+    }
+    return services
+
+
+def _list_all_jobs_for_admin(db: Session, limit: int, status_filter: str | None = None) -> list[dict]:
+    safe_limit = min(max(limit, 1), 100)
+    redis_jobs = _list_redis_jobs(safe_limit)
+    if status_filter:
+        redis_jobs = [job for job in redis_jobs if job["status"] == status_filter]
+
+    query = (
+        db.query(ProcessingJob, User.email)
+        .outerjoin(User, ProcessingJob.user_id == User.id)
+        .order_by(ProcessingJob.created_at.desc())
+    )
+    if status_filter:
+        query = query.filter(ProcessingJob.status == status_filter)
+
+    rows = query.limit(safe_limit).all()
+    db_jobs = [
+        {
+            "id": job.id,
+            "job_id": job.job_id,
+            "user_id": job.user_id,
+            "user_email": email,
+            "job_type": job.job_type,
+            "status": job.status,
+            "progress": job.progress,
+            "input_file_name": job.input_file_name,
+            "input_file_size": job.input_file_size,
+            "error_message": job.error_message,
+            "created_at": job.created_at,
+            "started_at": job.started_at,
+            "completed_at": job.completed_at,
+        }
+        for job, email in rows
+    ]
+    seen = {job["job_id"] for job in redis_jobs}
+    merged = redis_jobs + [job for job in db_jobs if job["job_id"] not in seen]
+    merged.sort(key=lambda item: item["created_at"], reverse=True)
+    return merged[:safe_limit]
+
+
 def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
     """Require an authenticated admin user."""
     if _role_value(current_user) != UserRole.ADMIN.value:
@@ -338,6 +402,36 @@ async def get_admin_overview(
         "jobs_count": db.query(ProcessingJob).count(),
         "failed_jobs_count": db.query(ProcessingJob).filter(ProcessingJob.status == "failed").count(),
         "recent_audit_logs": recent_logs,
+    }
+
+
+@router.get("/operations", response_model=AdminOperationsResponse)
+async def get_operations_overview(
+    _admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Return one-shot operational dashboard data for the hidden control room."""
+    _seed_defaults(db)
+    users = db.query(User).order_by(User.created_at.desc()).limit(8).all()
+    all_users = db.query(User).all()
+    jobs = _list_all_jobs_for_admin(db, limit=50)
+    failed_jobs = [job for job in jobs if job["status"] == "failed"]
+    running_jobs = [job for job in jobs if job["status"] in ("pending", "processing")]
+
+    return {
+        "generated_at": datetime.utcnow(),
+        "services": _check_services(db),
+        "total_users": len(all_users),
+        "active_users": len([user for user in all_users if user.is_active]),
+        "banned_users": len([user for user in all_users if not user.is_active]),
+        "test_users": len([user for user in all_users if _is_test_account(user)]),
+        "total_jobs": db.query(ProcessingJob).count(),
+        "visible_jobs": len(jobs),
+        "failed_jobs": len(failed_jobs),
+        "running_jobs": len(running_jobs),
+        "recent_users": [_serialize_admin_user(user) for user in users],
+        "recent_failed_jobs": failed_jobs[:5],
+        "recent_jobs": jobs[:8],
     }
 
 
@@ -586,42 +680,7 @@ async def list_jobs(
     db: Session = Depends(get_db),
 ):
     """Return recent processing jobs with user context."""
-    safe_limit = min(max(limit, 1), 100)
-    redis_jobs = _list_redis_jobs(safe_limit)
-    if status_filter:
-        redis_jobs = [job for job in redis_jobs if job["status"] == status_filter]
-
-    query = (
-        db.query(ProcessingJob, User.email)
-        .outerjoin(User, ProcessingJob.user_id == User.id)
-        .order_by(ProcessingJob.created_at.desc())
-    )
-    if status_filter:
-        query = query.filter(ProcessingJob.status == status_filter)
-
-    rows = query.limit(safe_limit).all()
-    db_jobs = [
-        {
-            "id": job.id,
-            "job_id": job.job_id,
-            "user_id": job.user_id,
-            "user_email": email,
-            "job_type": job.job_type,
-            "status": job.status,
-            "progress": job.progress,
-            "input_file_name": job.input_file_name,
-            "input_file_size": job.input_file_size,
-            "error_message": job.error_message,
-            "created_at": job.created_at,
-            "started_at": job.started_at,
-            "completed_at": job.completed_at,
-        }
-        for job, email in rows
-    ]
-    seen = {job["job_id"] for job in redis_jobs}
-    merged = redis_jobs + [job for job in db_jobs if job["job_id"] not in seen]
-    merged.sort(key=lambda item: item["created_at"], reverse=True)
-    return merged[:safe_limit]
+    return _list_all_jobs_for_admin(db, limit=limit, status_filter=status_filter)
 
 
 @router.get("/audit-logs", response_model=list[AdminAuditLogResponse])
