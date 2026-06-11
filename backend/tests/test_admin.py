@@ -95,6 +95,15 @@ def test_public_config_exposes_feature_flags(client):
     assert body["feature_flags"]["unlock_pdf"]["enabled"] is True
     assert body["feature_flags"]["unlock_pdf"]["requires_login"] is True
     assert body["feature_flags"]["unlock_pdf"]["requires_pro"] is False
+    assert body["feature_flags"]["sign_pdf"]["enabled"] is True
+    assert body["feature_flags"]["sign_pdf"]["requires_login"] is False
+    assert body["feature_flags"]["sign_pdf"]["requires_pro"] is False
+    assert body["feature_flags"]["extract_text_pdf"]["enabled"] is True
+    assert body["feature_flags"]["extract_text_pdf"]["requires_login"] is False
+    assert body["feature_flags"]["extract_text_pdf"]["requires_pro"] is False
+    assert body["feature_flags"]["extract_images_pdf"]["enabled"] is True
+    assert body["feature_flags"]["extract_images_pdf"]["requires_login"] is False
+    assert body["feature_flags"]["extract_images_pdf"]["requires_pro"] is False
     assert body["content_blocks"]["home_hero:zh"]["content"].startswith("隐私优先")
 
 

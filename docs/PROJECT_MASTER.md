@@ -899,3 +899,32 @@ python -m pytest tests/ -q      # 35 通过
 - Added service tests covering successful unlock output, wrong-password rejection, and public-config exposure through admin tests.
 - Local validation target: `npm run type-check`, `npm run build`, `python -m pytest backend/tests/test_admin.py backend/tests/test_advanced_pdf_service.py -q`, and `git diff --check`. Build may still show the known large PDF vendor chunk warning.
 - Server validation after deploy: use `/tools/protect` to create a password-protected PDF, then open `/tools/unlock`, upload that file, enter the password, download the result, and confirm the new PDF opens without asking for a password. Also confirm `/control-room -> 功能开关` contains `unlock_pdf`.
+
+### 2026-06-11 Sign PDF / 可视签署工具落地
+- Continued the P1 delivery and safety suite by adding `/tools/sign`, a local-first visual signature tool for placing a signature image onto a PDF and exporting a signed copy.
+- The tool is intentionally described as a visual signature/image stamp, not certificate-based digital signing, so users are not misled about legal-grade cryptographic signatures.
+- Added `src/utils/pdf/signature.ts` to embed PNG/JPG signatures directly and convert WEBP signatures through a browser canvas before embedding, keeping both the PDF and signature image local in the browser.
+- Added the Sign PDF frontend page with PDF upload, signature image upload, page selection, x/y placement, signature width, opacity, quick visual preview, local-processing notice, download, and browser history integration.
+- Wired the tool into the homepage card grid, route guard, translations, history records, and default admin feature flag `sign_pdf` so `/control-room` can hide or maintain it without code changes.
+- Local validation target: `npm run type-check`, `npm run build`, `python -m pytest backend/tests/test_admin.py -q`, and `git diff --check`. Build may still show the known large PDF vendor chunk warning.
+- Server validation after the P1 batch is pushed: open `/tools/sign`, upload a small PDF and a transparent PNG signature, adjust placement, export, and confirm the downloaded PDF displays the signature at the expected page/location. Also confirm `/control-room -> 功能开关` contains `sign_pdf`.
+
+### 2026-06-11 Extract PDF Text / P1 delivery tool
+- Continued the P1 delivery and safety suite by adding `/tools/extract-text`, a local-first text extraction tool for PDFs that already contain a selectable text layer.
+- The tool deliberately does not claim OCR capability. If no usable text is found, the page explains that scanned/image-based PDFs should use the existing OCR tool instead.
+- Added `src/utils/pdf/textExtraction.ts` using `pdfjs-dist` and the bundled worker to read each page text content in the browser, organize output by page, and avoid uploading the PDF to the server.
+- Added the Extract Text frontend page with PDF upload, local-processing notice, page/character/file stats, text preview, copy-to-clipboard, TXT download, empty-text guidance, and browser history integration.
+- Wired the tool into the homepage card grid, route guard, translations, history records, and default admin feature flag `extract_text_pdf` so `/control-room` can hide or maintain it without code changes.
+- Also cleaned the Sign PDF image preview remove button so it uses localized copy instead of a hardcoded English label.
+- Local validation target: `npm run type-check`, `npm run build`, `python -m pytest backend/tests/test_admin.py -q`, and `git diff --check`. Build may still show the known large PDF vendor chunk warning.
+- Server validation after the P1 batch is pushed: open `/tools/extract-text`, upload a text-based PDF, confirm text appears, copy and download TXT, then upload a scanned/image-only PDF and confirm the page guides the user to OCR. Also confirm `/control-room -> feature flags` contains `extract_text_pdf`.
+
+### 2026-06-11 Extract PDF Images / P1 delivery tool
+- Finished the P1 delivery and safety suite by adding `/tools/extract-images`, a local-first tool for extracting embedded image resources from PDF pages.
+- The tool is intentionally positioned differently from `PDF to Image`: it tries to recover image resources inside the PDF, while `/tools/pdf-to-image` remains the correct path for exporting full pages as images.
+- Added `src/utils/pdf/imageExtraction.ts` using `pdfjs-dist` operator lists and page object resources to collect image XObjects / inline images, convert recoverable image data to PNG blobs, and keep processing fully inside the browser.
+- Added the Extract Images frontend page with PDF upload, local-processing notice, extraction guidance, image preview cards, per-image download, download-all trigger, empty-state guidance, and browser history integration.
+- Wired the tool into the homepage card grid, route guard, translations, history records, and default admin feature flag `extract_images_pdf` so `/control-room` can hide or maintain it without code changes.
+- P1 delivery and safety suite status: Protect PDF, Unlock PDF, Sign PDF, Extract Text, and Extract Images are now implemented. Next recommended phase is P2 professional conversion tools.
+- Local validation target: `npm run type-check`, `npm run build`, `python -m pytest backend/tests/test_admin.py -q`, and `git diff --check`. Build may still show the known large PDF vendor chunk warning.
+- Server validation after this P1 batch is pushed: test `/tools/sign`, `/tools/extract-text`, and `/tools/extract-images`; confirm `/control-room -> feature flags` contains `sign_pdf`, `extract_text_pdf`, and `extract_images_pdf`.

@@ -66,6 +66,9 @@ const getToolIcon = (type: HistoryItem['type']) => {
     pageNumbers: '#',
     protect: 'L',
     unlock: 'U',
+    sign: 'S',
+    extractText: 'T',
+    extractImages: 'I',
     watermark: 'W',
   }
   return icons[type]
@@ -84,6 +87,9 @@ const getToolColor = (type: HistoryItem['type']) => {
     pageNumbers: 'bg-blue-500',
     protect: 'bg-slate-700',
     unlock: 'bg-emerald-600',
+    sign: 'bg-amber-500',
+    extractText: 'bg-cyan-500',
+    extractImages: 'bg-rose-500',
     watermark: 'bg-cyan-500',
   }
   return colors[type]

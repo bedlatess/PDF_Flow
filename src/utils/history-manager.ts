@@ -10,6 +10,9 @@ export type HistoryToolType =
   | 'pageNumbers'
   | 'protect'
   | 'unlock'
+  | 'sign'
+  | 'extractText'
+  | 'extractImages'
   | 'watermark'
 
 export interface HistoryItem {
@@ -128,6 +131,9 @@ export function formatToolType(type: HistoryToolType): string {
     pageNumbers: '添加 PDF 页码',
     protect: '保护 PDF',
     unlock: '解锁 PDF',
+    sign: '签署 PDF',
+    extractText: '提取 PDF 文字',
+    extractImages: '提取 PDF 图片',
     watermark: '添加水印',
   }
   return typeNames[type]

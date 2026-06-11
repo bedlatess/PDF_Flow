@@ -21,6 +21,9 @@
     "pageNumbers": { "title": "Añadir números de página", "desc": "Agrega números de página a informes y contratos" },
     "protect": { "title": "Proteger PDF", "desc": "Anade una contrasena antes de compartir un PDF" },
     "unlock": { "title": "Desbloquear PDF", "desc": "Introduce la contrasena conocida y crea una copia sin bloqueo" },
+    "sign": { "title": "Firmar PDF", "desc": "Anade una imagen de firma visual y exporta una copia firmada" },
+    "extractText": { "title": "Extraer texto PDF", "desc": "Exporta contenido TXT copiable desde PDFs con texto" },
+    "extractImages": { "title": "Extraer imagenes PDF", "desc": "Extrae recursos de imagen incrustados en un PDF" },
     "officeToPdf": {
       "title": "Office a PDF",
       "desc": "Convierte Word, Excel, PowerPoint a PDF",

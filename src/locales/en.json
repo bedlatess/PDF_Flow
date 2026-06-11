@@ -21,6 +21,9 @@
     "pageNumbers": { "title": "Add PDF Page Numbers", "desc": "Add page numbers to reports, contracts, and handouts" },
     "protect": { "title": "Protect PDF", "desc": "Add an opening password before sharing a PDF" },
     "unlock": { "title": "Unlock PDF", "desc": "Enter the known password and create an unlocked copy" },
+    "sign": { "title": "Sign PDF", "desc": "Add a visual signature image and export a signed copy" },
+    "extractText": { "title": "Extract PDF Text", "desc": "Export copyable TXT content from text-based PDFs" },
+    "extractImages": { "title": "Extract PDF Images", "desc": "Pull embedded image resources from a PDF" },
     "officeToPdf": {
       "title": "Office to PDF",
       "desc": "Convert Word, Excel, PowerPoint to PDF",

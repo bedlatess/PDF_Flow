@@ -190,6 +190,27 @@ const router = createRouter({
           meta: { titleKey: 'tools.unlock.title', featureKey: 'unlock_pdf' }
         },
         {
+          path: 'sign',
+          name: 'sign-pdf',
+          component: () => import('@/views/tools/SignPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.sign.title', featureKey: 'sign_pdf' }
+        },
+        {
+          path: 'extract-text',
+          name: 'extract-text-pdf',
+          component: () => import('@/views/tools/ExtractTextPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.extractText.title', featureKey: 'extract_text_pdf' }
+        },
+        {
+          path: 'extract-images',
+          name: 'extract-images-pdf',
+          component: () => import('@/views/tools/ExtractImagesPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.extractImages.title', featureKey: 'extract_images_pdf' }
+        },
+        {
           path: 'ocr',
           name: 'ocr-pdf',
           component: () => import('@/views/tools/OCRPDF.vue'),

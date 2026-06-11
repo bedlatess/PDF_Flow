@@ -21,6 +21,9 @@
     "pageNumbers": { "title": "添加 PDF 页码", "desc": "为合同、报告和讲义添加统一页码" },
     "protect": { "title": "保护 PDF", "desc": "为 PDF 添加打开密码，分享前多一层保护" },
     "unlock": { "title": "解锁 PDF", "desc": "输入已知密码，生成无密码 PDF 副本" },
+    "sign": { "title": "签署 PDF", "desc": "添加可视签名图片，生成签署副本" },
+    "extractText": { "title": "提取 PDF 文字", "desc": "从文本型 PDF 导出可复制的 TXT 内容" },
+    "extractImages": { "title": "提取 PDF 图片", "desc": "从 PDF 中取出可用的内嵌图片资源" },
     "officeToPdf": {
       "title": "Office 转 PDF",
       "desc": "将 Word、Excel、PowerPoint 转换为 PDF",
