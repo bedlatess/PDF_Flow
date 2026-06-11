@@ -63,6 +63,7 @@ const getToolIcon = (type: HistoryItem['type']) => {
     pdfToImage: 'P',
     deletePages: 'D',
     organize: 'O',
+    pageNumbers: '#',
     watermark: 'W',
   }
   return icons[type]
@@ -78,6 +79,7 @@ const getToolColor = (type: HistoryItem['type']) => {
     pdfToImage: 'bg-rose-500',
     deletePages: 'bg-red-500',
     organize: 'bg-emerald-500',
+    pageNumbers: 'bg-blue-500',
     watermark: 'bg-cyan-500',
   }
   return colors[type]

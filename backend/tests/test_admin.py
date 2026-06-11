@@ -88,6 +88,7 @@ def test_public_config_exposes_feature_flags(client):
     assert body["feature_flags"]["merge_pdf"]["enabled"] is True
     assert body["feature_flags"]["delete_pages_pdf"]["enabled"] is True
     assert body["feature_flags"]["organize_pdf"]["enabled"] is True
+    assert body["feature_flags"]["page_numbers_pdf"]["enabled"] is True
     assert body["content_blocks"]["home_hero:zh"]["content"].startswith("隐私优先")
 
 

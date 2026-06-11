@@ -104,6 +104,16 @@ const tools = computed<Tool[]>(() => [
     featureKey: 'organize_pdf',
   },
   {
+    name: 'pageNumbers',
+    titleKey: 'tools.pageNumbers.title',
+    descriptionKey: 'tools.pageNumbers.desc',
+    icon: 'M7 20l4-16m2 16l4-16M6 9h14M4 15h14',
+    route: '/tools/page-numbers',
+    color: 'from-blue-500 to-cyan-600',
+    glow: 'bg-blue-400/18',
+    featureKey: 'page_numbers_pdf',
+  },
+  {
     name: 'ocr',
     titleKey: 'tools.ocr.title',
     descriptionKey: 'home.toolDescriptions.ocr',

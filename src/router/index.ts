@@ -169,6 +169,13 @@ const router = createRouter({
           meta: { titleKey: 'tools.organize.title', featureKey: 'organize_pdf' }
         },
         {
+          path: 'page-numbers',
+          name: 'page-numbers-pdf',
+          component: () => import('@/views/tools/PageNumbersPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.pageNumbers.title', featureKey: 'page_numbers_pdf' }
+        },
+        {
           path: 'ocr',
           name: 'ocr-pdf',
           component: () => import('@/views/tools/OCRPDF.vue'),

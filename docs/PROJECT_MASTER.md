@@ -876,3 +876,9 @@ python -m pytest tests/ -q      # 35 通过
 - Added reusable `reorderPDFPages()` in `src/utils/pdf/split.ts` so future page-management tools can share the same page-copying path.
 - Wired the new tool into the homepage card grid, route guard, history records, and default admin feature flag `organize_pdf`, allowing `/control-room` to hide or maintain the feature like other public tools.
 - Page management P0 status: delete pages and organize/reorder pages are implemented; next recommended item is `Add Page Numbers`.
+### 2026-06-11 Add PDF Page Numbers / 添加页码工具落地
+- Finished the third P0 page-management item by adding a local-first `Add PDF Page Numbers` tool at `/tools/page-numbers`.
+- The tool supports position selection, start number, start-on-page, prefix/suffix, total-page display, font size, opacity, and color, with a live visual preview before export.
+- Added `src/utils/pdf/pageNumbers.ts`, rendering page labels through canvas before embedding them into the PDF so Chinese formats such as `第 1 页` work safely without StandardFont encoding failures.
+- Wired the tool into the homepage card grid, route guard, history records, translations, and default admin feature flag `page_numbers_pdf`.
+- P0 page management suite status: delete pages, organize/reorder pages, and add page numbers are implemented. Recommended next phase is P1 delivery/safety tools: protect PDF, unlock PDF, signature workflow, extract images, and extract text.
