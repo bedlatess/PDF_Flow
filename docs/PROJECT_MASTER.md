@@ -713,3 +713,11 @@ python -m pytest tests/ -q      # 35 閫氳繃
 - Added a shared `pdfBytesToBlob()` helper to safely convert `pdf-lib` byte output into browser `Blob` objects under stricter TypeScript DOM typings.
 - Aligned AI Q&A and batch analysis multipart requests by sending `question` and `operations` as form fields, with matching FastAPI `Form(...)` parameters.
 - Local validation: `npm run type-check`, `npm run build`, and `python -m pytest backend/tests -q` pass. Continue running type-check before build for future frontend changes.
+
+### 2026-06-11 PDF.js Worker Static Hosting Fix / PDF 转图片本地 Worker 修复
+- Production issue found on `PDF 转图片`: local conversion failed while cloud conversion worked. Root cause was frontend static hosting, not the PDF file or backend conversion path.
+- `pdf.js` loads a built `.mjs` worker asset such as `/assets/pdf.worker.min-*.mjs`; nginx now explicitly serves `mjs` as `application/javascript`, caches it with other static assets, and CSP now includes `worker-src 'self' blob:`.
+- `index.html` meta CSP was updated to match nginx CSP so browser policy remains consistent even before proxy/header changes are observed.
+- Current product note: `HistoryPanel.vue` exists as an internal/local-history component and `historyManager` records operations, but no public page currently mounts the history panel. It needs a deliberate UI entry before users can open it.
+- Current product note: `aiAPI.batchAnalyze()` exists, but the AI PDF Analyzer page currently exposes only summarize, ask, and extract tabs. Batch analysis has no visible UI tab yet, and AI checks are deferred until API keys are configured.
+- Server validation after deploy: rebuild frontend, hard refresh `https://pdf.pawn.eu.org/tools/pdf-to-image`, turn off cloud processing, convert a small PDF to PNG, and confirm `/assets/pdf.worker.min-*.mjs` returns JavaScript instead of failing worker import.
