@@ -73,7 +73,7 @@ const toggle = () => {
             <p class="text-sm font-semibold text-slate-900 dark:text-white">
               {{ title }}
             </p>
-            <ProBadge v-if="modelValue || !canUseCloud" compact />
+            <ProBadge v-if="modelValue || !canUseCloud" compact tone="ivory" />
           </div>
           <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
             {{ description }}

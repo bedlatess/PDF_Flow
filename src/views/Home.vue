@@ -251,7 +251,12 @@ onMounted(() => {
             clickable
             @click="navigateToTool(tool.route)"
           >
-            <div class="flex flex-col items-center text-center">
+            <div class="relative flex min-h-[220px] flex-col items-center text-center">
+              <ProBadge
+                v-if="tool.flag.requires_pro"
+                variant="corner"
+              />
+
               <!-- Icon -->
               <div
                 :class="[
@@ -277,10 +282,7 @@ onMounted(() => {
 
               <!-- Title -->
               <h3 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
-                <span class="inline-flex items-center gap-2">
-                  {{ t(tool.titleKey) }}
-                  <ProBadge v-if="tool.flag.requires_pro" compact />
-                </span>
+                {{ t(tool.titleKey) }}
               </h3>
 
               <!-- Description -->

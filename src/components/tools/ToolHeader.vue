@@ -70,7 +70,15 @@ const accentClasses = computed(() => {
         {{ subtitle }}
       </p>
 
+      <ProBadge
+        v-if="pro"
+        class="mt-6"
+        :label="badge"
+        variant="seal"
+      />
+
       <div
+        v-else
         :class="[
           'mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-sm',
           accentClasses.pill,
@@ -80,7 +88,6 @@ const accentClasses = computed(() => {
           *
         </slot>
         <span>{{ badge }}</span>
-        <ProBadge v-if="pro" compact tone="dark" />
       </div>
 
       <div class="mt-6">

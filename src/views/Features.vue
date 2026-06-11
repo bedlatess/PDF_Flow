@@ -168,7 +168,7 @@ onMounted(() => {
               <div>
                 <div class="flex flex-wrap items-center gap-2">
                   <p class="text-sm font-semibold text-slate-950 dark:text-white">{{ copy.proTitle }}</p>
-                  <ProBadge compact />
+                  <ProBadge compact tone="ivory" />
                 </div>
                 <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ copy.proDesc }}</p>
               </div>
@@ -211,7 +211,7 @@ onMounted(() => {
             <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-amber-300">{{ copy.proLabel }}</p>
             <h2 class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ copy.proTitle }}</h2>
           </div>
-          <ProBadge />
+          <ProBadge tone="ivory" />
         </div>
 
         <div class="mt-6 grid gap-3">
@@ -226,7 +226,7 @@ onMounted(() => {
             <div>
               <div class="flex flex-wrap items-center gap-2">
                 <h3 class="font-semibold text-slate-950 dark:text-white">{{ card.title }}</h3>
-                <ProBadge compact />
+                <ProBadge compact tone="ivory" />
               </div>
               <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ card.desc }}</p>
             </div>

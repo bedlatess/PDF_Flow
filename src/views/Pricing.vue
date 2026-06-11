@@ -337,7 +337,7 @@ const handleCTA = async (plan: Plan) => {
             <h2 class="text-2xl font-semibold text-slate-950 dark:text-white">
               {{ plan.name }}
             </h2>
-            <ProBadge v-if="plan.id === 'pro'" />
+            <ProBadge v-if="plan.id === 'pro'" tone="ivory" />
           </div>
           <p class="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
             {{ plan.eyebrow }}

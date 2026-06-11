@@ -832,3 +832,9 @@ python -m pytest tests/ -q      # 35 通过
 - 基础工具的云端模式新增保守推荐规则：Pro/企业用户在文件总量较大或文件数量较多时自动优先云端，小文件仍保持本地优先，避免无意义上传拖慢体验。
 - 云端通用轮询间隔从 1.5 秒优化到 0.8 秒，减少任务已完成但前端还在等待下一次轮询的感知延迟。
 - 前端验证：`npm run type-check` 与 `npm run build` 通过。Build 仍有已知 PDF vendor chunk 体积提示。
+
+### 2026-06-11 Pro 标识视觉优化
+- 将 `ProBadge` 扩展为 `pill`、`seal`、`corner` 三种展示形态，避免出现“徽章里再套 Pro 徽章”的拥挤效果。
+- Pro 工具页顶部改为单一高级 `seal` 徽章，首页工具卡改为右上角 `corner` 角标，标题不再被 Pro 标签挤压。
+- 功能页、定价页和云端切换组件统一使用更轻的 ivory/gold 视觉，减少黑金小标签在浅色卡片上的突兀感。
+- 前端验证：`npm run type-check` 与 `npm run build` 通过。Build 仍有已知 PDF vendor chunk 体积提示。
