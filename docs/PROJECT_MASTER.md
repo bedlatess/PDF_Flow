@@ -778,3 +778,10 @@ python -m pytest tests/ -q      # 35 通过
 - Updated test stubs so admin health report tests still exercise a positive worker response locally.
 - Local validation: `python -m pytest backend/tests/test_admin.py -q`, `npm run type-check`, `npm run build`, `python -m compileall backend\app`, and `git diff --check` pass. Docker Compose config validation is deferred to the server because Docker is not installed on the Windows workstation.
 - Server validation after deploy: run `ENVIRONMENT=production DEBUG=false docker compose up -d --build backend celery-worker frontend`, then copy `/control-room -> 运营总览` health report and confirm `环境：production`; `celery_worker` should be `healthy` when the worker responds.
+### 2026-06-11 Live Acceptance Feedback Cleanup / 验收反馈自动清理
+- Added admin-only `POST /api/v1/admin/feedback/cleanup-live-acceptance` to close synthetic `live acceptance...` feedback probes created by the production acceptance script, without touching real user feedback.
+- The cleanup only closes reports in `new` or `reviewing` status whose title starts with `live acceptance`, writes an admin audit log, and returns both the number closed and the remaining open-feedback count.
+- Updated `scripts/live-acceptance-test.sh` so runs with `LIVE_ADMIN_EMAIL` and `LIVE_ADMIN_PASSWORD` validate the hidden health report and then clean up the probe feedback automatically. Runs without admin credentials now print the created feedback id for manual cleanup.
+- Added `/control-room -> 问题反馈` action `关闭验收反馈` for manually cleaning accumulated acceptance probes from the admin console.
+- Local validation target: `python -m pytest backend/tests/test_admin.py -q`, `bash -n scripts/live-acceptance-test.sh`, `npm run type-check`, `npm run build`, and `git diff --check`. Build may still show the known large PDF vendor chunk warning.
+- Server validation after deploy: run the live acceptance script with admin credentials, or click `/control-room -> 问题反馈 -> 关闭验收反馈`, then copy the health report and confirm `待处理反馈` no longer includes synthetic acceptance probes.

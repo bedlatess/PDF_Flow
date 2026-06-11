@@ -445,6 +445,31 @@ def test_feedback_message_length_is_enforced(client):
     assert rejected.status_code == 422
 
 
+def test_admin_can_cleanup_live_acceptance_feedback_only(client):
+    client.post("/api/v1/feedback", json={
+        "title": "live acceptance 123",
+        "message": "synthetic probe",
+    })
+    client.post("/api/v1/feedback", json={
+        "title": "real user issue",
+        "message": "please keep this open",
+    })
+
+    _register(client)
+    _promote_to_admin(client)
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    cleanup = client.post("/api/v1/admin/feedback/cleanup-live-acceptance", headers=headers)
+    feedback = client.get("/api/v1/admin/feedback", headers=headers)
+
+    assert cleanup.status_code == 200
+    assert cleanup.json()["closed_count"] == 1
+    reports = {item["title"]: item["status"] for item in feedback.json()}
+    assert reports["live acceptance 123"] == "closed"
+    assert reports["real user issue"] == "new"
+
+
 def test_feedback_admin_list_requires_admin(client):
     _register(client, email="free-feedback@example.com")
     token = _login(client, email="free-feedback@example.com").json()["access_token"]

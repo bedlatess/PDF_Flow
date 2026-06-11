@@ -182,6 +182,11 @@ class AdminDiagnosticsResponse(BaseModel):
     api_error_count: int
 
 
+class AdminFeedbackCleanupResponse(BaseModel):
+    closed_count: int
+    remaining_open_count: int
+
+
 class AdminHealthReportResponse(BaseModel):
     generated_at: datetime
     app_version: str

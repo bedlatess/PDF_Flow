@@ -502,6 +502,35 @@ const saveFeedback = async (report: AdminFeedback) => {
   }
 }
 
+const cleanupLiveAcceptanceFeedback = async () => {
+  savingKey.value = 'feedback:cleanup-live'
+  error.value = ''
+
+  try {
+    const result = await adminAPI.cleanupLiveAcceptanceFeedback()
+    const [feedbackData, overviewData, diagnosticsData, healthReportData, auditData] = await Promise.all([
+      adminAPI.listFeedback({
+        status_filter: feedbackStatusFilter.value || undefined,
+      }),
+      adminAPI.getOverview(),
+      adminAPI.getDiagnostics(),
+      adminAPI.getHealthReport(),
+      adminAPI.listAuditLogs(),
+    ])
+    feedbackReports.value = feedbackData
+    overview.value = overviewData
+    diagnostics.value = diagnosticsData
+    apiErrors.value = diagnosticsData.recent_errors
+    healthReport.value = healthReportData
+    auditLogs.value = auditData
+    setMessage(`已关闭 ${result.closed_count} 条验收反馈，剩余待处理 ${result.remaining_open_count} 条`)
+  } catch {
+    error.value = '验收反馈清理失败，请稍后重试。'
+  } finally {
+    savingKey.value = null
+  }
+}
+
 const openFeedbackFromDiagnostics = async (feedbackId: number) => {
   activeTab.value = 'feedback'
   feedbackStatusFilter.value = ''
@@ -1196,6 +1225,15 @@ onMounted(loadAdminData)
                 >
                   <Loader2 v-if="savingKey === 'feedback:refresh'" class="h-4 w-4 animate-spin" />
                   刷新
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="savingKey === 'feedback:cleanup-live'"
+                  @click="cleanupLiveAcceptanceFeedback"
+                >
+                  <Loader2 v-if="savingKey === 'feedback:cleanup-live'" class="h-4 w-4 animate-spin" />
+                  关闭验收反馈
                 </button>
               </div>
             </div>

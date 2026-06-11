@@ -99,6 +99,7 @@ request POST "$BASE_URL/api/v1/feedback" \
   -d "{\"title\":\"live acceptance ${RUN_ID}\",\"message\":\"Live acceptance feedback probe ${RUN_ID}\",\"category\":\"suggestion\",\"severity\":\"normal\",\"page_url\":\"${BASE_URL}\"}"
 assert_status "200" "public feedback submission"
 assert_body_contains "\"status\":\"new\"" "public feedback response"
+FEEDBACK_ID="$(printf '%s' "$HTTP_BODY" | sed -n 's/.*"id":\([0-9][0-9]*\).*/\1/p' | head -n 1)"
 
 if [[ -n "$EMAIL" && -n "$PASSWORD" ]]; then
   log "Admin credentials provided; checking hidden health report"
@@ -114,8 +115,16 @@ if [[ -n "$EMAIL" && -n "$PASSWORD" ]]; then
   assert_status "200" "admin health report"
   assert_body_contains "\"migration_version\"" "admin health report migration"
   assert_body_contains "\"services\"" "admin health report services"
+
+  request POST "$BASE_URL/api/v1/admin/feedback/cleanup-live-acceptance" \
+    -H "Authorization: Bearer $TOKEN"
+  assert_status "200" "live acceptance feedback cleanup"
+  assert_body_contains "\"closed_count\"" "live acceptance cleanup response"
 else
-  log "Skipping admin health report check; set LIVE_ADMIN_EMAIL and LIVE_ADMIN_PASSWORD to enable it"
+  log "Skipping admin health report and feedback cleanup; set LIVE_ADMIN_EMAIL and LIVE_ADMIN_PASSWORD to enable it"
+  if [[ -n "$FEEDBACK_ID" ]]; then
+    log "Created feedback probe #$FEEDBACK_ID; close it from /control-room if you do not run admin cleanup"
+  fi
 fi
 
 log "Live acceptance checks passed"

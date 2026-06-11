@@ -578,6 +578,11 @@ export interface AdminFeedbackUpdate {
   admin_note?: string | null
 }
 
+export interface AdminFeedbackCleanup {
+  closed_count: number
+  remaining_open_count: number
+}
+
 export const adminAPI = {
   async getOverview(): Promise<AdminOverview> {
     const response = await apiClient.get<AdminOverview>('/api/v1/admin/overview')
@@ -667,6 +672,11 @@ export const adminAPI = {
 
   async updateFeedback(feedbackId: number, data: AdminFeedbackUpdate): Promise<AdminFeedback> {
     const response = await apiClient.patch<AdminFeedback>(`/api/v1/admin/feedback/${feedbackId}`, data)
+    return response.data
+  },
+
+  async cleanupLiveAcceptanceFeedback(): Promise<AdminFeedbackCleanup> {
+    const response = await apiClient.post<AdminFeedbackCleanup>('/api/v1/admin/feedback/cleanup-live-acceptance')
     return response.data
   },
 

@@ -27,6 +27,7 @@ from app.schemas.admin import (
     AdminAuditLogResponse,
     AdminApiErrorResponse,
     AdminDiagnosticsResponse,
+    AdminFeedbackCleanupResponse,
     AdminHealthReportResponse,
     AdminJobResponse,
     AdminOperationsResponse,
@@ -861,6 +862,46 @@ async def update_feedback(
     db.commit()
     db.refresh(report)
     return report
+
+
+@router.post("/feedback/cleanup-live-acceptance", response_model=AdminFeedbackCleanupResponse)
+async def cleanup_live_acceptance_feedback(
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Close synthetic live-acceptance feedback probes without touching real user reports."""
+    reports = (
+        db.query(FeedbackReport)
+        .filter(
+            FeedbackReport.status.in_(["new", "reviewing"]),
+            FeedbackReport.title.ilike("live acceptance%"),
+        )
+        .all()
+    )
+
+    for report in reports:
+        report.status = "closed"
+        report.admin_note = "Closed automatically by live acceptance cleanup."
+
+    _write_audit(
+        db,
+        request,
+        admin,
+        "cleanup",
+        "feedback",
+        "live_acceptance",
+        detail=f"closed={len(reports)}",
+    )
+    db.commit()
+
+    remaining_open = db.query(FeedbackReport).filter(
+        FeedbackReport.status.in_(["new", "reviewing"])
+    ).count()
+    return {
+        "closed_count": len(reports),
+        "remaining_open_count": remaining_open,
+    }
 
 
 @router.get("/audit-logs", response_model=list[AdminAuditLogResponse])
