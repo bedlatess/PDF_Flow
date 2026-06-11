@@ -352,18 +352,20 @@ def test_admin_operations_overview_returns_health_and_recent_activity(client):
 
 
 def test_guest_can_submit_feedback_and_admin_can_triage(client):
+    long_url = f"https://pdf.pawn.eu.org/tools/pdf-to-image?debug={'x' * 1500}"
     response = client.post("/api/v1/feedback", json={
         "title": "PDF conversion failed",
         "message": "The local PDF to image conversion failed on the public site.",
         "email": "tester@example.com",
         "category": "bug",
         "severity": "high",
-        "page_url": "https://pdf.pawn.eu.org/tools/pdf-to-image",
+        "page_url": long_url,
         "diagnostic_code": "PDF-FLOW-TEST",
         "diagnostics": {
             "path": "/tools/pdf-to-image",
             "locale": "zh",
             "viewport": "1440x900",
+            "url": long_url,
             "secret": "should not be stored",
         },
     })
@@ -384,6 +386,8 @@ def test_guest_can_submit_feedback_and_admin_can_triage(client):
     assert item["title"] == "PDF conversion failed"
     assert item["email"] == "tester@example.com"
     assert "secret" not in (item["diagnostics"] or "")
+    assert len(item["page_url"]) <= 1200
+    assert len(item["diagnostics"]) < len(long_url)
 
     updated = client.patch(
         f"/api/v1/admin/feedback/{item['id']}",
@@ -394,6 +398,20 @@ def test_guest_can_submit_feedback_and_admin_can_triage(client):
     assert updated.status_code == 200
     assert updated.json()["status"] == "reviewing"
     assert updated.json()["admin_note"] == "Need browser screenshot."
+
+
+def test_feedback_message_length_is_enforced(client):
+    accepted = client.post("/api/v1/feedback", json={
+        "title": "Long but valid feedback",
+        "message": "x" * 4000,
+    })
+    rejected = client.post("/api/v1/feedback", json={
+        "title": "Too long feedback",
+        "message": "x" * 4001,
+    })
+
+    assert accepted.status_code == 200
+    assert rejected.status_code == 422
 
 
 def test_feedback_admin_list_requires_admin(client):

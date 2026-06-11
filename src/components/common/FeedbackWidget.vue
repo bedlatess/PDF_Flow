@@ -13,6 +13,7 @@ const submitting = ref(false)
 const copied = ref(false)
 const error = ref('')
 const resultId = ref<number | null>(null)
+const MAX_MESSAGE_LENGTH = 4000
 
 const form = ref({
   title: '',
@@ -44,6 +45,8 @@ const feedbackSummary = computed(() => {
   if (!resultId.value) return ''
   return `反馈编号 #${resultId.value}\n诊断码 ${diagnosticCode.value}\n页面 ${window.location.href}`
 })
+const messageLength = computed(() => form.value.message.length)
+const messageRemaining = computed(() => MAX_MESSAGE_LENGTH - messageLength.value)
 
 const resetForm = () => {
   form.value = {
@@ -68,8 +71,16 @@ const close = () => {
 }
 
 const submitFeedback = async () => {
-  if (!form.value.title.trim() || !form.value.message.trim()) {
+  const title = form.value.title.trim()
+  const message = form.value.message.trim()
+
+  if (!title || !message) {
     error.value = '请填写问题标题和具体描述，方便管理员快速定位。'
+    return
+  }
+
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    error.value = `描述内容过长，请压缩到 ${MAX_MESSAGE_LENGTH} 字以内，或先提交关键复现步骤。`
     return
   }
 
@@ -78,8 +89,8 @@ const submitFeedback = async () => {
 
   try {
     const response = await feedbackAPI.create({
-      title: form.value.title.trim(),
-      message: form.value.message.trim(),
+      title,
+      message,
       email: form.value.email.trim() || undefined,
       category: form.value.category,
       severity: form.value.severity,
@@ -205,14 +216,25 @@ const copySummary = async () => {
           </label>
 
           <label class="block">
-            <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">具体描述</span>
+            <span class="flex items-center justify-between gap-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <span>具体描述</span>
+              <span
+                class="text-xs font-medium"
+                :class="messageRemaining < 0 ? 'text-rose-500' : messageRemaining < 300 ? 'text-amber-500' : 'text-slate-400'"
+              >
+                {{ messageLength }}/{{ MAX_MESSAGE_LENGTH }}
+              </span>
+            </span>
             <textarea
               v-model="form.message"
               rows="5"
-              maxlength="4000"
+              :maxlength="MAX_MESSAGE_LENGTH"
               placeholder="请写下你点了什么、看到了什么提示、是否可以复现。"
               class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-800 dark:bg-slate-900 dark:text-white dark:focus:ring-violet-500/20"
             />
+            <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              最多 {{ MAX_MESSAGE_LENGTH }} 字。建议优先写复现步骤、实际提示和期望结果，不需要粘贴文件内容。
+            </p>
           </label>
 
           <label class="block">

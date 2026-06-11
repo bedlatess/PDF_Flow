@@ -745,3 +745,10 @@ python -m pytest tests/ -q      # 35 通过
 - Added regression coverage that triggers a controlled 500 response under `TestClient(raise_server_exceptions=False)` and verifies both admin error listing and diagnostics see it.
 - Local validation: `npm run type-check`, `npm run build`, `python -m pytest backend/tests -q`, `python -m compileall backend\app backend\alembic\versions`, `python -m alembic heads`, and `git diff --check` pass. Build still shows the known large PDF vendor chunk warning.
 - Server deployment note: after pulling this commit, run `docker compose exec backend alembic upgrade head`, rebuild/restart backend and frontend, then open `/control-room -> 错误观察` to confirm the panel loads.
+### 2026-06-11 Feedback Triage Usability Hardening / 反馈排查体验加固
+- Made `/control-room -> 错误观察` pending-feedback cards actionable. Clicking a feedback summary now switches to `问题反馈`, reloads the full list, scrolls to the matching report, and highlights it.
+- Hardened long feedback handling across the full loop: the public feedback widget shows a 4000-character counter, blocks overly long descriptions before submit, and guides users to provide reproduction steps instead of file contents.
+- The admin feedback detail view now wraps long titles/messages, keeps full descriptions readable inside a bounded scroll area, and prevents long diagnostics/browser strings from stretching the control room layout.
+- Backend feedback creation now truncates oversized URL, diagnostic, email, category, severity, diagnostic code, and user-agent fields before storage while still preserving the useful summary; unapproved diagnostic keys remain filtered out.
+- Added regression coverage for 4000-character accepted feedback, 4001-character rejected feedback, long URL truncation, and diagnostic allowlist filtering.
+- Local validation: `npm run type-check`, `npm run build`, `python -m pytest backend/tests/test_admin.py -q`, and `git diff --check` pass. Build still shows the known large PDF vendor chunk warning.

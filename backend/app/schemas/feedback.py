@@ -10,7 +10,7 @@ class FeedbackCreate(BaseModel):
     email: Optional[str] = Field(default=None, max_length=255)
     category: str = Field(default="bug", max_length=40)
     severity: str = Field(default="normal", max_length=40)
-    page_url: Optional[str] = Field(default=None, max_length=1200)
+    page_url: Optional[str] = Field(default=None, max_length=4096)
     diagnostic_code: Optional[str] = Field(default=None, max_length=80)
     diagnostics: Optional[dict] = None
 

@@ -11,6 +11,15 @@ from app.schemas.feedback import FeedbackCreate, FeedbackResponse
 router = APIRouter()
 
 
+def _truncate(value, limit: int) -> str | None:
+    if value is None:
+        return None
+    text = str(value)
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit - 3]}..."
+
+
 def _client_host(request: Request) -> str | None:
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
@@ -29,7 +38,7 @@ async def create_feedback(
     diagnostics = payload.diagnostics or {}
     if diagnostics:
         diagnostics = {
-            key: value
+            key: _truncate(value, 1200)
             for key, value in diagnostics.items()
             if key in {
                 "path",
@@ -47,16 +56,16 @@ async def create_feedback(
 
     report = FeedbackReport(
         user_id=current_user.id if current_user else None,
-        email=payload.email or (current_user.email if current_user else None),
-        category=payload.category,
-        severity=payload.severity,
-        page_url=payload.page_url,
-        title=payload.title,
+        email=_truncate(payload.email or (current_user.email if current_user else None), 255),
+        category=_truncate(payload.category, 40) or "bug",
+        severity=_truncate(payload.severity, 40) or "normal",
+        page_url=_truncate(payload.page_url, 1200),
+        title=_truncate(payload.title, 160) or "Untitled feedback",
         message=payload.message,
-        diagnostic_code=payload.diagnostic_code,
+        diagnostic_code=_truncate(payload.diagnostic_code, 80),
         diagnostics=json.dumps(diagnostics, ensure_ascii=False) if diagnostics else None,
         ip_address=_client_host(request),
-        user_agent=request.headers.get("user-agent"),
+        user_agent=_truncate(request.headers.get("user-agent"), 1000),
     )
     db.add(report)
     db.commit()

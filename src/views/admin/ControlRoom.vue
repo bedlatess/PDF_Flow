@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import {
   Activity,
   AlertTriangle,
@@ -60,6 +60,7 @@ const userSearch = ref('')
 const jobStatusFilter = ref('')
 const jobSearch = ref('')
 const feedbackStatusFilter = ref('')
+const highlightedFeedbackId = ref<number | null>(null)
 
 const tabs = [
   { id: 'overview' as const, label: '运营总览', icon: GaugeCircle },
@@ -367,6 +368,19 @@ const saveFeedback = async (report: AdminFeedback) => {
   } finally {
     savingKey.value = null
   }
+}
+
+const openFeedbackFromDiagnostics = async (feedbackId: number) => {
+  activeTab.value = 'feedback'
+  feedbackStatusFilter.value = ''
+  highlightedFeedbackId.value = feedbackId
+  await loadFeedback()
+  await nextTick()
+
+  document.getElementById(`feedback-${feedbackId}`)?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center',
+  })
 }
 
 const loadDiagnostics = async () => {
@@ -1009,7 +1023,9 @@ onMounted(loadAdminData)
               <article
                 v-for="report in feedbackReports"
                 :key="report.id"
+                :id="`feedback-${report.id}`"
                 class="rounded-3xl border border-white/10 bg-black/20 p-4"
+                :class="highlightedFeedbackId === report.id ? 'ring-2 ring-cyan-300/80 shadow-2xl shadow-cyan-500/20' : ''"
               >
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div class="min-w-0 flex-1">
@@ -1023,14 +1039,18 @@ onMounted(loadAdminData)
                         {{ report.severity }}
                       </span>
                     </div>
-                    <p class="mt-3 text-lg font-semibold text-white">{{ report.title }}</p>
-                    <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-300">{{ report.message }}</p>
+                    <p class="mt-3 break-words text-lg font-semibold text-white">{{ report.title }}</p>
+                    <div class="mt-2 max-h-72 overflow-y-auto rounded-2xl border border-white/5 bg-slate-950/35 p-3">
+                      <p class="whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">{{ report.message }}</p>
+                    </div>
                     <div class="mt-3 space-y-1 text-xs leading-5 text-slate-500">
                       <p>提交：{{ formatDate(report.created_at) }} · 联系：{{ report.email || '未提供' }}</p>
                       <p v-if="report.page_url" class="break-all">页面：{{ report.page_url }}</p>
                       <p v-if="report.diagnostic_code">诊断码：{{ report.diagnostic_code }}</p>
                       <p v-if="report.user_agent" class="break-all">浏览器：{{ report.user_agent }}</p>
-                      <p v-if="report.diagnostics" class="break-all">诊断信息：{{ report.diagnostics }}</p>
+                      <div v-if="report.diagnostics" class="max-h-36 overflow-y-auto rounded-2xl border border-white/5 bg-black/20 p-3">
+                        <p class="break-all">诊断信息：{{ report.diagnostics }}</p>
+                      </div>
                     </div>
                   </div>
 
@@ -1161,18 +1181,21 @@ onMounted(loadAdminData)
                 <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
                   <p class="font-semibold">待处理反馈</p>
                   <div class="mt-4 space-y-3">
-                    <div
+                    <button
                       v-for="item in diagnostics?.recent_feedback || []"
                       :key="item.id"
-                      class="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4"
+                      type="button"
+                      class="w-full rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-left transition hover:-translate-y-0.5 hover:border-cyan-200/60 hover:bg-cyan-300/15 focus:outline-none focus:ring-2 focus:ring-cyan-300/70"
+                      @click="openFeedbackFromDiagnostics(item.id)"
                     >
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="rounded-full bg-cyan-300/15 px-2.5 py-1 text-xs font-semibold text-cyan-100">#{{ item.id }}</span>
                         <span class="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200">{{ item.status }}</span>
+                        <span class="ml-auto text-xs font-semibold text-cyan-100">打开详情</span>
                       </div>
-                      <p class="mt-2 font-semibold text-white">{{ item.title }}</p>
+                      <p class="mt-2 break-words font-semibold text-white">{{ item.title }}</p>
                       <p v-if="item.page_url" class="mt-1 break-all text-xs text-slate-400">{{ item.page_url }}</p>
-                    </div>
+                    </button>
                     <div v-if="!diagnostics?.recent_feedback?.length" class="rounded-2xl border border-white/10 bg-black/20 p-6 text-center text-sm text-slate-400">
                       没有待处理反馈。
                     </div>
