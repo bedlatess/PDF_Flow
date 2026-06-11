@@ -1,5 +1,6 @@
 """Hidden admin console endpoints."""
 from datetime import datetime
+import json
 import time
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import text
@@ -11,6 +12,7 @@ from app.models.user import (
     AdminAuditLog,
     ContentBlock,
     FeatureFlag,
+    FeedbackReport,
     ProcessingJob,
     SiteSetting,
     User,
@@ -32,6 +34,7 @@ from app.schemas.admin import (
     SiteSettingResponse,
     SiteSettingUpdate,
 )
+from app.schemas.feedback import AdminFeedbackResponse, AdminFeedbackUpdate
 
 router = APIRouter()
 
@@ -401,6 +404,8 @@ async def get_admin_overview(
         "admin_users_count": db.query(User).filter(User.role == UserRole.ADMIN).count(),
         "jobs_count": db.query(ProcessingJob).count(),
         "failed_jobs_count": db.query(ProcessingJob).filter(ProcessingJob.status == "failed").count(),
+        "feedback_count": db.query(FeedbackReport).count(),
+        "open_feedback_count": db.query(FeedbackReport).filter(FeedbackReport.status.in_(["new", "reviewing"])).count(),
         "recent_audit_logs": recent_logs,
     }
 
@@ -681,6 +686,60 @@ async def list_jobs(
 ):
     """Return recent processing jobs with user context."""
     return _list_all_jobs_for_admin(db, limit=limit, status_filter=status_filter)
+
+
+@router.get("/feedback", response_model=list[AdminFeedbackResponse])
+async def list_feedback(
+    status_filter: str | None = None,
+    limit: int = 50,
+    _admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Return recent user-submitted feedback reports."""
+    safe_limit = min(max(limit, 1), 100)
+    query = db.query(FeedbackReport).order_by(FeedbackReport.created_at.desc())
+    if status_filter:
+        query = query.filter(FeedbackReport.status == status_filter)
+    return query.limit(safe_limit).all()
+
+
+@router.patch("/feedback/{feedback_id}", response_model=AdminFeedbackResponse)
+async def update_feedback(
+    feedback_id: int,
+    payload: AdminFeedbackUpdate,
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Update feedback triage status or internal admin note."""
+    report = db.query(FeedbackReport).filter(FeedbackReport.id == feedback_id).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Feedback not found")
+
+    data = payload.model_dump(exclude_unset=True)
+    if "status" in data and data["status"] is not None:
+        allowed = {"new", "reviewing", "resolved", "closed"}
+        if data["status"] not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid feedback status. Allowed values: {', '.join(sorted(allowed))}",
+            )
+        report.status = data["status"]
+    if "admin_note" in data:
+        report.admin_note = data["admin_note"]
+
+    _write_audit(
+        db,
+        request,
+        admin,
+        "update",
+        "feedback",
+        str(report.id),
+        detail=json.dumps(data, ensure_ascii=False),
+    )
+    db.commit()
+    db.refresh(report)
+    return report
 
 
 @router.get("/audit-logs", response_model=list[AdminAuditLogResponse])

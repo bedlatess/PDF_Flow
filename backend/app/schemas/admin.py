@@ -147,4 +147,6 @@ class AdminOverviewResponse(BaseModel):
     admin_users_count: int
     jobs_count: int
     failed_jobs_count: int
+    feedback_count: int = 0
+    open_feedback_count: int = 0
     recent_audit_logs: list[AdminAuditLogResponse]

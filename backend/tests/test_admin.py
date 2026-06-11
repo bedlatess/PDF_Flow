@@ -349,3 +349,60 @@ def test_admin_operations_overview_returns_health_and_recent_activity(client):
     assert body["visible_jobs"] >= 1
     assert body["failed_jobs"] >= 1
     assert body["recent_failed_jobs"][0]["job_id"] == "job_ops_failed"
+
+
+def test_guest_can_submit_feedback_and_admin_can_triage(client):
+    response = client.post("/api/v1/feedback", json={
+        "title": "PDF conversion failed",
+        "message": "The local PDF to image conversion failed on the public site.",
+        "email": "tester@example.com",
+        "category": "bug",
+        "severity": "high",
+        "page_url": "https://pdf.pawn.eu.org/tools/pdf-to-image",
+        "diagnostic_code": "PDF-FLOW-TEST",
+        "diagnostics": {
+            "path": "/tools/pdf-to-image",
+            "locale": "zh",
+            "viewport": "1440x900",
+            "secret": "should not be stored",
+        },
+    })
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "new"
+    assert body["diagnostic_code"] == "PDF-FLOW-TEST"
+
+    _register(client)
+    _promote_to_admin(client)
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    feedback = client.get("/api/v1/admin/feedback", headers=headers)
+    assert feedback.status_code == 200
+    item = feedback.json()[0]
+    assert item["title"] == "PDF conversion failed"
+    assert item["email"] == "tester@example.com"
+    assert "secret" not in (item["diagnostics"] or "")
+
+    updated = client.patch(
+        f"/api/v1/admin/feedback/{item['id']}",
+        headers=headers,
+        json={"status": "reviewing", "admin_note": "Need browser screenshot."},
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["status"] == "reviewing"
+    assert updated.json()["admin_note"] == "Need browser screenshot."
+
+
+def test_feedback_admin_list_requires_admin(client):
+    _register(client, email="free-feedback@example.com")
+    token = _login(client, email="free-feedback@example.com").json()["access_token"]
+
+    response = client.get(
+        "/api/v1/admin/feedback",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403

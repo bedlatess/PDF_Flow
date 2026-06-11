@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   CircleDot,
+  ClipboardList,
   EyeOff,
   FileText,
   Flag,
@@ -21,6 +22,7 @@ import {
 import {
   adminAPI,
   type AdminAuditLog,
+  type AdminFeedback,
   type AdminJob,
   type AdminOperations,
   type AdminOverview,
@@ -31,7 +33,7 @@ import {
 } from '@/services/api'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 
-type TabId = 'overview' | 'flags' | 'settings' | 'content' | 'users' | 'jobs' | 'audit'
+type TabId = 'overview' | 'flags' | 'settings' | 'content' | 'users' | 'jobs' | 'feedback' | 'audit'
 
 const siteConfigStore = useSiteConfigStore()
 const loading = ref(true)
@@ -48,9 +50,11 @@ const contentBlocks = ref<ContentBlock[]>([])
 const auditLogs = ref<AdminAuditLog[]>([])
 const users = ref<AdminUser[]>([])
 const jobs = ref<AdminJob[]>([])
+const feedbackReports = ref<AdminFeedback[]>([])
 const userSearch = ref('')
 const jobStatusFilter = ref('')
 const jobSearch = ref('')
+const feedbackStatusFilter = ref('')
 
 const tabs = [
   { id: 'overview' as const, label: '运营总览', icon: GaugeCircle },
@@ -59,6 +63,7 @@ const tabs = [
   { id: 'content' as const, label: '内容块', icon: FileText },
   { id: 'users' as const, label: '用户管理', icon: UserCog },
   { id: 'jobs' as const, label: '任务观察', icon: GaugeCircle },
+  { id: 'feedback' as const, label: '问题反馈', icon: ClipboardList },
   { id: 'audit' as const, label: '审计日志', icon: Activity },
 ]
 
@@ -115,7 +120,7 @@ const loadAdminData = async () => {
   error.value = ''
 
   try {
-    const [overviewData, operationsData, settingsData, flagsData, contentData, usersData, jobsData, auditData] = await Promise.all([
+    const [overviewData, operationsData, settingsData, flagsData, contentData, usersData, jobsData, feedbackData, auditData] = await Promise.all([
       adminAPI.getOverview(),
       adminAPI.getOperations(),
       adminAPI.listSettings(),
@@ -123,6 +128,7 @@ const loadAdminData = async () => {
       adminAPI.listContentBlocks(),
       adminAPI.listUsers(),
       adminAPI.listJobs(),
+      adminAPI.listFeedback(),
       adminAPI.listAuditLogs(),
     ])
 
@@ -133,6 +139,7 @@ const loadAdminData = async () => {
     contentBlocks.value = contentData
     users.value = usersData
     jobs.value = jobsData
+    feedbackReports.value = feedbackData
     auditLogs.value = auditData
     selectedContent.value = contentData[0] ?? null
   } catch (err: any) {
@@ -316,6 +323,43 @@ const loadJobs = async () => {
   }
 }
 
+const loadFeedback = async () => {
+  savingKey.value = 'feedback:refresh'
+  error.value = ''
+
+  try {
+    feedbackReports.value = await adminAPI.listFeedback({
+      status_filter: feedbackStatusFilter.value || undefined,
+    })
+    overview.value = await adminAPI.getOverview()
+  } catch {
+    error.value = '问题反馈加载失败，请稍后重试。'
+  } finally {
+    savingKey.value = null
+  }
+}
+
+const saveFeedback = async (report: AdminFeedback) => {
+  savingKey.value = `feedback:${report.id}`
+  error.value = ''
+
+  try {
+    const updated = await adminAPI.updateFeedback(report.id, {
+      status: report.status,
+      admin_note: report.admin_note,
+    })
+    const index = feedbackReports.value.findIndex((item) => item.id === updated.id)
+    if (index >= 0) feedbackReports.value[index] = updated
+    auditLogs.value = await adminAPI.listAuditLogs()
+    overview.value = await adminAPI.getOverview()
+    setMessage(`已更新反馈 #${updated.id}`)
+  } catch {
+    error.value = '反馈状态保存失败，请稍后重试。'
+  } finally {
+    savingKey.value = null
+  }
+}
+
 const formatBytes = (value: number) => {
   if (!value) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
@@ -350,7 +394,7 @@ onMounted(loadAdminData)
             </p>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 text-center sm:grid-cols-5">
+          <div class="grid grid-cols-2 gap-3 text-center sm:grid-cols-6">
             <div class="rounded-3xl border border-white/10 bg-white/[0.07] p-4">
               <p class="text-2xl font-semibold">{{ enabledFlagCount }}</p>
               <p class="mt-1 text-xs text-slate-400">已开启</p>
@@ -370,6 +414,10 @@ onMounted(loadAdminData)
             <div class="rounded-3xl border border-white/10 bg-white/[0.07] p-4">
               <p class="text-2xl font-semibold">{{ overview?.failed_jobs_count ?? 0 }}</p>
               <p class="mt-1 text-xs text-slate-400">失败任务</p>
+            </div>
+            <div class="rounded-3xl border border-white/10 bg-white/[0.07] p-4">
+              <p class="text-2xl font-semibold">{{ overview?.open_feedback_count ?? 0 }}</p>
+              <p class="mt-1 text-xs text-slate-400">待处理反馈</p>
             </div>
           </div>
         </div>
@@ -897,6 +945,101 @@ onMounted(loadAdminData)
               </article>
               <div v-if="filteredJobs.length === 0" class="rounded-3xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-slate-400">
                 当前没有匹配任务。运行一次业务、OCR 或 Office smoke test 后，再点刷新；如果已刷新仍为空，说明最近 1 小时 Redis 状态和数据库任务里都没有匹配记录。
+              </div>
+            </div>
+          </div>
+
+          <div v-else-if="activeTab === 'feedback'" class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p class="text-xl font-semibold">问题反馈</p>
+                <p class="mt-2 text-sm leading-6 text-slate-400">
+                  收集真实用户在页面右下角提交的问题，包含页面地址、诊断码、浏览器信息和用户描述，方便上线测试时快速复现。
+                </p>
+              </div>
+              <div class="flex flex-col gap-2 sm:flex-row">
+                <select
+                  v-model="feedbackStatusFilter"
+                  class="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/60"
+                >
+                  <option value="">全部状态</option>
+                  <option value="new">New</option>
+                  <option value="reviewing">Reviewing</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="savingKey === 'feedback:refresh'"
+                  @click="loadFeedback"
+                >
+                  <Loader2 v-if="savingKey === 'feedback:refresh'" class="h-4 w-4 animate-spin" />
+                  刷新
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-5 space-y-4">
+              <article
+                v-for="report in feedbackReports"
+                :key="report.id"
+                class="rounded-3xl border border-white/10 bg-black/20 p-4"
+              >
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">#{{ report.id }}</span>
+                      <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-200">{{ report.category }}</span>
+                      <span
+                        class="rounded-full px-3 py-1 text-xs font-semibold"
+                        :class="report.severity === 'critical' ? 'bg-rose-400/15 text-rose-100' : report.severity === 'high' ? 'bg-amber-300/15 text-amber-100' : 'bg-emerald-400/15 text-emerald-100'"
+                      >
+                        {{ report.severity }}
+                      </span>
+                    </div>
+                    <p class="mt-3 text-lg font-semibold text-white">{{ report.title }}</p>
+                    <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-300">{{ report.message }}</p>
+                    <div class="mt-3 space-y-1 text-xs leading-5 text-slate-500">
+                      <p>提交：{{ formatDate(report.created_at) }} · 联系：{{ report.email || '未提供' }}</p>
+                      <p v-if="report.page_url" class="break-all">页面：{{ report.page_url }}</p>
+                      <p v-if="report.diagnostic_code">诊断码：{{ report.diagnostic_code }}</p>
+                      <p v-if="report.user_agent" class="break-all">浏览器：{{ report.user_agent }}</p>
+                      <p v-if="report.diagnostics" class="break-all">诊断信息：{{ report.diagnostics }}</p>
+                    </div>
+                  </div>
+
+                  <div class="w-full space-y-3 xl:w-72">
+                    <select
+                      v-model="report.status"
+                      class="w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300/60"
+                    >
+                      <option value="new">New</option>
+                      <option value="reviewing">Reviewing</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                    <textarea
+                      v-model="report.admin_note"
+                      rows="4"
+                      placeholder="内部备注，例如：已复现 / 等截图 / 已修复待上线"
+                      class="w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-2 text-sm leading-6 text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
+                    />
+                    <button
+                      type="button"
+                      class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      :disabled="savingKey === `feedback:${report.id}`"
+                      @click="saveFeedback(report)"
+                    >
+                      <Loader2 v-if="savingKey === `feedback:${report.id}`" class="h-4 w-4 animate-spin" />
+                      <Save v-else class="h-4 w-4" />
+                      保存反馈状态
+                    </button>
+                  </div>
+                </div>
+              </article>
+              <div v-if="feedbackReports.length === 0" class="rounded-3xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-slate-400">
+                当前没有匹配的问题反馈。用户可通过页面右下角“反馈问题”提交。
               </div>
             </div>
           </div>

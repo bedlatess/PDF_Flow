@@ -377,6 +377,8 @@ export interface AdminOverview {
   admin_users_count: number
   jobs_count: number
   failed_jobs_count: number
+  feedback_count: number
+  open_feedback_count: number
   recent_audit_logs: AdminAuditLog[]
 }
 
@@ -481,6 +483,48 @@ export interface AdminOperations {
   recent_jobs: AdminJob[]
 }
 
+export interface FeedbackCreate {
+  title: string
+  message: string
+  email?: string
+  category?: string
+  severity?: string
+  page_url?: string
+  diagnostic_code?: string
+  diagnostics?: Record<string, any>
+}
+
+export interface FeedbackResponse {
+  id: number
+  status: string
+  diagnostic_code: string | null
+  created_at: string
+}
+
+export interface AdminFeedback {
+  id: number
+  user_id: number | null
+  email: string | null
+  category: string
+  severity: string
+  status: 'new' | 'reviewing' | 'resolved' | 'closed'
+  page_url: string | null
+  title: string
+  message: string
+  diagnostic_code: string | null
+  diagnostics: string | null
+  admin_note: string | null
+  ip_address: string | null
+  user_agent: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminFeedbackUpdate {
+  status?: AdminFeedback['status']
+  admin_note?: string | null
+}
+
 export const adminAPI = {
   async getOverview(): Promise<AdminOverview> {
     const response = await apiClient.get<AdminOverview>('/api/v1/admin/overview')
@@ -548,8 +592,27 @@ export const adminAPI = {
     return response.data
   },
 
+  async listFeedback(params?: { status_filter?: string; limit?: number }): Promise<AdminFeedback[]> {
+    const response = await apiClient.get<AdminFeedback[]>('/api/v1/admin/feedback', { params })
+    return response.data
+  },
+
+  async updateFeedback(feedbackId: number, data: AdminFeedbackUpdate): Promise<AdminFeedback> {
+    const response = await apiClient.patch<AdminFeedback>(`/api/v1/admin/feedback/${feedbackId}`, data)
+    return response.data
+  },
+
   async listAuditLogs(): Promise<AdminAuditLog[]> {
     const response = await apiClient.get<AdminAuditLog[]>('/api/v1/admin/audit-logs')
+    return response.data
+  }
+}
+
+// ==================== Feedback API ====================
+
+export const feedbackAPI = {
+  async create(data: FeedbackCreate): Promise<FeedbackResponse> {
+    const response = await apiClient.post<FeedbackResponse>('/api/v1/feedback', data)
     return response.data
   }
 }

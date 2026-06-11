@@ -297,3 +297,31 @@ class AdminAuditLog(Base):
         Index("idx_admin_audit_admin", "admin_user_id"),
         Index("idx_admin_audit_target", "target_type", "target_key"),
     )
+
+
+class FeedbackReport(Base):
+    """User-submitted issue report for live testing and support triage."""
+    __tablename__ = "feedback_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    email = Column(String, nullable=True)
+    category = Column(String, default="bug", nullable=False)
+    severity = Column(String, default="normal", nullable=False)
+    status = Column(String, default="new", nullable=False)
+    page_url = Column(Text, nullable=True)
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    diagnostic_code = Column(String, nullable=True)
+    diagnostics = Column(Text, nullable=True)
+    admin_note = Column(Text, nullable=True)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("idx_feedback_status", "status"),
+        Index("idx_feedback_created", "created_at"),
+        Index("idx_feedback_user", "user_id"),
+    )

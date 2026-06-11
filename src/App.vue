@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import Header from '@/components/layout/Header.vue'
 import Footer from '@/components/layout/Footer.vue'
+import FeedbackWidget from '@/components/common/FeedbackWidget.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 
@@ -18,6 +19,7 @@ const shouldShowMaintenance = computed(() =>
   siteConfigStore.maintenanceMode &&
   !maintenanceBypassPrefixes.some((prefix) => route.path.startsWith(prefix))
 )
+const shouldShowFeedback = computed(() => !route.path.startsWith('/control-room'))
 
 onMounted(() => {
   settingsStore.initTheme()
@@ -72,6 +74,7 @@ onMounted(() => {
         />
       </RouterView>
     </main>
+    <FeedbackWidget v-if="shouldShowFeedback" />
     <Footer :key="`footer-${currentLocale}`" />
   </div>
 </template>

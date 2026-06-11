@@ -729,3 +729,11 @@ python -m pytest tests/ -q      # 35 通过
 - Added a fourth `批量分析` tab to `AI PDF 分析器`, wiring the existing `/api/v1/ai/batch-analyze` client method to a visible UI with selectable summary, extraction, and classification operations.
 - AI live validation remains deferred until the Gemini/API key is configured; the new batch UI is build-validated and will surface normal AI error messaging if backend AI is unavailable.
 - Local validation: `npm run type-check` and `npm run build` pass with only the existing large PDF vendor chunk warning.
+### 2026-06-11 Live Feedback Loop / 上线测试反馈闭环
+- Added `feedback_reports` storage with Alembic migration `add_feedback_reports`, allowing guest and signed-in users to submit live issue reports without exposing internal stack traces.
+- Added public `POST /api/v1/feedback`, storing title, description, optional email, category, severity, page URL, diagnostic code, and a safe allowlist of browser/page diagnostics.
+- Added hidden admin feedback triage APIs under `/api/v1/admin/feedback` for listing reports and updating status/admin notes. Current statuses: `new`, `reviewing`, `resolved`, `closed`.
+- Added a global frontend `FeedbackWidget` outside `/control-room`, shown as a low-distraction bottom-right `反馈问题` entry. It automatically includes path, URL, locale, theme, viewport, browser UA, timezone, timestamp, and auth state, but does not collect file contents.
+- Added `/control-room` `问题反馈` tab with status filtering, report details, diagnostic info, admin note editing, and status updates. Admin overview now includes `feedback_count` and `open_feedback_count`.
+- Local validation: `npm run type-check`, `npm run build`, `python -m pytest backend/tests -q`, and backend compileall pass. Build still shows the known large PDF vendor chunk warning.
+- Server deployment note: after pulling this commit, run `docker compose exec backend alembic upgrade head` before testing feedback submission, then rebuild/restart backend and frontend.
