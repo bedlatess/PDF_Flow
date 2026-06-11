@@ -852,3 +852,27 @@ python -m pytest tests/ -q      # 35 通过
 - 清理公开用户文案中的“管理员 / 上线验收 / staging”类内部表达，统一改为支持渠道、反馈或维护操作。
 - 更新隐私政策中云端文件清理描述，避免用户看到内部后台角色词。
 - 前端验证：`npm run type-check`、`npm run build`、公开页面内部词扫描、`git diff --check` 通过。Build 仍有已知 PDF vendor chunk 体积提示。
+
+### 2026-06-11 Competitor Tool Gap Review And Page Management Start / 竞品工具差距与页面管理套件启动
+- Reference review covered iLovePDF and PDF24 all-tools pages. Both products cover the common baseline of merge, split, compress, rotate, Office/PDF conversion, OCR, watermark, edit/annotate, protect/unlock, signing, page numbers, crop, repair, compare, redact, flatten, and long-tail conversion/organization tools.
+- Current PDF-Flow public tools already cover merge, split/extract, rotate, compress, image to PDF, PDF to image, OCR, Office to PDF, AI analyzer, watermark, form fill, and annotation. Admin, feature flags, feedback, health report, history, and cloud file retention are current differentiators.
+- Recommended roadmap:
+  - P0 page management suite: delete pages, reorder/organize pages, add page numbers.
+  - P1 delivery and safety suite: protect PDF, unlock PDF, signature workflow, extract images, extract text.
+  - P2 professional conversion suite: PDF to Word/Excel/PPT, crop PDF, real redaction, flatten PDF, repair PDF, PDF/A.
+  - P3 advanced workflows: compare PDF, translate PDF, batch processing hub, stronger AI batch workflows.
+- Implementation principle: keep lightweight operations local-first and free where practical; reserve Pro/cloud for OCR, Office conversion, AI, large files, long-running tasks, repair/redaction/conversion quality paths, and team/enterprise workflows.
+- Started P0 by exposing a new local `Delete PDF Pages` tool. It reuses existing `deletePDFPages()` logic, adds a dedicated route `/tools/delete-pages`, homepage card, history type, and backend default feature flag `delete_pages_pdf` so admins can hide or maintain the tool from `/control-room`.
+- Suggested user-facing copy for future tools:
+  - 删除 PDF 页面：移除不需要的页面，生成一份干净的新文件。
+  - 整理 PDF 页面：拖拽调整页面顺序，合并、提交或归档前先把文档排好。
+  - 添加页码：为合同、报告、讲义快速添加统一页码。
+  - 保护 PDF：为 PDF 添加打开密码，适合发送前保护敏感内容。
+  - 解锁 PDF：在你拥有权限的前提下移除密码限制，方便后续整理。
+  - 涂黑敏感信息：分享文件前永久移除手机号、证件号、地址等敏感内容；实现时必须真实删除内容，不能只是覆盖黑色矩形。
+### 2026-06-11 Organize PDF Pages / 页面整理工具落地
+- Continued the P0 page management suite after `Delete PDF Pages` by adding a local-first `Organize PDF Pages` tool at `/tools/organize`.
+- The tool lets users upload one PDF, preview page thumbnails, drag pages into a new order, use move up/down controls for mobile or non-drag workflows, reverse the order, reset to original order, and export a new PDF without modifying the original file.
+- Added reusable `reorderPDFPages()` in `src/utils/pdf/split.ts` so future page-management tools can share the same page-copying path.
+- Wired the new tool into the homepage card grid, route guard, history records, and default admin feature flag `organize_pdf`, allowing `/control-room` to hide or maintain the feature like other public tools.
+- Page management P0 status: delete pages and organize/reorder pages are implemented; next recommended item is `Add Page Numbers`.

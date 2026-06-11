@@ -61,6 +61,8 @@ const getToolIcon = (type: HistoryItem['type']) => {
     compress: 'C',
     imageToPdf: 'I',
     pdfToImage: 'P',
+    deletePages: 'D',
+    organize: 'O',
     watermark: 'W',
   }
   return icons[type]
@@ -74,6 +76,8 @@ const getToolColor = (type: HistoryItem['type']) => {
     compress: 'bg-indigo-500',
     imageToPdf: 'bg-orange-500',
     pdfToImage: 'bg-rose-500',
+    deletePages: 'bg-red-500',
+    organize: 'bg-emerald-500',
     watermark: 'bg-cyan-500',
   }
   return colors[type]

@@ -13,6 +13,8 @@ DEFAULT_FEATURE_FLAGS = [
     ("rotate_pdf", "旋转 PDF", "允许用户旋转 PDF 页面。", True, False, False),
     ("image_to_pdf", "图片转 PDF", "允许用户将图片转换为 PDF。", True, False, False),
     ("pdf_to_image", "PDF 转图片", "允许用户将 PDF 页面导出为图片。", True, False, False),
+    ("delete_pages_pdf", "删除 PDF 页面", "允许用户移除 PDF 中不需要的页面。", True, False, False),
+    ("organize_pdf", "整理 PDF 页面", "允许用户调整 PDF 页面顺序。", True, False, False),
     ("ocr_pdf", "OCR 文字识别", "允许登录用户提交 OCR 识别任务。", True, True, True),
     ("office_to_pdf", "Office 转 PDF", "允许登录用户将 Office 文件转换为 PDF。", True, True, False),
     ("ai_analyzer", "AI PDF 分析器", "允许 Pro 用户进行 PDF 智能分析。", True, True, True),

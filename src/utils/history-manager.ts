@@ -5,6 +5,8 @@ export type HistoryToolType =
   | 'compress'
   | 'imageToPdf'
   | 'pdfToImage'
+  | 'deletePages'
+  | 'organize'
   | 'watermark'
 
 export interface HistoryItem {
@@ -118,6 +120,8 @@ export function formatToolType(type: HistoryToolType): string {
     compress: '压缩 PDF',
     imageToPdf: '图片转 PDF',
     pdfToImage: 'PDF 转图片',
+    deletePages: '删除 PDF 页面',
+    organize: '整理 PDF 页面',
     watermark: '添加水印',
   }
   return typeNames[type]

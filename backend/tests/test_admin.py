@@ -86,6 +86,8 @@ def test_public_config_exposes_feature_flags(client):
     assert "feature_flags" in body
     assert body["settings"]["support_email"]["value"] == "support@pdf-flow.com"
     assert body["feature_flags"]["merge_pdf"]["enabled"] is True
+    assert body["feature_flags"]["delete_pages_pdf"]["enabled"] is True
+    assert body["feature_flags"]["organize_pdf"]["enabled"] is True
     assert body["content_blocks"]["home_hero:zh"]["content"].startswith("隐私优先")
 
 

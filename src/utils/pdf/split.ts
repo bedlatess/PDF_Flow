@@ -197,3 +197,52 @@ export async function deletePDFPages(
     throw new Error(`Failed to delete pages: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
+
+/**
+ * 按指定顺序重新排列 PDF 页面
+ * @param file - PDF 文件
+ * @param orderedPages - 新页面顺序，页码从 1 开始
+ * @returns 重新排列后的 PDF Blob
+ */
+export async function reorderPDFPages(
+  file: File,
+  orderedPages: number[]
+): Promise<Blob> {
+  if (!file) {
+    throw new Error('No file provided')
+  }
+
+  try {
+    const arrayBuffer = await file.arrayBuffer()
+    const sourcePdf = await PDFDocument.load(arrayBuffer)
+    const totalPages = sourcePdf.getPageCount()
+
+    if (orderedPages.length !== totalPages) {
+      throw new Error('Page order must include every page exactly once')
+    }
+
+    const uniquePages = new Set(orderedPages)
+    if (uniquePages.size !== totalPages) {
+      throw new Error('Page order contains duplicate pages')
+    }
+
+    const invalidPages = orderedPages.filter((num) => num < 1 || num > totalPages)
+    if (invalidPages.length > 0) {
+      throw new Error(`Invalid page numbers: ${invalidPages.join(', ')}`)
+    }
+
+    const newPdf = await PDFDocument.create()
+    const pageIndices = orderedPages.map((num) => num - 1)
+    const copiedPages = await newPdf.copyPages(sourcePdf, pageIndices)
+
+    copiedPages.forEach((page) => {
+      newPdf.addPage(page)
+    })
+
+    const pdfBytes = await newPdf.save()
+    return pdfBytesToBlob(pdfBytes)
+  } catch (error) {
+    console.error('Reorder pages error:', error)
+    throw new Error(`Failed to reorder pages: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
+}

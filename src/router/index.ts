@@ -155,6 +155,20 @@ const router = createRouter({
           meta: { titleKey: 'tools.pdfToImage.title', featureKey: 'pdf_to_image' }
         },
         {
+          path: 'delete-pages',
+          name: 'delete-pages-pdf',
+          component: () => import('@/views/tools/DeletePagesPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.deletePages.title', featureKey: 'delete_pages_pdf' }
+        },
+        {
+          path: 'organize',
+          name: 'organize-pdf',
+          component: () => import('@/views/tools/OrganizePDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.organize.title', featureKey: 'organize_pdf' }
+        },
+        {
           path: 'ocr',
           name: 'ocr-pdf',
           component: () => import('@/views/tools/OCRPDF.vue'),

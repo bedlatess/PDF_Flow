@@ -16,6 +16,8 @@
     "compress": { "title": "压缩 PDF", "desc": "减小 PDF 文件大小" },
     "imageToPdf": { "title": "图片转 PDF", "desc": "将图片转换为 PDF" },
     "pdfToImage": { "title": "PDF 转图片", "desc": "将 PDF 转换为图片" },
+    "deletePages": { "title": "删除 PDF 页面", "desc": "移除不需要的页面，生成干净的新 PDF" },
+    "organize": { "title": "整理 PDF 页面", "desc": "拖拽调整页面顺序，导出新的 PDF" },
     "officeToPdf": {
       "title": "Office 转 PDF",
       "desc": "将 Word、Excel、PowerPoint 转换为 PDF",
