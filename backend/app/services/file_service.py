@@ -23,6 +23,7 @@ from app.tasks.pdf_tasks import (
     convert_pdf_to_images_task,
 )
 from app.tasks.ocr_tasks import extract_text_task
+from app.services.file_retention_service import file_retention_service
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ class FileProcessingService:
             文件信息字典
         """
         # 验证文件
+        file_retention_service.cleanup_if_due()
         max_size = FileValidator.MAX_FILE_SIZE.get(user_tier, FileValidator.MAX_FILE_SIZE["free"])
         is_valid, error_msg = await FileValidator.validate_file(file, max_size)
 
@@ -197,6 +199,7 @@ class FileProcessingService:
         Raises:
             HTTPException: 任务不存在 / 未完成 / 无可下载产物
         """
+        file_retention_service.cleanup_if_due()
         status_data = self.get_job_status(job_id)
         if not status_data:
             raise HTTPException(

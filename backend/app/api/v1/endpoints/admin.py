@@ -23,6 +23,7 @@ from app.models.user import (
 )
 from app.services.feature_gate import DEFAULT_FEATURE_FLAGS
 from app.services.file_service import file_processing_service
+from app.services.file_retention_service import file_retention_service
 from app.celery_worker import celery_app
 from app.schemas.admin import (
     AdminAuditLogResponse,
@@ -30,6 +31,7 @@ from app.schemas.admin import (
     AdminCleanupTestUsersResponse,
     AdminDiagnosticsResponse,
     AdminFeedbackCleanupResponse,
+    AdminFileRetentionResponse,
     AdminHealthReportResponse,
     AdminJobResponse,
     AdminMaintenanceResponse,
@@ -909,7 +911,29 @@ async def get_maintenance_summary(
         "api_error_count": db.query(ApiErrorLog).count(),
         "failed_jobs_count": len([job for job in jobs if job["status"] == "failed"]),
         "running_jobs_count": len([job for job in jobs if job["status"] in ("pending", "processing")]),
+        "file_retention": file_retention_service.preview(),
     }
+
+
+@router.post("/files/cleanup-expired", response_model=AdminFileRetentionResponse)
+async def cleanup_expired_files(
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete expired temporary upload/result/download directories under UPLOAD_DIR."""
+    result = file_retention_service.cleanup()
+    _write_audit(
+        db,
+        request,
+        admin,
+        "cleanup",
+        "file_retention",
+        settings.UPLOAD_DIR,
+        detail=f"removed={result['removed_count']}, bytes={result['removed_bytes']}",
+    )
+    db.commit()
+    return result
 
 
 @router.patch("/feedback/{feedback_id}", response_model=AdminFeedbackResponse)

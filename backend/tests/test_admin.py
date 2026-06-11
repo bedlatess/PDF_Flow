@@ -516,6 +516,46 @@ def test_admin_can_cleanup_live_acceptance_feedback_only(client):
     assert reports["real user issue"] == "new"
 
 
+def test_admin_can_preview_and_cleanup_expired_cloud_files(client, tmp_path, monkeypatch):
+    import os
+    import time
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "CLOUD_FILE_UPLOAD_TTL_SECONDS", 10)
+    monkeypatch.setattr(settings, "CLOUD_FILE_RESULT_TTL_SECONDS", 10)
+    monkeypatch.setattr(settings, "CLOUD_FILE_DOWNLOAD_TTL_SECONDS", 10)
+
+    expired_upload = tmp_path / "file_old_abc"
+    expired_result = tmp_path / "merge_old_abc"
+    keep_unknown = tmp_path / "manual_docs"
+    fresh_upload = tmp_path / "file_fresh_abc"
+    for directory in (expired_upload, expired_result, keep_unknown, fresh_upload):
+        directory.mkdir()
+        (directory / "sample.pdf").write_bytes(b"%PDF-1.4")
+
+    old_time = time.time() - 60
+    for directory in (expired_upload, expired_result, keep_unknown):
+        os.utime(directory, (old_time, old_time))
+
+    _register(client)
+    _promote_to_admin(client)
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    summary = client.get("/api/v1/admin/maintenance", headers=headers)
+    cleanup = client.post("/api/v1/admin/files/cleanup-expired", headers=headers)
+
+    assert summary.status_code == 200
+    assert summary.json()["file_retention"]["removable_count"] == 2
+    assert cleanup.status_code == 200
+    assert cleanup.json()["removed_count"] == 2
+    assert not expired_upload.exists()
+    assert not expired_result.exists()
+    assert keep_unknown.exists()
+    assert fresh_upload.exists()
+
+
 def test_feedback_admin_list_requires_admin(client):
     _register(client, email="free-feedback@example.com")
     token = _login(client, email="free-feedback@example.com").json()["access_token"]

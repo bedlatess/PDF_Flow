@@ -590,6 +590,16 @@ export interface AdminMaintenance {
   api_error_count: number
   failed_jobs_count: number
   running_jobs_count: number
+  file_retention: AdminFileRetention
+}
+
+export interface AdminFileRetention {
+  scanned_count: number
+  removable_count: number
+  removed_count: number
+  removed_bytes: number
+  skipped_count: number
+  upload_dir: string
 }
 
 export interface AdminCleanupTestUsers {
@@ -662,6 +672,11 @@ export const adminAPI = {
 
   async cleanupTestUsers(): Promise<AdminCleanupTestUsers> {
     const response = await apiClient.post<AdminCleanupTestUsers>('/api/v1/admin/users/cleanup-test-users')
+    return response.data
+  },
+
+  async cleanupExpiredFiles(): Promise<AdminFileRetention> {
+    const response = await apiClient.post<AdminFileRetention>('/api/v1/admin/files/cleanup-expired')
     return response.data
   },
 

@@ -43,18 +43,23 @@ const { cloudProgress, cloudPhase, processInCloud } = useCloudProcessing()
 
 const copy = computed(() => locale.value.startsWith('zh')
   ? {
-      badge: '本地工具',
+      badge: '本地优先',
       setupLabel: '压缩设置',
       setupTitle: '选择压缩强度',
-      setupDesc: '根据用途选择更合适的压缩级别，在文件大小和阅读体验之间取得平衡。',
-      resultLabel: '预计结果',
+      setupDesc: '压缩效果取决于 PDF 是否已经被优化。这里的强度会影响处理方式，但最终节省空间以实际结果为准。',
+      resultLabel: '参考预估',
       resultTitle: '输出前快速确认',
+      estimateHint: '预估用于帮助选择强度，不代表最终一定节省。实际大小会在处理完成后显示。',
+      actualLabel: '实际结果',
+      noSavingsTitle: '文件已接近最优',
+      noSavingsDesc: '这份 PDF 没有进一步缩小，PDF-Flow 已保留原文件，避免生成更大的“压缩文件”。',
+      optimizedDesc: '已按当前设置生成更小的 PDF。',
       originalSize: '原始大小',
-      estimatedCompression: '预计压缩',
-      estimatedSize: '预计大小',
-      outputSize: '压缩后大小',
+      estimatedCompression: '参考压缩',
+      estimatedSize: '参考大小',
+      outputSize: '输出大小',
       savedSize: '节省空间',
-      ratio: '压缩比例',
+      ratio: '实际比例',
       action: '压缩 PDF',
       successTitle: '压缩完成',
       compressMore: '继续压缩其他文件',
@@ -66,34 +71,39 @@ const copy = computed(() => locale.value.startsWith('zh')
       qualityOptions: [
         {
           value: 'high' as CompressionQuality,
-          label: '高质量',
-          description: '轻度压缩，优先保留更好的阅读清晰度。',
+          label: '高清优先',
+          description: '轻度优化，优先保留更好的阅读清晰度。',
         },
         {
           value: 'medium' as CompressionQuality,
-          label: '平衡',
-          description: '适合大多数日常分享、归档和在线传输场景。',
+          label: '平衡压缩',
+          description: '适合多数分享、归档和在线传输场景。',
         },
         {
           value: 'low' as CompressionQuality,
-          label: '高压缩',
+          label: '体积优先',
           description: '尽可能减小体积，更适合上传和快速分发。',
         },
       ],
     }
   : {
-      badge: 'Local tool',
+      badge: 'Local-first',
       setupLabel: 'Compression setup',
       setupTitle: 'Choose a compression level',
-      setupDesc: 'Pick the compression level that best fits your use case and balance file size with reading quality.',
-      resultLabel: 'Estimated result',
+      setupDesc: 'Compression depends on how the PDF was built. The level changes the optimization pass, but actual savings are shown after processing.',
+      resultLabel: 'Reference estimate',
       resultTitle: 'Review before exporting',
+      estimateHint: 'The estimate helps choose a level, but the real size depends on the file. Actual results appear after processing.',
+      actualLabel: 'Actual result',
+      noSavingsTitle: 'Already near optimal',
+      noSavingsDesc: 'This PDF did not shrink further, so PDF-Flow kept the original file instead of creating a larger “compressed” copy.',
+      optimizedDesc: 'A smaller PDF was generated with the selected setting.',
       originalSize: 'Original size',
-      estimatedCompression: 'Estimated compression',
-      estimatedSize: 'Estimated size',
-      outputSize: 'Compressed size',
+      estimatedCompression: 'Reference compression',
+      estimatedSize: 'Reference size',
+      outputSize: 'Output size',
       savedSize: 'Space saved',
-      ratio: 'Compression ratio',
+      ratio: 'Actual ratio',
       action: 'Compress PDF',
       successTitle: 'Compression complete',
       compressMore: 'Compress more files',
@@ -106,7 +116,7 @@ const copy = computed(() => locale.value.startsWith('zh')
         {
           value: 'high' as CompressionQuality,
           label: 'High quality',
-          description: 'Light compression with a stronger focus on visual clarity.',
+          description: 'Light optimization with a stronger focus on visual clarity.',
         },
         {
           value: 'medium' as CompressionQuality,
@@ -115,11 +125,13 @@ const copy = computed(() => locale.value.startsWith('zh')
         },
         {
           value: 'low' as CompressionQuality,
-          label: 'High compression',
+          label: 'Size first',
           description: 'Prioritizes a smaller file size for uploads and fast distribution.',
         },
       ],
     })
+
+const formatMB = (value: number) => `${(Math.max(value, 0) / (1024 * 1024)).toFixed(2)} MB`
 
 const estimatedRatio = computed(() => {
   if (!selectedFile.value) return 0
@@ -138,7 +150,6 @@ const estimatedStats = computed(() => {
   const originalSize = selectedFile.value.size
   const estimatedOutputSize = estimatedSize.value
   const savedSize = Math.max(originalSize - estimatedOutputSize, 0)
-  const formatMB = (value: number) => `${(value / (1024 * 1024)).toFixed(2)} MB`
 
   return {
     originalSize: formatMB(originalSize),
@@ -156,13 +167,12 @@ const resultStats = computed(() => {
   const savedSize = Math.max(originalSize - compressedSize, 0)
   const ratio = originalSize > 0 ? ((savedSize / originalSize) * 100) : 0
 
-  const formatMB = (value: number) => `${(value / (1024 * 1024)).toFixed(2)} MB`
-
   return {
     originalSize: formatMB(originalSize),
     compressedSize: formatMB(compressedSize),
     savedSize: formatMB(savedSize),
     ratio: `${ratio.toFixed(1)}%`,
+    optimized: compressionResult.value.optimized,
   }
 })
 
@@ -194,6 +204,23 @@ const clearAll = () => {
   }
 }
 
+const setResultFileName = () => {
+  if (!selectedFile.value) return
+  const timestamp = new Date().toISOString().slice(0, 10)
+  const originalName = selectedFile.value.name.replace(/\.pdf$/i, '')
+  resultFileName.value = `${originalName}-compressed-${timestamp}.pdf`
+}
+
+const storeHistory = (result: CompressionResult) => {
+  if (!selectedFile.value) return
+  historyManager.addHistory({
+    type: 'compress',
+    fileName: selectedFile.value.name,
+    fileSize: result.originalSize,
+    resultSize: result.compressedSize,
+  })
+}
+
 const compressFile = async () => {
   if (!selectedFile.value) return
 
@@ -221,17 +248,8 @@ const compressFile = async () => {
 
     compressionResult.value = result
     resultUrl.value = memoryManager.createTemporaryURL(result.compressedBlob)
-    const timestamp = new Date().toISOString().slice(0, 10)
-    const originalName = selectedFile.value.name.replace('.pdf', '')
-    resultFileName.value = `${originalName}-compressed-${timestamp}.pdf`
-
-    historyManager.addHistory({
-      type: 'compress',
-      fileName: selectedFile.value.name,
-      fileSize: result.originalSize,
-      resultSize: result.compressedSize,
-    })
-
+    setResultFileName()
+    storeHistory(result)
     showSuccessModal.value = true
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : copy.value.errorFailed
@@ -254,25 +272,20 @@ const compressInCloud = async () => {
     )
 
     const originalSize = selectedFile.value.size
-    resultUrl.value = memoryManager.createTemporaryURL(blob)
-    const timestamp = new Date().toISOString().slice(0, 10)
-    const originalName = selectedFile.value.name.replace('.pdf', '')
-    resultFileName.value = `${originalName}-compressed-${timestamp}.pdf`
-
-    compressionResult.value = {
+    const optimized = blob.size < originalSize
+    const outputBlob = optimized ? blob : selectedFile.value
+    const result: CompressionResult = {
       originalSize,
-      compressedSize: blob.size,
-      compressionRatio: originalSize > 0 ? (1 - blob.size / originalSize) * 100 : 0,
-      compressedBlob: blob,
-    } as CompressionResult
+      compressedSize: optimized ? blob.size : originalSize,
+      compressionRatio: optimized && originalSize > 0 ? (1 - blob.size / originalSize) * 100 : 0,
+      compressedBlob: outputBlob,
+      optimized,
+    }
 
-    historyManager.addHistory({
-      type: 'compress',
-      fileName: selectedFile.value.name,
-      fileSize: originalSize,
-      resultSize: blob.size,
-    })
-
+    resultUrl.value = memoryManager.createTemporaryURL(outputBlob)
+    compressionResult.value = result
+    setResultFileName()
+    storeHistory(result)
     showSuccessModal.value = true
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : copy.value.errorCloudFailed
@@ -400,6 +413,9 @@ onUnmounted(() => {
               <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
                 {{ copy.resultTitle }}
               </h3>
+              <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                {{ copy.estimateHint }}
+              </p>
             </div>
 
             <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
@@ -424,6 +440,25 @@ onUnmounted(() => {
             </div>
 
             <div
+              v-if="resultStats"
+              class="rounded-[24px] border p-5 dark:border-slate-800"
+              :class="resultStats.optimized ? 'border-emerald-200 bg-emerald-50/80 dark:bg-emerald-500/10' : 'border-amber-200 bg-amber-50/80 dark:bg-amber-500/10'"
+            >
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                {{ copy.actualLabel }}
+              </p>
+              <p class="mt-2 font-semibold text-slate-900 dark:text-white">
+                {{ resultStats.optimized ? copy.optimizedDesc : copy.noSavingsTitle }}
+              </p>
+              <p
+                v-if="!resultStats.optimized"
+                class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"
+              >
+                {{ copy.noSavingsDesc }}
+              </p>
+            </div>
+
+            <div
               v-if="resultStats || estimatedStats"
               class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40"
             >
@@ -442,13 +477,19 @@ onUnmounted(() => {
                 </div>
                 <div>
                   <p class="text-slate-500 dark:text-slate-400">{{ copy.savedSize }}</p>
-                  <p class="mt-1 font-semibold text-emerald-600">
+                  <p
+                    class="mt-1 font-semibold"
+                    :class="resultStats && !resultStats.optimized ? 'text-amber-600' : 'text-emerald-600'"
+                  >
                     {{ resultStats?.savedSize || estimatedStats?.savedSize }}
                   </p>
                 </div>
                 <div>
                   <p class="text-slate-500 dark:text-slate-400">{{ copy.ratio }}</p>
-                  <p class="mt-1 font-semibold text-primary">
+                  <p
+                    class="mt-1 font-semibold"
+                    :class="resultStats && !resultStats.optimized ? 'text-amber-600' : 'text-primary'"
+                  >
                     {{ resultStats?.ratio || estimatedStats?.ratio }}
                   </p>
                 </div>
@@ -505,6 +546,9 @@ onUnmounted(() => {
             v-if="resultStats"
             class="mb-6 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 text-left dark:border-slate-800 dark:bg-slate-950/40"
           >
+            <p class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">
+              {{ resultStats.optimized ? copy.optimizedDesc : copy.noSavingsDesc }}
+            </p>
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p class="text-slate-500 dark:text-slate-400">{{ copy.originalSize }}</p>
@@ -520,13 +564,19 @@ onUnmounted(() => {
               </div>
               <div>
                 <p class="text-slate-500 dark:text-slate-400">{{ copy.savedSize }}</p>
-                <p class="mt-1 font-semibold text-emerald-600">
+                <p
+                  class="mt-1 font-semibold"
+                  :class="resultStats.optimized ? 'text-emerald-600' : 'text-amber-600'"
+                >
                   {{ resultStats.savedSize }}
                 </p>
               </div>
               <div>
                 <p class="text-slate-500 dark:text-slate-400">{{ copy.ratio }}</p>
-                <p class="mt-1 font-semibold text-primary">
+                <p
+                  class="mt-1 font-semibold"
+                  :class="resultStats.optimized ? 'text-primary' : 'text-amber-600'"
+                >
                   {{ resultStats.ratio }}
                 </p>
               </div>

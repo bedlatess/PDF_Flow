@@ -592,6 +592,25 @@ const cleanupTestUsers = async () => {
   }
 }
 
+const cleanupExpiredFiles = async () => {
+  const count = maintenance.value?.file_retention?.removable_count ?? 0
+  const confirmed = window.confirm(`确认清理 ${count} 个过期临时文件目录？\n\n只会删除上传目录中 PDF-Flow 生成的过期临时上传、转换结果和下载包，不会删除用户账号、反馈、审计日志或数据库记录。`)
+  if (!confirmed) return
+
+  savingKey.value = 'maintenance:cleanup-files'
+  error.value = ''
+
+  try {
+    const result = await adminAPI.cleanupExpiredFiles()
+    await refreshAdminMeta()
+    setMessage(`已清理 ${result.removed_count} 个过期临时目录，释放 ${formatBytes(result.removed_bytes)}`)
+  } catch (err: any) {
+    error.value = err?.response?.data?.detail || '临时文件清理失败，请稍后重试。'
+  } finally {
+    savingKey.value = null
+  }
+}
+
 const openFeedbackFromDiagnostics = async (feedbackId: number) => {
   activeTab.value = 'feedback'
   feedbackStatusFilter.value = ''
@@ -1522,7 +1541,7 @@ onMounted(loadAdminData)
                 </div>
               </div>
 
-              <div class="mt-5 grid gap-4 md:grid-cols-3">
+              <div class="mt-5 grid gap-4 md:grid-cols-4">
                 <div class="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-4">
                   <p class="text-sm text-amber-100/70">测试账号</p>
                   <p class="mt-2 text-3xl font-semibold text-amber-50">{{ maintenance?.test_users_count ?? operations?.test_users ?? 0 }}</p>
@@ -1538,10 +1557,15 @@ onMounted(loadAdminData)
                   <p class="mt-2 text-3xl font-semibold text-rose-50">{{ maintenance?.failed_jobs_count ?? diagnostics?.failed_jobs_count ?? 0 }}</p>
                   <p class="mt-2 text-xs text-rose-100/60">失败任务暂不自动删除，保留排查线索</p>
                 </div>
+                <div class="rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+                  <p class="text-sm text-emerald-100/70">过期临时文件</p>
+                  <p class="mt-2 text-3xl font-semibold text-emerald-50">{{ maintenance?.file_retention?.removable_count ?? 0 }}</p>
+                  <p class="mt-2 text-xs text-emerald-100/60">上传、结果和下载包按保留策略清理</p>
+                </div>
               </div>
             </section>
 
-            <section class="grid gap-5 xl:grid-cols-2">
+            <section class="grid gap-5 xl:grid-cols-3">
               <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
                 <div class="flex items-start justify-between gap-4">
                   <div>
@@ -1597,12 +1621,40 @@ onMounted(loadAdminData)
                   执行：删除测试账号
                 </button>
               </article>
+
+              <article class="rounded-[28px] border border-emerald-300/20 bg-emerald-500/10 p-5 backdrop-blur-xl">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <p class="text-lg font-semibold">清理云端临时文件</p>
+                    <p class="mt-2 text-sm leading-6 text-emerald-100/75">
+                      删除超过保留时间的上传文件、转换结果和下载包。只扫描配置的上传目录，并使用固定前缀白名单保护其他文件。
+                    </p>
+                  </div>
+                  <Trash2 class="h-5 w-5 text-emerald-100" />
+                </div>
+                <div class="mt-5 rounded-3xl border border-emerald-300/20 bg-black/20 p-4">
+                  <p class="text-sm text-emerald-100/70">当前可清理</p>
+                  <p class="mt-2 text-3xl font-semibold text-emerald-50">{{ maintenance?.file_retention?.removable_count ?? 0 }}</p>
+                  <p class="mt-2 break-all text-xs text-emerald-100/60">
+                    {{ maintenance?.file_retention?.upload_dir || '未读取到上传目录' }}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="savingKey === 'maintenance:cleanup-files' || (maintenance?.file_retention?.removable_count ?? 0) === 0"
+                  @click="cleanupExpiredFiles"
+                >
+                  <Loader2 v-if="savingKey === 'maintenance:cleanup-files'" class="h-4 w-4 animate-spin" />
+                  执行：清理过期临时文件
+                </button>
+              </article>
             </section>
 
             <section class="rounded-[28px] border border-white/10 bg-black/20 p-5 text-sm leading-7 text-slate-300">
               <p class="font-semibold text-white">暂不自动清理的内容</p>
               <p class="mt-2">
-                API 错误、失败任务和真实用户反馈会保留，用于后续排查。等线上稳定后，可以再补“按时间归档/清理旧日志”的独立策略。
+                API 错误、失败任务、审计日志和真实用户反馈会保留，用于后续排查。云端文件内容会按保留策略自动/手动清理，数据库中的任务摘要只保留必要的排查线索。
               </p>
             </section>
           </div>

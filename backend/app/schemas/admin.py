@@ -187,6 +187,15 @@ class AdminFeedbackCleanupResponse(BaseModel):
     remaining_open_count: int
 
 
+class AdminFileRetentionResponse(BaseModel):
+    scanned_count: int
+    removable_count: int
+    removed_count: int = 0
+    removed_bytes: int = 0
+    skipped_count: int
+    upload_dir: str
+
+
 class AdminMaintenanceResponse(BaseModel):
     test_users_count: int
     live_acceptance_feedback_count: int
@@ -194,6 +203,7 @@ class AdminMaintenanceResponse(BaseModel):
     api_error_count: int
     failed_jobs_count: int
     running_jobs_count: int
+    file_retention: AdminFileRetentionResponse
 
 
 class AdminCleanupTestUsersResponse(BaseModel):

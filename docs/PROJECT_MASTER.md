@@ -819,3 +819,9 @@ python -m pytest tests/ -q      # 35 通过
 - Optimized `/tools/ocr` UX: Chinese locale now defaults to Simplified Chinese OCR, completed OCR text remains visible in the page with copy/download actions, and the modal remains available for full result review.
 - Local validation: `npm run type-check`, `npm run build`, `python -m compileall backend\app\api\v1\endpoints\advanced.py backend\app\services\advanced_pdf_service.py`, `python -m pytest backend/tests/test_files.py backend/tests/test_admin.py -q`, and `git diff --check` pass. Build still shows the known large PDF vendor chunk warning.
 - Server validation after deploy: test Split PDF local extraction, Compress strength switching, OCR Chinese recognition, Fill Form field detection/fill/download with a real fillable PDF, and Annotate text/highlight download with an admin/pro account.
+### 2026-06-11 压缩结果可信化与云端文件生命周期
+- 修复压缩 PDF 的体验误导：本地压缩如果没有让文件变小，会保留原文件并提示“文件已接近最优”，避免用户下载到更大的“压缩文件”；压缩页将“预估”改为参考信息，实际结果单独展示。
+- 新增云端文件生命周期配置：`CLOUD_FILE_UPLOAD_TTL_SECONDS`、`CLOUD_FILE_RESULT_TTL_SECONDS`、`CLOUD_FILE_DOWNLOAD_TTL_SECONDS`、`CLOUD_FILE_CLEANUP_INTERVAL_SECONDS`。
+- 新增 `file_retention_service`，只扫描 `UPLOAD_DIR` 下 PDF-Flow 自己生成的临时目录前缀，并清理过期上传、结果和下载包；上传和下载入口会节流触发自动清理。
+- 后台维护页新增过期临时文件预览和手动清理按钮；清理动作写入审计日志，不删除账户、反馈、错误摘要、审计日志或数据库任务元数据。
+- 隐私政策明确说明本地处理与云端处理差异，以及默认云端文件保留策略：上传/结果约 1 小时，下载包约 30 分钟，实际删除可能因队列、排障或维护略有延迟。

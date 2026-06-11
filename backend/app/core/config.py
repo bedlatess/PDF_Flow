@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 500 * 1024 * 1024  # 500MB for Pro users
     FREE_TIER_MAX_SIZE: int = 20 * 1024 * 1024  # 20MB for free users
     ALLOWED_EXTENSIONS: List[str] = ["pdf", "jpg", "jpeg", "png", "docx", "xlsx", "pptx"]
+    CLOUD_FILE_UPLOAD_TTL_SECONDS: int = Field(default=3600, env="CLOUD_FILE_UPLOAD_TTL_SECONDS")
+    CLOUD_FILE_RESULT_TTL_SECONDS: int = Field(default=3600, env="CLOUD_FILE_RESULT_TTL_SECONDS")
+    CLOUD_FILE_DOWNLOAD_TTL_SECONDS: int = Field(default=1800, env="CLOUD_FILE_DOWNLOAD_TTL_SECONDS")
+    CLOUD_FILE_CLEANUP_INTERVAL_SECONDS: int = Field(default=300, env="CLOUD_FILE_CLEANUP_INTERVAL_SECONDS")
 
     # Rate Limiting (Redis sliding window)
     RATE_LIMIT_FREE: int = 3  # 3 requests per day for free users

@@ -1,6 +1,9 @@
 /**
- * PDF 压缩工具
- * 使用 pdf-lib 优化和压缩 PDF 文件
+ * PDF compression helpers.
+ *
+ * pdf-lib can remove metadata and rewrite object streams, but it does not
+ * recompress every embedded image. For already-optimized PDFs, rewriting can
+ * produce a larger file, so we protect users by keeping the original blob.
  */
 
 import { PDFDocument } from 'pdf-lib'
@@ -19,14 +22,9 @@ export interface CompressionResult {
   originalSize: number
   compressedSize: number
   compressionRatio: number
+  optimized: boolean
 }
 
-/**
- * 压缩 PDF 文件
- * @param file - 原始 PDF 文件
- * @param options - 压缩选项
- * @returns 压缩结果
- */
 export async function compressPDF(
   file: File,
   options: CompressionOptions = {}
@@ -35,15 +33,10 @@ export async function compressPDF(
 
   try {
     const originalSize = file.size
-
-    // 读取 PDF
     const arrayBuffer = await file.arrayBuffer()
     const pdfDoc = await PDFDocument.load(arrayBuffer)
-
-    // 根据质量设置进行优化
     const optimizationLevel = getOptimizationLevel(quality)
 
-    // 移除元数据（可选）
     if (removeMetadata) {
       pdfDoc.setTitle('')
       pdfDoc.setAuthor('')
@@ -53,22 +46,30 @@ export async function compressPDF(
       pdfDoc.setCreator('PDF-Flow')
     }
 
-    // 保存优化后的 PDF
     const pdfBytes = await pdfDoc.save({
       useObjectStreams: optimizationLevel >= 2,
       addDefaultPage: false,
       objectsPerTick: optimizationLevel >= 3 ? 50 : 100,
     })
 
-    const compressedSize = pdfBytes.length
-    const compressedBlob = pdfBytesToBlob(pdfBytes)
-    const compressionRatio = ((originalSize - compressedSize) / originalSize) * 100
+    const optimizedSize = pdfBytes.length
+    if (optimizedSize >= originalSize) {
+      return {
+        compressedBlob: file,
+        originalSize,
+        compressedSize: originalSize,
+        compressionRatio: 0,
+        optimized: false,
+      }
+    }
 
+    const compressionRatio = ((originalSize - optimizedSize) / originalSize) * 100
     return {
-      compressedBlob,
+      compressedBlob: pdfBytesToBlob(pdfBytes),
       originalSize,
-      compressedSize,
+      compressedSize: optimizedSize,
       compressionRatio: Math.max(0, compressionRatio),
+      optimized: true,
     }
   } catch (error) {
     console.error('PDF compression error:', error)
@@ -76,12 +77,6 @@ export async function compressPDF(
   }
 }
 
-/**
- * 批量压缩 PDF 文件
- * @param files - PDF 文件数组
- * @param options - 压缩选项
- * @returns 压缩结果数组
- */
 export async function compressPDFBatch(
   files: File[],
   options: CompressionOptions = {}
@@ -94,12 +89,12 @@ export async function compressPDFBatch(
       results.push(result)
     } catch (error) {
       console.error(`Failed to compress ${file.name}:`, error)
-      // 如果单个文件失败，继续处理其他文件
       results.push({
         compressedBlob: file,
         originalSize: file.size,
         compressedSize: file.size,
         compressionRatio: 0,
+        optimized: false,
       })
     }
   }
@@ -107,45 +102,32 @@ export async function compressPDFBatch(
   return results
 }
 
-/**
- * 获取优化级别
- */
 function getOptimizationLevel(quality: CompressionQuality): number {
   switch (quality) {
     case 'high':
-      return 1 // 轻度压缩，保持高质量
+      return 1
     case 'medium':
-      return 2 // 中度压缩，平衡质量和大小
+      return 2
     case 'low':
-      return 3 // 强度压缩，最小文件大小
+      return 3
     default:
       return 2
   }
 }
 
-/**
- * 估算压缩效果
- * @param fileSize - 文件大小（字节）
- * @param quality - 压缩质量
- * @returns 估算的压缩比例（百分比）
- */
 export function estimateCompressionRatio(
   _fileSize: number,
   quality: CompressionQuality
 ): number {
-  // 基于经验的估算值
   const ratios: Record<CompressionQuality, number> = {
-    high: 10, // 约 10% 压缩
-    medium: 20, // 约 20% 压缩
-    low: 30, // 约 30% 压缩
+    high: 10,
+    medium: 20,
+    low: 30,
   }
 
   return ratios[quality]
 }
 
-/**
- * 格式化压缩信息
- */
 export function formatCompressionInfo(result: CompressionResult): {
   originalSizeText: string
   compressedSizeText: string
@@ -153,20 +135,21 @@ export function formatCompressionInfo(result: CompressionResult): {
   ratioText: string
 } {
   const formatSize = (bytes: number): string => {
-    const mb = bytes / (1024 * 1024)
+    const safeBytes = Math.max(bytes, 0)
+    const mb = safeBytes / (1024 * 1024)
     if (mb >= 1) {
       return `${mb.toFixed(2)} MB`
     }
-    const kb = bytes / 1024
+    const kb = safeBytes / 1024
     return `${kb.toFixed(2)} KB`
   }
 
-  const savedSize = result.originalSize - result.compressedSize
+  const savedSize = Math.max(result.originalSize - result.compressedSize, 0)
 
   return {
     originalSizeText: formatSize(result.originalSize),
     compressedSizeText: formatSize(result.compressedSize),
     savedSizeText: formatSize(savedSize),
-    ratioText: `${result.compressionRatio.toFixed(1)}%`,
+    ratioText: `${Math.max(result.compressionRatio, 0).toFixed(1)}%`,
   }
 }
