@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.v1.endpoints.auth import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import (
     AdminAuditLog,
@@ -25,6 +26,7 @@ from app.schemas.admin import (
     AdminAuditLogResponse,
     AdminApiErrorResponse,
     AdminDiagnosticsResponse,
+    AdminHealthReportResponse,
     AdminJobResponse,
     AdminOperationsResponse,
     AdminOverviewResponse,
@@ -274,6 +276,14 @@ def _check_services(db: Session) -> dict:
     return services
 
 
+def _current_migration_version(db: Session) -> str | None:
+    try:
+        row = db.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).first()
+        return row[0] if row else None
+    except Exception:
+        return None
+
+
 def _list_all_jobs_for_admin(db: Session, limit: int, status_filter: str | None = None) -> list[dict]:
     safe_limit = min(max(limit, 1), 100)
     redis_jobs = _list_redis_jobs(safe_limit)
@@ -441,6 +451,41 @@ async def get_operations_overview(
         "recent_users": [_serialize_admin_user(user) for user in users],
         "recent_failed_jobs": failed_jobs[:5],
         "recent_jobs": jobs[:8],
+    }
+
+
+@router.get("/health-report", response_model=AdminHealthReportResponse)
+async def get_health_report(
+    _admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Return a safe copyable live health summary for admin troubleshooting."""
+    _seed_defaults(db)
+    jobs = _list_all_jobs_for_admin(db, limit=50)
+    failed_jobs = [job for job in jobs if job["status"] == "failed"]
+    running_jobs = [job for job in jobs if job["status"] in ("pending", "processing")]
+    recent_error = db.query(ApiErrorLog).order_by(ApiErrorLog.created_at.desc()).first()
+    recent_feedback = (
+        db.query(FeedbackReport)
+        .filter(FeedbackReport.status.in_(["new", "reviewing"]))
+        .order_by(FeedbackReport.created_at.desc())
+        .first()
+    )
+
+    return {
+        "generated_at": datetime.utcnow(),
+        "app_version": settings.VERSION,
+        "environment": settings.ENVIRONMENT,
+        "migration_version": _current_migration_version(db),
+        "services": _check_services(db),
+        "users_count": db.query(User).count(),
+        "active_users_count": db.query(User).filter(User.is_active == True).count(),  # noqa: E712
+        "open_feedback_count": db.query(FeedbackReport).filter(FeedbackReport.status.in_(["new", "reviewing"])).count(),
+        "api_error_count": db.query(ApiErrorLog).count(),
+        "failed_jobs_count": len(failed_jobs),
+        "running_jobs_count": len(running_jobs),
+        "recent_error_path": recent_error.path if recent_error else None,
+        "recent_feedback_title": recent_feedback.title if recent_feedback else None,
     }
 
 

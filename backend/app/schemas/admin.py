@@ -180,3 +180,19 @@ class AdminDiagnosticsResponse(BaseModel):
     open_feedback_count: int
     failed_jobs_count: int
     api_error_count: int
+
+
+class AdminHealthReportResponse(BaseModel):
+    generated_at: datetime
+    app_version: str
+    environment: str
+    migration_version: Optional[str]
+    services: dict[str, AdminServiceStatus]
+    users_count: int
+    active_users_count: int
+    open_feedback_count: int
+    api_error_count: int
+    failed_jobs_count: int
+    running_jobs_count: int
+    recent_error_path: Optional[str] = None
+    recent_feedback_title: Optional[str] = None

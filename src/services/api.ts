@@ -520,6 +520,22 @@ export interface AdminDiagnostics {
   api_error_count: number
 }
 
+export interface AdminHealthReport {
+  generated_at: string
+  app_version: string
+  environment: string
+  migration_version: string | null
+  services: Record<string, AdminServiceStatus>
+  users_count: number
+  active_users_count: number
+  open_feedback_count: number
+  api_error_count: number
+  failed_jobs_count: number
+  running_jobs_count: number
+  recent_error_path: string | null
+  recent_feedback_title: string | null
+}
+
 export interface FeedbackCreate {
   title: string
   message: string
@@ -636,6 +652,11 @@ export const adminAPI = {
 
   async getDiagnostics(): Promise<AdminDiagnostics> {
     const response = await apiClient.get<AdminDiagnostics>('/api/v1/admin/diagnostics')
+    return response.data
+  },
+
+  async getHealthReport(): Promise<AdminHealthReport> {
+    const response = await apiClient.get<AdminHealthReport>('/api/v1/admin/health-report')
     return response.data
   },
 

@@ -351,6 +351,37 @@ def test_admin_operations_overview_returns_health_and_recent_activity(client):
     assert body["recent_failed_jobs"][0]["job_id"] == "job_ops_failed"
 
 
+def test_admin_health_report_returns_copyable_status(client):
+    _register(client)
+    _promote_to_admin(client)
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = client.get("/api/v1/admin/health-report", headers=headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["app_version"]
+    assert body["environment"]
+    assert "database" in body["services"]
+    assert "redis" in body["services"]
+    assert "users_count" in body
+    assert "open_feedback_count" in body
+    assert "api_error_count" in body
+
+
+def test_admin_health_report_requires_admin(client):
+    _register(client, email="free-health@example.com")
+    token = _login(client, email="free-health@example.com").json()["access_token"]
+
+    response = client.get(
+        "/api/v1/admin/health-report",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403
+
+
 def test_guest_can_submit_feedback_and_admin_can_triage(client):
     long_url = f"https://pdf.pawn.eu.org/tools/pdf-to-image?debug={'x' * 1500}"
     response = client.post("/api/v1/feedback", json={

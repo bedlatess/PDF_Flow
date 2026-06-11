@@ -27,6 +27,7 @@ import {
   type AdminApiError,
   type AdminDiagnostics,
   type AdminFeedback,
+  type AdminHealthReport,
   type AdminJob,
   type AdminOperations,
   type AdminOverview,
@@ -57,12 +58,14 @@ const jobs = ref<AdminJob[]>([])
 const feedbackReports = ref<AdminFeedback[]>([])
 const apiErrors = ref<AdminApiError[]>([])
 const diagnostics = ref<AdminDiagnostics | null>(null)
+const healthReport = ref<AdminHealthReport | null>(null)
 const userSearch = ref('')
 const jobStatusFilter = ref('')
 const jobSearch = ref('')
 const feedbackStatusFilter = ref('')
 const highlightedFeedbackId = ref<number | null>(null)
 const copiedFeedbackId = ref<number | null>(null)
+const healthReportCopied = ref(false)
 
 const tabs = [
   { id: 'overview' as const, label: '运营总览', icon: GaugeCircle },
@@ -93,13 +96,15 @@ const filteredJobs = computed(() => {
 })
 
 const refreshAdminMeta = async () => {
-  const [overviewData, operationsData, auditData] = await Promise.all([
+  const [overviewData, operationsData, healthReportData, auditData] = await Promise.all([
     adminAPI.getOverview(),
     adminAPI.getOperations(),
+    adminAPI.getHealthReport(),
     adminAPI.listAuditLogs(),
   ])
   overview.value = overviewData
   operations.value = operationsData
+  healthReport.value = healthReportData
   auditLogs.value = auditData
 }
 
@@ -173,6 +178,66 @@ const copyFeedbackSummary = async (report: AdminFeedback) => {
   }
 }
 
+const serviceStatusText = (report: AdminHealthReport | null) => {
+  if (!report) return 'unknown'
+  return Object.entries(report.services)
+    .map(([name, service]) => `${name}=${service.status}`)
+    .join(', ')
+}
+
+const buildHealthReportSummary = () => {
+  const report = healthReport.value
+  if (!report) return ''
+
+  return [
+    'PDF-Flow 上线健康报告',
+    `生成时间：${formatDate(report.generated_at)}`,
+    `前端版本：${import.meta.env.VITE_APP_VERSION || 'frontend-build'}`,
+    `后端版本：${report.app_version}`,
+    `环境：${report.environment}`,
+    `数据库迁移：${report.migration_version || '未读取到'}`,
+    `服务状态：${serviceStatusText(report)}`,
+    `用户：${report.active_users_count}/${report.users_count} 活跃`,
+    `任务：失败 ${report.failed_jobs_count}，处理中 ${report.running_jobs_count}`,
+    `反馈：待处理 ${report.open_feedback_count}`,
+    `API 错误：${report.api_error_count}`,
+    `最近错误路径：${report.recent_error_path || '无'}`,
+    `最近反馈：${report.recent_feedback_title || '无'}`,
+    `页面：${window.location.href}`,
+  ].join('\n')
+}
+
+const copyHealthReport = async () => {
+  if (!healthReport.value) {
+    error.value = '健康报告还没有加载完成，请先刷新。'
+    return
+  }
+
+  try {
+    await navigator.clipboard?.writeText(buildHealthReportSummary())
+    healthReportCopied.value = true
+    setMessage('已复制上线健康报告')
+    window.setTimeout(() => {
+      healthReportCopied.value = false
+    }, 1800)
+  } catch {
+    error.value = '复制健康报告失败，请手动选中报告内容复制。'
+  }
+}
+
+const loadHealthReport = async () => {
+  savingKey.value = 'health-report:refresh'
+  error.value = ''
+
+  try {
+    healthReport.value = await adminAPI.getHealthReport()
+  } catch {
+    error.value = '健康报告加载失败，请稍后重试。'
+  } finally {
+    savingKey.value = null
+  }
+}
+
 const serviceTone = (status?: string) => {
   if (status === 'healthy') return 'border-emerald-300/20 bg-emerald-300/10 text-emerald-100'
   if (status === 'unhealthy') return 'border-rose-300/20 bg-rose-500/10 text-rose-100'
@@ -185,7 +250,7 @@ const loadAdminData = async () => {
   error.value = ''
 
   try {
-    const [overviewData, operationsData, settingsData, flagsData, contentData, usersData, jobsData, feedbackData, diagnosticsData, auditData] = await Promise.all([
+    const [overviewData, operationsData, settingsData, flagsData, contentData, usersData, jobsData, feedbackData, diagnosticsData, healthReportData, auditData] = await Promise.all([
       adminAPI.getOverview(),
       adminAPI.getOperations(),
       adminAPI.listSettings(),
@@ -195,6 +260,7 @@ const loadAdminData = async () => {
       adminAPI.listJobs(),
       adminAPI.listFeedback(),
       adminAPI.getDiagnostics(),
+      adminAPI.getHealthReport(),
       adminAPI.listAuditLogs(),
     ])
 
@@ -207,6 +273,7 @@ const loadAdminData = async () => {
     jobs.value = jobsData
     feedbackReports.value = feedbackData
     diagnostics.value = diagnosticsData
+    healthReport.value = healthReportData
     apiErrors.value = diagnosticsData.recent_errors
     auditLogs.value = auditData
     selectedContent.value = contentData[0] ?? null
@@ -619,6 +686,55 @@ onMounted(loadAdminData)
                 </div>
               </article>
 
+              <article class="rounded-[28px] border border-cyan-300/20 bg-cyan-300/10 p-5 backdrop-blur-xl">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p class="text-lg font-semibold">上线健康报告</p>
+                    <p class="mt-1 text-sm leading-6 text-cyan-100/75">
+                      一键复制当前线上状态，方便截图或发给管理员排查。
+                    </p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button
+                      type="button"
+                      class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+                      :disabled="savingKey === 'health-report:refresh'"
+                      @click="loadHealthReport"
+                    >
+                      <Loader2 v-if="savingKey === 'health-report:refresh'" class="h-4 w-4 animate-spin" />
+                      刷新
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-50"
+                      @click="copyHealthReport"
+                    >
+                      <ClipboardCopy class="h-4 w-4" />
+                      {{ healthReportCopied ? '已复制' : '复制报告' }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <p class="text-xs text-cyan-100/70">后端版本</p>
+                    <p class="mt-2 break-all font-semibold text-white">{{ healthReport?.app_version || '未加载' }}</p>
+                  </div>
+                  <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <p class="text-xs text-cyan-100/70">迁移版本</p>
+                    <p class="mt-2 break-all font-semibold text-white">{{ healthReport?.migration_version || '未读取到' }}</p>
+                  </div>
+                  <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <p class="text-xs text-cyan-100/70">环境</p>
+                    <p class="mt-2 font-semibold text-white">{{ healthReport?.environment || 'unknown' }}</p>
+                  </div>
+                </div>
+
+                <pre class="mt-4 max-h-72 overflow-y-auto whitespace-pre-wrap rounded-3xl border border-white/10 bg-slate-950/60 p-4 text-xs leading-6 text-cyan-50/85">{{ buildHealthReportSummary() || '健康报告加载中...' }}</pre>
+              </article>
+            </section>
+
+            <section class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
               <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
                 <div class="mb-4 flex items-center justify-between">
                   <div>

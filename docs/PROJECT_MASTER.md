@@ -757,3 +757,10 @@ python -m pytest tests/ -q      # 35 通过
 - Feedback diagnostics in the admin detail view now render as formatted JSON when possible, making screenshots and copied context easier to read.
 - Saving a feedback status now refreshes admin overview, diagnostics, API error summaries, and audit logs together, so `待处理反馈` counts in the header and `错误观察` stay current after closing or resolving reports.
 - Local validation: `npm run type-check`, `npm run build`, and `git diff --check` pass. Build still shows the known large PDF vendor chunk warning.
+### 2026-06-11 Admin Copyable Health Report / 后台可复制健康报告
+- Added admin-only `GET /api/v1/admin/health-report` for safe live-status sharing. The report includes backend version, environment, current Alembic migration version, database/Redis/Celery status, user counts, open feedback count, API error count, failed/running job counts, latest error path, and latest open feedback title.
+- The health report intentionally does not expose secrets, database URLs, Redis URLs, API keys, or raw environment variables.
+- Added `/control-room -> 运营总览` `上线健康报告` card with refresh and `复制报告` actions. The copied text includes frontend build marker, backend version, migration version, service status, key counts, current page, and latest issue hints.
+- Added backend tests for admin access and non-admin rejection of the health report endpoint.
+- Local validation: `python -m pytest backend/tests/test_admin.py -q`, `npm run type-check`, `npm run build`, and `git diff --check` pass. Build still shows the known large PDF vendor chunk warning.
+- Server deployment note: rebuild/restart backend and frontend; no new Alembic migration is required.
