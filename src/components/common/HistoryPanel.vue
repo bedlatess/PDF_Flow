@@ -65,6 +65,7 @@ const getToolIcon = (type: HistoryItem['type']) => {
     organize: 'O',
     pageNumbers: '#',
     protect: 'L',
+    unlock: 'U',
     watermark: 'W',
   }
   return icons[type]
@@ -82,6 +83,7 @@ const getToolColor = (type: HistoryItem['type']) => {
     organize: 'bg-emerald-500',
     pageNumbers: 'bg-blue-500',
     protect: 'bg-slate-700',
+    unlock: 'bg-emerald-600',
     watermark: 'bg-cyan-500',
   }
   return colors[type]

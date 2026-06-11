@@ -190,6 +190,44 @@ class AdvancedPDFService:
 
         return output_path
 
+    def unlock_pdf(
+        self,
+        pdf_path: str,
+        output_path: str,
+        password: str,
+    ) -> str:
+        """
+        Remove PDF open-password protection when the user provides the password.
+
+        Args:
+            pdf_path: Input encrypted PDF path
+            output_path: Output PDF path
+            password: Current open password
+
+        Returns:
+            Path to output PDF
+        """
+        reader = PdfReader(pdf_path)
+
+        if not reader.is_encrypted:
+            raise ValueError("This PDF does not appear to require an open password.")
+
+        decrypt_result = reader.decrypt(password)
+        if decrypt_result == 0:
+            raise ValueError("The password was not accepted for this PDF.")
+
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+
+        if reader.metadata:
+            writer.add_metadata(reader.metadata)
+
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+
+        return output_path
+
     def fill_form(
         self,
         pdf_path: str,

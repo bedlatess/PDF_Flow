@@ -9,6 +9,7 @@ export type HistoryToolType =
   | 'organize'
   | 'pageNumbers'
   | 'protect'
+  | 'unlock'
   | 'watermark'
 
 export interface HistoryItem {
@@ -126,6 +127,7 @@ export function formatToolType(type: HistoryToolType): string {
     organize: '整理 PDF 页面',
     pageNumbers: '添加 PDF 页码',
     protect: '保护 PDF',
+    unlock: '解锁 PDF',
     watermark: '添加水印',
   }
   return typeNames[type]

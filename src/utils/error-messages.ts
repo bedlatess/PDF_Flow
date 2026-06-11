@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export type ErrorArea = 'AUTH' | 'OCR' | 'FORM' | 'ANNOTATE' | 'AI' | 'OFFICE' | 'PROTECT' | 'UPLOAD' | 'GENERAL'
+export type ErrorArea = 'AUTH' | 'OCR' | 'FORM' | 'ANNOTATE' | 'AI' | 'OFFICE' | 'PROTECT' | 'UNLOCK' | 'UPLOAD' | 'GENERAL'
 
 export interface FormattedErrorOptions {
   area?: ErrorArea
@@ -60,6 +60,10 @@ const AREA_DEFAULTS: Record<ErrorArea, { title: string; message: string }> = {
   PROTECT: {
     title: 'Protection failed',
     message: 'We could not create a protected copy of this PDF. Please retry with a standard PDF file.',
+  },
+  UNLOCK: {
+    title: 'Unlock failed',
+    message: 'We could not unlock this PDF. Please confirm the password and retry with a standard protected PDF.',
   },
   UPLOAD: {
     title: 'Upload failed',

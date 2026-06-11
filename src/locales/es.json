@@ -20,6 +20,7 @@
     "organize": { "title": "Organizar páginas PDF", "desc": "Reordena páginas PDF antes de compartirlas" },
     "pageNumbers": { "title": "Añadir números de página", "desc": "Agrega números de página a informes y contratos" },
     "protect": { "title": "Proteger PDF", "desc": "Anade una contrasena antes de compartir un PDF" },
+    "unlock": { "title": "Desbloquear PDF", "desc": "Introduce la contrasena conocida y crea una copia sin bloqueo" },
     "officeToPdf": {
       "title": "Office a PDF",
       "desc": "Convierte Word, Excel, PowerPoint a PDF",

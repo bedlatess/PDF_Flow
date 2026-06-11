@@ -890,3 +890,12 @@ python -m pytest tests/ -q      # 35 通过
 - Cleaned `feature_gate.py` and `history-manager.ts` into readable UTF-8 text while preserving existing behavior, reducing mojibake in admin/public user-visible labels.
 - Local validation: `npm run type-check`, `npm run build`, `python -m pytest backend/tests/test_admin.py backend/tests/test_advanced_pdf_service.py -q`, and `git diff --check` pass. Build still shows the known large PDF vendor chunk warning.
 - Server validation after deploy: pull `main`, rebuild `backend` and `frontend`, open `/tools/protect`, sign in, upload a small PDF, set a password, download the result, and confirm a PDF reader requires the password. Also confirm `/control-room -> 功能开关` contains `protect_pdf` and shows login required / non-Pro.
+
+### 2026-06-11 Unlock PDF / PDF 解锁工具落地
+- Continued the P1 delivery and safety suite by adding `/tools/unlock`, the companion to Protect PDF. The tool only removes an open password when the signed-in user provides the current password; it does not guess, bypass, or crack unknown passwords.
+- Added backend `POST /api/v1/advanced/unlock` using PyPDF2 decrypt + clean re-export, with user-facing validation for wrong passwords and non-encrypted PDFs. The new `unlock_pdf` feature flag defaults to login-required and not Pro-only.
+- Added the Unlock PDF frontend page with protected-file upload, current password input, show/hide password, permission reminder, cloud-processing notice, diagnostic errors, result download, and browser history integration.
+- Wired the tool into the homepage card grid, route guard, translations, public config feature flags, and admin feature-flag defaults so `/control-room` can hide or maintain it without code changes.
+- Added service tests covering successful unlock output, wrong-password rejection, and public-config exposure through admin tests.
+- Local validation target: `npm run type-check`, `npm run build`, `python -m pytest backend/tests/test_admin.py backend/tests/test_advanced_pdf_service.py -q`, and `git diff --check`. Build may still show the known large PDF vendor chunk warning.
+- Server validation after deploy: use `/tools/protect` to create a password-protected PDF, then open `/tools/unlock`, upload that file, enter the password, download the result, and confirm the new PDF opens without asking for a password. Also confirm `/control-room -> 功能开关` contains `unlock_pdf`.

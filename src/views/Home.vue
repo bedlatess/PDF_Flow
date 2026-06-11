@@ -124,6 +124,16 @@ const tools = computed<Tool[]>(() => [
     featureKey: 'protect_pdf',
   },
   {
+    name: 'unlock',
+    titleKey: 'tools.unlock.title',
+    descriptionKey: 'tools.unlock.desc',
+    icon: 'M16 11V7a4 4 0 00-7.874-.992M8 11H6a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2v-6a2 2 0 00-2-2H8zm4 4v2',
+    route: '/tools/unlock',
+    color: 'from-emerald-500 to-slate-700',
+    glow: 'bg-emerald-400/18',
+    featureKey: 'unlock_pdf',
+  },
+  {
     name: 'ocr',
     titleKey: 'tools.ocr.title',
     descriptionKey: 'home.toolDescriptions.ocr',

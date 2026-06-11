@@ -183,6 +183,13 @@ const router = createRouter({
           meta: { titleKey: 'tools.protect.title', featureKey: 'protect_pdf' }
         },
         {
+          path: 'unlock',
+          name: 'unlock-pdf',
+          component: () => import('@/views/tools/UnlockPDF.vue'),
+          beforeEnter: featureFlagGuard,
+          meta: { titleKey: 'tools.unlock.title', featureKey: 'unlock_pdf' }
+        },
+        {
           path: 'ocr',
           name: 'ocr-pdf',
           component: () => import('@/views/tools/OCRPDF.vue'),
