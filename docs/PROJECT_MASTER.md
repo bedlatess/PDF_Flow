@@ -838,3 +838,10 @@ python -m pytest tests/ -q      # 35 通过
 - Pro 工具页顶部改为单一高级 `seal` 徽章，首页工具卡改为右上角 `corner` 角标，标题不再被 Pro 标签挤压。
 - 功能页、定价页和云端切换组件统一使用更轻的 ivory/gold 视觉，减少黑金小标签在浅色卡片上的突兀感。
 - 前端验证：`npm run type-check` 与 `npm run build` 通过。Build 仍有已知 PDF vendor chunk 体积提示。
+
+### 2026-06-11 首页工具卡质感优化
+- 首页工具网格从通用 `Card` 切换为专属营销卡片：圆角玻璃外壳、内层渐变面板、柔和光晕、底部行动条和 hover 位移。
+- 工具图标从纯色圆形改为主题渐变方圆图标，和工具页顶部的现代质感保持一致。
+- Pro 角标改为浅色毛玻璃样式，降低黑色贴片感，避免破坏首页整体明亮主题。
+- 工具区标题新增轻量工作区标签和用户说明，帮助用户理解免费/Pro 功能区分。
+- 前端验证：`npm run type-check`、`npm run build`、`git diff --check` 通过。Build 仍有已知 PDF vendor chunk 体积提示。

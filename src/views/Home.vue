@@ -2,7 +2,6 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import Card from '@/components/common/Card.vue'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 import ProBadge from '@/components/common/ProBadge.vue'
 
@@ -19,6 +18,7 @@ interface Tool {
   icon: string
   route: string
   color: string
+  glow: string
   featureKey: string
 }
 
@@ -29,7 +29,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.merge.desc',
     icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12',
     route: '/tools/merge',
-    color: 'bg-blue-500',
+    color: 'from-sky-500 to-blue-600',
+    glow: 'bg-sky-400/20',
     featureKey: 'merge_pdf',
   },
   {
@@ -38,7 +39,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.split.desc',
     icon: 'M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5',
     route: '/tools/split',
-    color: 'bg-green-500',
+    color: 'from-emerald-500 to-teal-600',
+    glow: 'bg-emerald-400/20',
     featureKey: 'split_pdf',
   },
   {
@@ -47,7 +49,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.rotate.desc',
     icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
     route: '/tools/rotate',
-    color: 'bg-purple-500',
+    color: 'from-violet-500 to-fuchsia-600',
+    glow: 'bg-violet-400/20',
     featureKey: 'rotate_pdf',
   },
   {
@@ -56,7 +59,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.compress.desc',
     icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4',
     route: '/tools/compress',
-    color: 'bg-indigo-500',
+    color: 'from-indigo-500 to-blue-700',
+    glow: 'bg-indigo-400/20',
     featureKey: 'compress_pdf',
   },
   {
@@ -65,7 +69,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.imageToPdf.desc',
     icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
     route: '/tools/image-to-pdf',
-    color: 'bg-orange-500',
+    color: 'from-orange-400 to-rose-500',
+    glow: 'bg-orange-300/25',
     featureKey: 'image_to_pdf',
   },
   {
@@ -74,7 +79,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.pdfToImage.desc',
     icon: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
     route: '/tools/pdf-to-image',
-    color: 'bg-red-500',
+    color: 'from-rose-500 to-red-600',
+    glow: 'bg-rose-400/20',
     featureKey: 'pdf_to_image',
   },
   {
@@ -83,7 +89,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'home.toolDescriptions.ocr',
     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
     route: '/tools/ocr',
-    color: 'bg-pink-500',
+    color: 'from-pink-500 to-fuchsia-600',
+    glow: 'bg-pink-400/22',
     featureKey: 'ocr_pdf',
   },
   {
@@ -92,7 +99,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.officeToPdf.desc',
     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
     route: '/tools/office-to-pdf',
-    color: 'bg-teal-500',
+    color: 'from-teal-500 to-cyan-600',
+    glow: 'bg-cyan-400/20',
     featureKey: 'office_to_pdf',
   },
   {
@@ -101,7 +109,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'home.toolDescriptions.aiAnalyzer',
     icon: 'M13 10V3L4 14h7v7l9-11h-7z',
     route: '/tools/ai-analyzer',
-    color: 'bg-gradient-to-r from-purple-500 to-pink-500',
+    color: 'from-purple-500 to-pink-600',
+    glow: 'bg-purple-400/22',
     featureKey: 'ai_analyzer',
   },
   {
@@ -110,7 +119,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.watermark.desc',
     icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01',
     route: '/tools/watermark',
-    color: 'bg-cyan-500',
+    color: 'from-cyan-500 to-sky-600',
+    glow: 'bg-cyan-400/20',
     featureKey: 'watermark_pdf',
   },
   {
@@ -119,7 +129,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.fillForm.description',
     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
     route: '/tools/fill-form',
-    color: 'bg-emerald-500',
+    color: 'from-emerald-500 to-lime-600',
+    glow: 'bg-emerald-400/22',
     featureKey: 'fill_form',
   },
   {
@@ -128,7 +139,8 @@ const tools = computed<Tool[]>(() => [
     descriptionKey: 'tools.annotate.description',
     icon: 'M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z',
     route: '/tools/annotate',
-    color: 'bg-amber-500',
+    color: 'from-amber-400 to-orange-600',
+    glow: 'bg-amber-300/25',
     featureKey: 'annotate_pdf',
   },
 ])
@@ -230,9 +242,17 @@ onMounted(() => {
     <!-- Tools Grid -->
     <section class="tools-grid pb-20">
       <div class="container mx-auto px-4">
-        <h2 class="mb-8 text-center text-3xl font-bold text-gray-900 dark:text-white">
-          {{ t('home.toolsTitle') }}
-        </h2>
+        <div class="mx-auto mb-10 max-w-3xl text-center">
+          <div class="mb-4 inline-flex items-center rounded-full border border-sky-200 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700 shadow-sm backdrop-blur dark:border-sky-400/20 dark:bg-slate-900/60 dark:text-sky-200">
+            PDF Workspace
+          </div>
+          <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            {{ t('home.toolsTitle') }}
+          </h2>
+          <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {{ locale.startsWith('zh') ? '常用工具保持轻快，专业能力用 Pro 角标清楚区分。' : 'Everyday tools stay fast, while Pro capabilities are clearly marked.' }}
+          </p>
+        </div>
 
         <div
           v-if="disabledFeatureMessage"
@@ -241,73 +261,80 @@ onMounted(() => {
           {{ disabledFeatureMessage }}
         </div>
 
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <Card
+        <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <article
             v-for="tool in visibleTools"
             :key="tool.name"
             data-testid="tool-card"
-            variant="glass"
-            hoverable
-            clickable
+            class="group relative min-h-[236px] cursor-pointer overflow-hidden rounded-[30px] border border-white/70 bg-white/82 p-[1px] shadow-xl shadow-slate-200/55 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-sky-200/45 dark:border-white/10 dark:bg-slate-900/70 dark:shadow-none"
             @click="navigateToTool(tool.route)"
           >
-            <div class="relative flex min-h-[220px] flex-col items-center text-center">
+            <div
+              class="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              :class="tool.glow"
+            />
+            <div class="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/45 blur-2xl dark:bg-white/5" />
+            <div class="absolute bottom-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-sky-300/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+            <div class="relative flex h-full min-h-[234px] flex-col rounded-[29px] bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(248,250,252,0.76)_100%)] p-5 text-left dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.90)_0%,rgba(2,6,23,0.76)_100%)]">
               <ProBadge
                 v-if="tool.flag.requires_pro"
                 variant="corner"
               />
 
-              <!-- Icon -->
-              <div
-                :class="[
-                  'mb-4 flex h-16 w-16 items-center justify-center rounded-full',
-                  tool.color,
-                  'text-white shadow-lg',
-                ]"
-              >
-                <svg
-                  class="h-8 w-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div class="mb-5 flex items-start justify-between gap-4">
+                <div
+                  :class="[
+                    'relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg transition-transform duration-300 group-hover:scale-105',
+                    tool.color,
+                  ]"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    :d="tool.icon"
-                  />
-                </svg>
+                  <div class="absolute inset-0 rounded-2xl bg-white/18 opacity-0 transition-opacity group-hover:opacity-100" />
+                  <svg
+                    class="relative h-7 w-7"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      :d="tool.icon"
+                    />
+                  </svg>
+                </div>
               </div>
 
-              <!-- Title -->
-              <h3 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+              <h3 class="pr-16 text-xl font-semibold tracking-tight text-slate-950 dark:text-white">
                 {{ t(tool.titleKey) }}
               </h3>
-
-              <!-- Description -->
-              <p class="text-sm text-gray-600 dark:text-gray-300">
+              <p class="mt-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {{ t(tool.descriptionKey) }}
               </p>
 
-              <!-- Arrow -->
-              <div class="mt-4 text-primary">
-                <svg
-                  class="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
+              <div class="mt-6 flex items-center justify-between border-t border-slate-200/70 pt-4 dark:border-white/10">
+                <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                  PDF-Flow
+                </span>
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-white shadow-sm transition-all duration-300 group-hover:translate-x-1 group-hover:bg-primary dark:bg-white dark:text-slate-950">
+                  <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </span>
               </div>
             </div>
-          </Card>
+          </article>
         </div>
       </div>
     </section>

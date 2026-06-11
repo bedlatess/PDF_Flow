@@ -17,8 +17,8 @@ const props = withDefaults(defineProps<{
 const classes = computed(() => {
   if (props.variant === 'corner') {
     return [
-      'absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] shadow-lg ring-1 ring-inset',
-      'bg-slate-950 text-amber-100 ring-amber-300/30 dark:bg-white dark:text-slate-950 dark:ring-white/40',
+      'absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] shadow-lg ring-1 ring-inset backdrop-blur',
+      'bg-white/88 text-amber-700 ring-amber-200/70 shadow-amber-100/70 dark:bg-slate-950/78 dark:text-amber-200 dark:ring-amber-300/20 dark:shadow-none',
     ]
   }
 
