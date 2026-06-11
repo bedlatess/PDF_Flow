@@ -19,8 +19,11 @@ import { usePDFWorker } from '@/composables/usePDFWorker'
 import { useCloudProcessing } from '@/composables/useCloudProcessing'
 import { fileAPI } from '@/services/api'
 import { historyManager } from '@/utils/history-manager'
+import { useUserStore } from '@/stores/user'
+import { shouldPreferCloudProcessing } from '@/utils/cloud-recommendation'
 
 const { t, locale } = useI18n()
+const userStore = useUserStore()
 
 const selectedFile = ref<File | null>(null)
 const totalPages = ref(0)
@@ -104,6 +107,7 @@ const copy = computed(() => locale.value.startsWith('zh')
 const handleFilesSelected = async (files: File[]) => {
   try {
     selectedFile.value = files[0]
+    useCloud.value = shouldPreferCloudProcessing(files.slice(0, 1), userStore.canUseCloudFeatures)
     totalPages.value = await getPDFPageCount(files[0])
     errorMessage.value = ''
   } catch (error) {
@@ -117,6 +121,7 @@ const handleError = (message: string) => {
 
 const clearAll = () => {
   selectedFile.value = null
+  useCloud.value = false
   totalPages.value = 0
   pageRanges.value = ''
   useVisualSelector.value = false

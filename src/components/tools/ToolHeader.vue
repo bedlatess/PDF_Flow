@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import ProBadge from '@/components/common/ProBadge.vue'
 
 type Accent = 'purple' | 'blue' | 'amber' | 'cyan' | 'emerald' | 'pink'
 
@@ -7,8 +8,10 @@ const props = withDefaults(defineProps<{
   title: string
   subtitle: string
   badge: string
+  pro?: boolean
   accent?: Accent
 }>(), {
+  pro: false,
   accent: 'purple',
 })
 
@@ -77,6 +80,7 @@ const accentClasses = computed(() => {
           *
         </slot>
         <span>{{ badge }}</span>
+        <ProBadge v-if="pro" compact tone="dark" />
       </div>
 
       <div class="mt-6">

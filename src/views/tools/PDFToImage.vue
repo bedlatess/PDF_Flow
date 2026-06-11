@@ -12,8 +12,11 @@ import { useCloudProcessing } from '@/composables/useCloudProcessing'
 import { fileAPI } from '@/services/api'
 import { historyManager } from '@/utils/history-manager'
 import ToolHeader from '@/components/tools/ToolHeader.vue'
+import { useUserStore } from '@/stores/user'
+import { shouldPreferCloudProcessing } from '@/utils/cloud-recommendation'
 
 const { t, locale } = useI18n()
+const userStore = useUserStore()
 
 const selectedFile = ref<File | null>(null)
 const imageFormat = ref<'png' | 'jpeg'>('png')
@@ -61,6 +64,7 @@ const copy = computed(() => locale.value.startsWith('zh')
 
 const handleFilesSelected = (files: File[]) => {
   selectedFile.value = files[0]
+  useCloud.value = shouldPreferCloudProcessing(files.slice(0, 1), userStore.canUseCloudFeatures)
   errorMessage.value = ''
   successMessage.value = ''
 }
@@ -76,6 +80,7 @@ const revokeImageUrls = () => {
 
 const clearAll = () => {
   selectedFile.value = null
+  useCloud.value = false
   errorMessage.value = ''
   successMessage.value = ''
   revokeImageUrls()

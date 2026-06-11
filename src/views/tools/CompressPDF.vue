@@ -22,8 +22,11 @@ import { fileAPI } from '@/services/api'
 import CloudToggle from '@/components/common/CloudToggle.vue'
 import { historyManager } from '@/utils/history-manager'
 import ToolHeader from '@/components/tools/ToolHeader.vue'
+import { useUserStore } from '@/stores/user'
+import { shouldPreferCloudProcessing } from '@/utils/cloud-recommendation'
 
 const { t, locale } = useI18n()
+const userStore = useUserStore()
 
 const selectedFile = ref<File | null>(null)
 const selectedQuality = ref<CompressionQuality>('medium')
@@ -178,6 +181,7 @@ const resultStats = computed(() => {
 
 const handleFilesSelected = (files: File[]) => {
   selectedFile.value = files[0]
+  useCloud.value = shouldPreferCloudProcessing(files.slice(0, 1), userStore.canUseCloudFeatures)
   errorMessage.value = ''
   compressionResult.value = null
 }
@@ -196,6 +200,7 @@ const handleError = (message: string) => {
 
 const clearAll = () => {
   selectedFile.value = null
+  useCloud.value = false
   compressionResult.value = null
   errorMessage.value = ''
   if (resultUrl.value) {

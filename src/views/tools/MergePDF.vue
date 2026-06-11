@@ -18,8 +18,11 @@ import { usePDFWorker } from '@/composables/usePDFWorker'
 import { useCloudProcessing } from '@/composables/useCloudProcessing'
 import { fileAPI } from '@/services/api'
 import { historyManager } from '@/utils/history-manager'
+import { useUserStore } from '@/stores/user'
+import { shouldPreferCloudProcessing } from '@/utils/cloud-recommendation'
 
 const { t, locale } = useI18n()
+const userStore = useUserStore()
 
 interface FileWithPages {
   file: File
@@ -67,6 +70,10 @@ const handleFilesSelected = async (files: File[]) => {
     }
 
     selectedFiles.value.push(...filesWithPages)
+    useCloud.value = shouldPreferCloudProcessing(
+      selectedFiles.value.map((item) => item.file),
+      userStore.canUseCloudFeatures,
+    )
     errorMessage.value = ''
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '加载 PDF 文件失败'
@@ -89,6 +96,7 @@ const removeFile = (index: number) => {
 const clearAll = () => {
   sortedFiles.value.forEach((item) => clearThumbnails(item.file))
   selectedFiles.value = []
+  useCloud.value = false
   errorMessage.value = ''
 
   if (resultUrl.value) {

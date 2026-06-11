@@ -1,14 +1,10 @@
 <script setup lang="ts">
-/**
- * CloudToggle — 本地/云端处理切换开关
- *
- * - 未登录或免费用户：显示禁用状态 + 升级提示（点击跳转登录/定价）
- * - Pro/Enterprise：可切换"云端处理"
- */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { Cloud, Cpu, Gauge } from 'lucide-vue-next'
 import { useUserStore } from '@/stores/user'
+import ProBadge from '@/components/common/ProBadge.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -19,14 +15,41 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const userStore = useUserStore()
 
 const canUseCloud = computed(() => userStore.canUseCloudFeatures)
 
+const copy = computed(() => {
+  if (locale.value.startsWith('zh')) {
+    return {
+      localTitle: '本地即时处理',
+      localDesc: '小文件通常更快，文件尽量留在浏览器内完成。',
+      cloudTitle: 'Pro 云端加速',
+      cloudDesc: '适合大文件、长任务、批量处理，以及 OCR / Office / AI 等服务器能力。',
+      lockedDesc: '升级后可使用大文件、长任务、OCR / Office / AI 等云端能力。',
+      switchLabel: '切换云端处理',
+    }
+  }
+
+  return {
+    localTitle: 'Instant local processing',
+    localDesc: 'Usually faster for small files and keeps work in the browser.',
+    cloudTitle: 'Pro cloud boost',
+    cloudDesc: 'Best for large files, long-running jobs, batch work, OCR / Office / AI, and server-powered workflows.',
+    lockedDesc: 'Upgrade for large files, long jobs, OCR / Office / AI, and cloud workflows.',
+    switchLabel: 'Toggle cloud processing',
+  }
+})
+
+const title = computed(() => (props.modelValue && canUseCloud.value ? copy.value.cloudTitle : copy.value.localTitle))
+const description = computed(() => {
+  if (!canUseCloud.value) return copy.value.lockedDesc
+  return props.modelValue ? copy.value.cloudDesc : copy.value.localDesc
+})
+
 const toggle = () => {
   if (!canUseCloud.value) {
-    // 引导未登录/免费用户
     router.push(userStore.isAuthenticated ? '/pricing' : '/auth/login')
     return
   }
@@ -35,51 +58,51 @@ const toggle = () => {
 </script>
 
 <template>
-  <div
-    class="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800"
-  >
-    <div class="flex items-center gap-3">
-      <div class="text-primary">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
-          />
-        </svg>
+  <div class="rounded-[26px] border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/50">
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex gap-3">
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+          :class="modelValue && canUseCloud ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'"
+        >
+          <Cloud v-if="modelValue && canUseCloud" class="h-5 w-5" />
+          <Cpu v-else class="h-5 w-5" />
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="text-sm font-semibold text-slate-900 dark:text-white">
+              {{ title }}
+            </p>
+            <ProBadge v-if="modelValue || !canUseCloud" compact />
+          </div>
+          <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+            {{ description }}
+          </p>
+          <p class="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            <Gauge class="h-3.5 w-3.5" />
+            {{ copy.cloudDesc }}
+          </p>
+        </div>
       </div>
-      <div>
-        <p class="text-sm font-medium text-gray-900 dark:text-white">
-          {{ t('cloud.title') }}
-        </p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">
-          {{ canUseCloud ? t('cloud.desc') : t('cloud.proOnly') }}
-        </p>
-      </div>
-    </div>
 
-    <!-- 开关 -->
-    <button
-      type="button"
-      role="switch"
-      :aria-checked="modelValue"
-      :title="canUseCloud ? '' : t('cloud.proOnly')"
-      class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors"
-      :class="[
-        modelValue && canUseCloud ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600',
-        !canUseCloud ? 'opacity-60' : '',
-      ]"
-      @click="toggle"
-    >
-      <span
-        class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-        :class="modelValue && canUseCloud ? 'translate-x-6' : 'translate-x-1'"
-      />
-      <span
-        v-if="!canUseCloud"
-        class="absolute -top-2 -right-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
-      >Pro</span>
-    </button>
+      <button
+        type="button"
+        role="switch"
+        :aria-checked="modelValue"
+        :aria-label="copy.switchLabel"
+        :title="canUseCloud ? '' : t('cloud.proOnly')"
+        class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors"
+        :class="[
+          modelValue && canUseCloud ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700',
+          !canUseCloud ? 'opacity-75' : '',
+        ]"
+        @click="toggle"
+      >
+        <span
+          class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform"
+          :class="modelValue && canUseCloud ? 'translate-x-6' : 'translate-x-1'"
+        />
+      </button>
+    </div>
   </div>
 </template>

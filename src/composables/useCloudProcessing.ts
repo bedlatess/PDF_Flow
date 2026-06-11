@@ -54,7 +54,9 @@ export function useCloudProcessing() {
           } else if (cloudProgress.value < 90) {
             cloudProgress.value += 5
           }
-        }
+        },
+        800,
+        150
       )
 
       if (finalStatus.status === 'failed') {

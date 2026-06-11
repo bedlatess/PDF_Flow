@@ -231,6 +231,7 @@ const closeResultModal = () => {
       :title="t('tools.ocr.title')"
       :subtitle="t('tools.ocr.subtitle')"
       :badge="t('tools.ocr.badge')"
+      pro
       accent="purple"
     >
       <template #badgeIcon>

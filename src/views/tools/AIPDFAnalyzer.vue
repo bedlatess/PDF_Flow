@@ -4,6 +4,7 @@
       :title="t('ai.title')"
       :subtitle="t('ai.subtitle')"
       :badge="t('ai.proBadge')"
+      pro
       accent="pink"
     >
       <template #badgeIcon>

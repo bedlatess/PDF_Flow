@@ -14,8 +14,11 @@ import { useCloudProcessing } from '@/composables/useCloudProcessing'
 import { fileAPI } from '@/services/api'
 import { historyManager } from '@/utils/history-manager'
 import ToolHeader from '@/components/tools/ToolHeader.vue'
+import { useUserStore } from '@/stores/user'
+import { shouldPreferCloudProcessing } from '@/utils/cloud-recommendation'
 
 const { t, locale } = useI18n()
+const userStore = useUserStore()
 
 const selectedFiles = ref<File[]>([])
 const pageSize = ref<'a4' | 'letter' | 'a3'>('a4')
@@ -72,6 +75,7 @@ const copy = computed(() => locale.value.startsWith('zh')
 
 const handleFilesSelected = (files: File[]) => {
   selectedFiles.value.push(...files)
+  useCloud.value = shouldPreferCloudProcessing(selectedFiles.value, userStore.canUseCloudFeatures)
   errorMessage.value = ''
 }
 
@@ -81,10 +85,12 @@ const handleError = (message: string) => {
 
 const removeFile = (index: number) => {
   selectedFiles.value.splice(index, 1)
+  useCloud.value = shouldPreferCloudProcessing(selectedFiles.value, userStore.canUseCloudFeatures)
 }
 
 const clearAll = () => {
   selectedFiles.value = []
+  useCloud.value = false
   errorMessage.value = ''
   if (resultUrl.value) {
     memoryManager.revokeObjectURL(resultUrl.value)

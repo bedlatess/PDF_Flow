@@ -265,6 +265,7 @@ onUnmounted(() => {
       :title="t('tools.annotate.title')"
       :subtitle="t('tools.annotate.description')"
       :badge="t('tools.annotate.proOnly')"
+      pro
       accent="purple"
     >
       <template #badgeIcon>

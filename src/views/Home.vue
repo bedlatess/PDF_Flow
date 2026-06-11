@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import Card from '@/components/common/Card.vue'
 import { useSiteConfigStore } from '@/stores/siteConfig'
+import ProBadge from '@/components/common/ProBadge.vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -133,7 +134,12 @@ const tools = computed<Tool[]>(() => [
 ])
 
 const visibleTools = computed(() =>
-  tools.value.filter((tool) => siteConfigStore.getFeatureFlag(tool.featureKey, t(tool.titleKey)).enabled)
+  tools.value
+    .map((tool) => ({
+      ...tool,
+      flag: siteConfigStore.getFeatureFlag(tool.featureKey, t(tool.titleKey)),
+    }))
+    .filter((tool) => tool.flag.enabled)
 )
 
 const disabledFeatureMessage = computed(() => {
@@ -271,7 +277,10 @@ onMounted(() => {
 
               <!-- Title -->
               <h3 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
-                {{ t(tool.titleKey) }}
+                <span class="inline-flex items-center gap-2">
+                  {{ t(tool.titleKey) }}
+                  <ProBadge v-if="tool.flag.requires_pro" compact />
+                </span>
               </h3>
 
               <!-- Description -->

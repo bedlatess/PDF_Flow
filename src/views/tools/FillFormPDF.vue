@@ -222,6 +222,7 @@ onUnmounted(() => {
       :title="t('tools.fillForm.title')"
       :subtitle="t('tools.fillForm.description')"
       :badge="t('tools.fillForm.proOnly')"
+      pro
       accent="amber"
     >
       <template #badgeIcon>
