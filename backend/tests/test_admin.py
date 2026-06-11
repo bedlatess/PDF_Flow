@@ -182,6 +182,7 @@ def test_admin_can_list_and_update_users(client):
     users = client.get("/api/v1/admin/users", headers=headers)
     assert users.status_code == 200
     customer = next(user for user in users.json() if user["email"] == "customer@example.com")
+    assert customer["is_test_account"] is True
 
     updated = client.patch(
         f"/api/v1/admin/users/{customer['id']}",
@@ -223,6 +224,37 @@ def test_admin_cannot_remove_own_admin_access(client):
     assert deactivate.status_code == 400
 
 
+def test_admin_can_delete_non_current_user(client):
+    _register(client)
+    _promote_to_admin(client)
+    _register(client, email="remove-me@example.com")
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    users = client.get("/api/v1/admin/users", headers=headers).json()
+    target = next(user for user in users if user["email"] == "remove-me@example.com")
+
+    deleted = client.delete(f"/api/v1/admin/users/{target['id']}", headers=headers)
+    remaining = client.get("/api/v1/admin/users", headers=headers)
+
+    assert deleted.status_code == 204
+    assert all(user["email"] != "remove-me@example.com" for user in remaining.json())
+
+
+def test_admin_cannot_delete_self(client):
+    _register(client)
+    _promote_to_admin(client)
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    users = client.get("/api/v1/admin/users", headers=headers).json()
+    admin = next(user for user in users if user["email"] == "admin@example.com")
+
+    deleted = client.delete(f"/api/v1/admin/users/{admin['id']}", headers=headers)
+
+    assert deleted.status_code == 400
+
+
 def test_admin_can_list_recent_jobs(client):
     from app.core.database import get_db
     from app.models.user import ProcessingJob, User
@@ -255,3 +287,33 @@ def test_admin_can_list_recent_jobs(client):
     assert jobs.json()[0]["job_id"] == "job_admin_test"
     assert jobs.json()[0]["user_email"] == "admin@example.com"
     assert jobs.json()[0]["status"] == "failed"
+
+
+def test_admin_can_list_redis_jobs(client):
+    from app.services.file_service import file_processing_service
+
+    _register(client)
+    _promote_to_admin(client)
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    file_processing_service._save_job_status("job_redis_test", {
+        "job_id": "job_redis_test",
+        "status": "completed",
+        "progress": 100,
+        "message": "PDF merge job queued",
+        "created_at": 1780998441.0,
+        "updated_at": 1780998442.0,
+        "result": {
+            "output_path": "/tmp/pdf-flow/uploads/merged.pdf",
+            "file_size": 2048,
+        },
+    })
+
+    jobs = client.get("/api/v1/admin/jobs", headers=headers)
+
+    assert jobs.status_code == 200
+    redis_job = next(job for job in jobs.json() if job["job_id"] == "job_redis_test")
+    assert redis_job["job_type"] == "merge_pdf"
+    assert redis_job["status"] == "completed"
+    assert redis_job["input_file_size"] == 2048

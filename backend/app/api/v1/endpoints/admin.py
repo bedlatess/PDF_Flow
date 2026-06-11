@@ -1,4 +1,6 @@
 """Hidden admin console endpoints."""
+from datetime import datetime
+import time
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -14,6 +16,7 @@ from app.models.user import (
     UserRole,
 )
 from app.services.feature_gate import DEFAULT_FEATURE_FLAGS
+from app.services.file_service import file_processing_service
 from app.schemas.admin import (
     AdminAuditLogResponse,
     AdminJobResponse,
@@ -135,6 +138,109 @@ LEGACY_CONTENT_PLACEHOLDERS = {
 
 def _role_value(user: User) -> str:
     return user.role.value if hasattr(user.role, "value") else str(user.role)
+
+
+def _is_test_account(user: User) -> bool:
+    email = (user.email or "").lower()
+    return (
+        email.startswith("smoke-")
+        or email.startswith("ocr-")
+        or email.startswith("office-")
+        or email.endswith("@example.com")
+    )
+
+
+def _serialize_admin_user(user: User) -> dict:
+    return {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": _role_value(user),
+        "is_active": user.is_active,
+        "is_verified": user.is_verified,
+        "is_test_account": _is_test_account(user),
+        "created_at": user.created_at,
+        "last_login_at": user.last_login_at,
+    }
+
+
+def _datetime_from_epoch(value) -> datetime | None:
+    try:
+        return datetime.fromtimestamp(float(value))
+    except (TypeError, ValueError, OSError):
+        return None
+
+
+def _infer_job_type(status_data: dict) -> str:
+    message = str(status_data.get("message") or "").lower()
+    result = status_data.get("result") or {}
+    if "ocr" in message or "text" in result:
+        return "ocr_pdf"
+    if "office" in message:
+        return "office_to_pdf"
+    if "merge" in message:
+        return "merge_pdf"
+    if "split" in message:
+        return "split_pdf"
+    if "compression" in message or "compress" in message:
+        return "compress_pdf"
+    if "rotation" in message or "rotate" in message:
+        return "rotate_pdf"
+    if "image to pdf" in message:
+        return "image_to_pdf"
+    if "pdf to images" in message:
+        return "pdf_to_image"
+    return "processing_job"
+
+
+def _list_redis_jobs(limit: int) -> list[dict]:
+    jobs = []
+    redis_client = file_processing_service.redis_client
+    try:
+        keys = list(redis_client.scan_iter("job:*", count=100))
+    except AttributeError:
+        keys = [key for key in getattr(redis_client, "store", {}).keys() if str(key).startswith("job:")]
+    except Exception:
+        return jobs
+
+    for index, key in enumerate(keys):
+        try:
+            raw = redis_client.get(key)
+            if not raw:
+                continue
+            import json
+
+            status_data = json.loads(raw)
+        except Exception:
+            continue
+
+        created_at = _datetime_from_epoch(status_data.get("created_at"))
+        updated_at = _datetime_from_epoch(status_data.get("updated_at")) or created_at
+        result = status_data.get("result") or {}
+        error = status_data.get("error")
+        output_path = result.get("output_path") or ""
+        input_file_name = result.get("input_file_name") or output_path.rsplit("/", 1)[-1] or "Redis task"
+        jobs.append({
+            "id": None,
+            "job_id": status_data.get("job_id") or str(key).replace("job:", ""),
+            "user_id": None,
+            "user_email": None,
+            "job_type": _infer_job_type(status_data),
+            "status": status_data.get("status", "unknown"),
+            "progress": int(status_data.get("progress") or (100 if status_data.get("status") == "completed" else 0)),
+            "input_file_name": input_file_name,
+            "input_file_size": int(result.get("file_size") or 0),
+            "error_message": str(error) if error else None,
+            "created_at": created_at or datetime.fromtimestamp(0),
+            "started_at": None,
+            "completed_at": updated_at if status_data.get("status") in ("completed", "failed") else None,
+            "_sort": created_at.timestamp() if created_at else time.time() - index,
+        })
+
+    jobs.sort(key=lambda item: item["_sort"], reverse=True)
+    for item in jobs:
+        item.pop("_sort", None)
+    return jobs[:limit]
 
 
 def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
@@ -394,19 +500,7 @@ async def list_users(
         )
 
     users = query.limit(min(max(limit, 1), 100)).all()
-    return [
-        {
-            "id": user.id,
-            "email": user.email,
-            "full_name": user.full_name,
-            "role": _role_value(user),
-            "is_active": user.is_active,
-            "is_verified": user.is_verified,
-            "created_at": user.created_at,
-            "last_login_at": user.last_login_at,
-        }
-        for user in users
-    ]
+    return [_serialize_admin_user(user) for user in users]
 
 
 @router.patch("/users/{user_id}", response_model=AdminUserResponse)
@@ -457,16 +551,31 @@ async def update_user(
     )
     db.commit()
     db.refresh(user)
-    return {
-        "id": user.id,
-        "email": user.email,
-        "full_name": user.full_name,
-        "role": _role_value(user),
-        "is_active": user.is_active,
-        "is_verified": user.is_verified,
-        "created_at": user.created_at,
-        "last_login_at": user.last_login_at,
-    }
+    return _serialize_admin_user(user)
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: int,
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete a non-current user account and related owned records."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if user.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own admin account.",
+        )
+
+    email = user.email
+    _write_audit(db, request, admin, "delete", "user", email)
+    db.delete(user)
+    db.commit()
+    return None
 
 
 @router.get("/jobs", response_model=list[AdminJobResponse])
@@ -477,6 +586,11 @@ async def list_jobs(
     db: Session = Depends(get_db),
 ):
     """Return recent processing jobs with user context."""
+    safe_limit = min(max(limit, 1), 100)
+    redis_jobs = _list_redis_jobs(safe_limit)
+    if status_filter:
+        redis_jobs = [job for job in redis_jobs if job["status"] == status_filter]
+
     query = (
         db.query(ProcessingJob, User.email)
         .outerjoin(User, ProcessingJob.user_id == User.id)
@@ -485,8 +599,8 @@ async def list_jobs(
     if status_filter:
         query = query.filter(ProcessingJob.status == status_filter)
 
-    rows = query.limit(min(max(limit, 1), 100)).all()
-    return [
+    rows = query.limit(safe_limit).all()
+    db_jobs = [
         {
             "id": job.id,
             "job_id": job.job_id,
@@ -504,6 +618,10 @@ async def list_jobs(
         }
         for job, email in rows
     ]
+    seen = {job["job_id"] for job in redis_jobs}
+    merged = redis_jobs + [job for job in db_jobs if job["job_id"] not in seen]
+    merged.sort(key=lambda item: item["created_at"], reverse=True)
+    return merged[:safe_limit]
 
 
 @router.get("/audit-logs", response_model=list[AdminAuditLogResponse])

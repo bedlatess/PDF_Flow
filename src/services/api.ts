@@ -433,6 +433,7 @@ export interface AdminUser {
   role: 'free' | 'pro' | 'enterprise' | 'admin'
   is_active: boolean
   is_verified: boolean
+  is_test_account: boolean
   created_at: string
   last_login_at: string | null
 }
@@ -510,6 +511,10 @@ export const adminAPI = {
   async updateUser(userId: number, data: AdminUserUpdate): Promise<AdminUser> {
     const response = await apiClient.patch<AdminUser>(`/api/v1/admin/users/${userId}`, data)
     return response.data
+  },
+
+  async deleteUser(userId: number): Promise<void> {
+    await apiClient.delete(`/api/v1/admin/users/${userId}`)
   },
 
   async listJobs(params?: { status_filter?: string; limit?: number }): Promise<AdminJob[]> {

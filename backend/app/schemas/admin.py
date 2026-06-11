@@ -90,6 +90,7 @@ class AdminUserResponse(BaseModel):
     role: str
     is_active: bool
     is_verified: bool
+    is_test_account: bool = False
     created_at: datetime
     last_login_at: Optional[datetime]
 
@@ -101,9 +102,9 @@ class AdminUserUpdate(BaseModel):
 
 
 class AdminJobResponse(BaseModel):
-    id: int
+    id: Optional[int]
     job_id: str
-    user_id: int
+    user_id: Optional[int]
     user_email: Optional[str]
     job_type: str
     status: str
