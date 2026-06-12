@@ -54,7 +54,9 @@ RECLONE_BRANCH=main \
 bash scripts/server-clean-reclone.sh
 ```
 
-After checking the printed plan, run it for real:
+After checking the printed plan, run it for real. This default mode moves the
+old project directory into a dated backup folder, restores env/override files,
+clones the new repository, deploys it, and runs smoke checks:
 
 ```bash
 RECLONE_REPO_URL=https://github.com/bedlatess/PDF_Flow_v2.git \
@@ -63,6 +65,42 @@ RECLONE_BRANCH=main \
 RECLONE_DRY_RUN=0 \
 bash scripts/server-clean-reclone.sh
 ```
+
+If you want to delete the old project directory instead of moving it into
+`old-project`, use the explicit delete mode. The helper still preserves
+`.env`/compose override files into the dated backup folder before deletion:
+
+```bash
+RECLONE_REPO_URL=https://github.com/bedlatess/PDF_Flow_v2.git \
+RECLONE_TARGET_DIR=/opt/pdf-flow-v2 \
+RECLONE_BRANCH=main \
+RECLONE_OLD_TARGET_ACTION=delete \
+RECLONE_CONFIRM_DELETE=DELETE_OLD_PDF_FLOW \
+RECLONE_DRY_RUN=0 \
+bash scripts/server-clean-reclone.sh
+```
+
+Only purge Docker Compose volumes when you intentionally want to delete old
+project data such as bundled Postgres data, Redis state, and named temp volumes.
+This is not required for replacing the code directory. If you do need a full
+data reset, run a database backup first, then add both confirmation flags:
+
+```bash
+RECLONE_REPO_URL=https://github.com/bedlatess/PDF_Flow_v2.git \
+RECLONE_TARGET_DIR=/opt/pdf-flow-v2 \
+RECLONE_BRANCH=main \
+RECLONE_OLD_TARGET_ACTION=delete \
+RECLONE_CONFIRM_DELETE=DELETE_OLD_PDF_FLOW \
+RECLONE_PURGE_COMPOSE_VOLUMES=1 \
+RECLONE_CONFIRM_PURGE_VOLUMES=DELETE_PDF_FLOW_DATA \
+RECLONE_DRY_RUN=0 \
+bash scripts/server-clean-reclone.sh
+```
+
+Use `RECLONE_REMOVE_COMPOSE_IMAGES=local` only if you also want old locally
+built images removed. Avoid `RECLONE_REMOVE_COMPOSE_IMAGES=all` unless you have
+reviewed the old Compose file and know it will not remove shared base images you
+still want cached.
 
 ## 4. Environment Files
 
@@ -144,6 +182,13 @@ The deploy helper does this:
 7. Runs `alembic upgrade head` inside the backend container.
 8. Runs `scripts/smoke-test.sh`.
 9. Records the successful deployed commit.
+
+The re-clone helper additionally stops the old Compose stack with
+`down --remove-orphans`. It passes the old `.env` or `backend/.env` to Compose
+when present so variable-expanded service names and paths are resolved the same
+way they were during the old deployment. In real delete mode, if the old target
+has a Compose file but services cannot be stopped, the helper refuses to delete
+the directory; fix Docker/Compose first or review the old deployment manually.
 
 ## 7. Smoke Gates
 

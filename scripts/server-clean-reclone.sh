@@ -12,9 +12,15 @@ RUN_DEPLOY="${RECLONE_RUN_DEPLOY:-1}"
 RUN_MAIN_SMOKE="${RECLONE_RUN_MAIN_SMOKE:-}"
 RESTORE_ENV="${RECLONE_RESTORE_ENV:-1}"
 BACKUP_COMMAND="${RECLONE_BACKUP_COMMAND:-}"
+OLD_TARGET_ACTION="${RECLONE_OLD_TARGET_ACTION:-backup}"
+CONFIRM_DELETE="${RECLONE_CONFIRM_DELETE:-}"
+PURGE_COMPOSE_VOLUMES="${RECLONE_PURGE_COMPOSE_VOLUMES:-0}"
+CONFIRM_PURGE_VOLUMES="${RECLONE_CONFIRM_PURGE_VOLUMES:-}"
+REMOVE_COMPOSE_IMAGES="${RECLONE_REMOVE_COMPOSE_IMAGES:-none}"
 
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 declare -a COMPOSE_CMD
+declare -a COMPOSE_ENV_ARGS
 
 log() {
   printf '[%s] %s\n' "$(date '+%F %T')" "$*"
@@ -76,6 +82,30 @@ validate_inputs() {
     BACKUP_ROOT="$(abs_path "$BACKUP_ROOT")"
   fi
 
+  case "$OLD_TARGET_ACTION" in
+    backup|delete)
+      ;;
+    *)
+      fail "Unsupported RECLONE_OLD_TARGET_ACTION=$OLD_TARGET_ACTION. Use backup or delete."
+      ;;
+  esac
+
+  case "$REMOVE_COMPOSE_IMAGES" in
+    none|local|all)
+      ;;
+    *)
+      fail "Unsupported RECLONE_REMOVE_COMPOSE_IMAGES=$REMOVE_COMPOSE_IMAGES. Use none, local, or all."
+      ;;
+  esac
+
+  if [[ "$OLD_TARGET_ACTION" == "delete" && "$CONFIRM_DELETE" != "DELETE_OLD_PDF_FLOW" ]]; then
+    fail "Deleting the old target requires RECLONE_CONFIRM_DELETE=DELETE_OLD_PDF_FLOW"
+  fi
+
+  if [[ "$PURGE_COMPOSE_VOLUMES" == "1" && "$CONFIRM_PURGE_VOLUMES" != "DELETE_PDF_FLOW_DATA" ]]; then
+    fail "Deleting Compose volumes requires RECLONE_CONFIRM_PURGE_VOLUMES=DELETE_PDF_FLOW_DATA"
+  fi
+
   if [[ -z "$RUN_MAIN_SMOKE" ]]; then
     if [[ "$BRANCH" == "main" ]]; then
       RUN_MAIN_SMOKE="1"
@@ -120,6 +150,22 @@ validate_existing_target() {
 
 detect_compose() {
   local compose_file="$1"
+  local compose_project_dir compose_env_file
+
+  compose_project_dir="$(dirname "$compose_file")"
+  compose_env_file=""
+
+  if [[ -f "$compose_project_dir/.env" ]]; then
+    compose_env_file="$compose_project_dir/.env"
+  elif [[ -f "$compose_project_dir/backend/.env" ]]; then
+    compose_env_file="$compose_project_dir/backend/.env"
+  fi
+
+  COMPOSE_ENV_ARGS=()
+  if [[ -n "$compose_env_file" ]]; then
+    COMPOSE_ENV_ARGS=(--env-file "$compose_env_file")
+    log "Using old Docker Compose env file: $compose_env_file"
+  fi
 
   if ! command -v docker >/dev/null 2>&1; then
     log "Docker is not installed or not in PATH; skipping compose stop"
@@ -128,9 +174,9 @@ detect_compose() {
   fi
 
   if docker compose version >/dev/null 2>&1; then
-    COMPOSE_CMD=(docker compose -f "$compose_file")
+    COMPOSE_CMD=(docker compose --project-directory "$compose_project_dir" "${COMPOSE_ENV_ARGS[@]}" -f "$compose_file")
   elif command -v docker-compose >/dev/null 2>&1; then
-    COMPOSE_CMD=(docker-compose -f "$compose_file")
+    COMPOSE_CMD=(docker-compose --project-directory "$compose_project_dir" "${COMPOSE_ENV_ARGS[@]}" -f "$compose_file")
   else
     log "No Docker Compose command found; skipping compose stop"
     COMPOSE_CMD=()
@@ -139,9 +185,25 @@ detect_compose() {
 
 stop_old_services() {
   if [[ -f "$TARGET_DIR/docker-compose.yml" ]]; then
+    local -a down_args
+
     detect_compose "$TARGET_DIR/docker-compose.yml"
     if [[ "${#COMPOSE_CMD[@]}" -gt 0 ]]; then
-      run "${COMPOSE_CMD[@]}" down
+      down_args=(down --remove-orphans)
+
+      if [[ "$PURGE_COMPOSE_VOLUMES" == "1" ]]; then
+        down_args+=(--volumes)
+      fi
+
+      if [[ "$REMOVE_COMPOSE_IMAGES" != "none" ]]; then
+        down_args+=(--rmi "$REMOVE_COMPOSE_IMAGES")
+      fi
+
+      run "${COMPOSE_CMD[@]}" "${down_args[@]}"
+    elif [[ "$OLD_TARGET_ACTION" == "delete" && "$DRY_RUN" == "1" ]]; then
+      log "Would refuse real delete if old Compose services cannot be stopped"
+    elif [[ "$OLD_TARGET_ACTION" == "delete" ]]; then
+      fail "Refusing to delete old Docker project because Compose services could not be stopped"
     fi
   else
     log "No old docker-compose.yml found; skipping old service stop"
@@ -172,6 +234,34 @@ move_old_target_to_backup() {
   else
     log "Target does not exist yet; no old directory backup needed"
   fi
+}
+
+preserve_restore_files() {
+  local restore_source="$1"
+  local relative_path
+
+  run mkdir -p "$restore_source"
+
+  for relative_path in ".env" "backend/.env" "docker-compose.override.yml" "backend/docker-compose.override.yml"; do
+    if [[ -f "$TARGET_DIR/$relative_path" ]]; then
+      run mkdir -p "$(dirname "$restore_source/$relative_path")"
+      run cp "$TARGET_DIR/$relative_path" "$restore_source/$relative_path"
+      log "Preserved $relative_path before deleting old target"
+    fi
+  done
+}
+
+delete_old_target() {
+  local restore_source="$1"
+
+  if [[ ! -e "$TARGET_DIR" ]]; then
+    log "Target does not exist yet; no old directory delete needed"
+    return
+  fi
+
+  preserve_restore_files "$restore_source"
+  run rm -rf -- "$TARGET_DIR"
+  log "Old target deleted: $TARGET_DIR"
 }
 
 clone_new_project() {
@@ -235,20 +325,25 @@ deploy_new_project() {
 }
 
 main() {
-  local backup_dir old_target_backup temp_dir
+  local backup_dir old_target_backup preserved_config temp_dir restore_source
 
   validate_inputs
   validate_existing_target
 
   backup_dir="$BACKUP_ROOT/$(basename "$TARGET_DIR")-$TIMESTAMP"
   old_target_backup="$backup_dir/old-project"
+  preserved_config="$backup_dir/preserved-config"
   temp_dir="$(dirname "$TARGET_DIR")/.reclone-$(basename "$TARGET_DIR")-$TIMESTAMP"
+  restore_source="$old_target_backup"
 
   log "Server clean re-clone plan"
   log "Repository: $REPO_URL"
   log "Branch: $BRANCH"
   log "Target: $TARGET_DIR"
   log "Backup: $backup_dir"
+  log "Old target action: $OLD_TARGET_ACTION"
+  log "Purge Compose volumes: $PURGE_COMPOSE_VOLUMES"
+  log "Remove Compose images: $REMOVE_COMPOSE_IMAGES"
   log "Dry run: $DRY_RUN"
 
   run mkdir -p "$backup_dir"
@@ -256,9 +351,15 @@ main() {
     run_custom_backup "$backup_dir"
   fi
   stop_old_services
-  move_old_target_to_backup "$old_target_backup"
+  if [[ "$OLD_TARGET_ACTION" == "delete" ]]; then
+    delete_old_target "$preserved_config"
+    restore_source="$preserved_config"
+  else
+    move_old_target_to_backup "$old_target_backup"
+    restore_source="$old_target_backup"
+  fi
   clone_new_project "$temp_dir"
-  restore_env_files "$old_target_backup"
+  restore_env_files "$restore_source"
   deploy_new_project
 
   if [[ "$DRY_RUN" == "1" ]]; then
