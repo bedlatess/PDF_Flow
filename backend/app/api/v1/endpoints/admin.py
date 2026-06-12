@@ -1,17 +1,10 @@
 """Hidden admin console endpoints."""
-import json
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.v1.endpoints.auth import get_current_user
 from app.core.database import get_db
-from app.models.user import (
-    AdminAuditLog,
-    FeedbackReport,
-    User,
-    UserRole,
-)
-from app.domains.admin.audit import write_admin_audit
+from app.models.user import User, UserRole
 from app.domains.admin.content import (
     get_admin_overview_summary,
     get_public_config as get_public_config_payload,
@@ -21,6 +14,12 @@ from app.domains.admin.content import (
     update_content_block as update_content_block_service,
     update_feature_flag as update_feature_flag_service,
     update_setting as update_setting_service,
+)
+from app.domains.admin.feedback import (
+    cleanup_live_acceptance_feedback as cleanup_live_acceptance_feedback_service,
+    list_audit_logs as list_audit_logs_service,
+    list_feedback as list_feedback_service,
+    update_feedback as update_feedback_service,
 )
 from app.domains.admin.payment_ops import get_payment_operations_summary
 from app.domains.admin.operations import (
@@ -273,11 +272,7 @@ async def list_feedback(
     db: Session = Depends(get_db),
 ):
     """Return recent user-submitted feedback reports."""
-    safe_limit = min(max(limit, 1), 100)
-    query = db.query(FeedbackReport).order_by(FeedbackReport.created_at.desc())
-    if status_filter:
-        query = query.filter(FeedbackReport.status == status_filter)
-    return query.limit(safe_limit).all()
+    return list_feedback_service(db, status_filter=status_filter, limit=limit)
 
 
 @router.get("/errors", response_model=list[AdminApiErrorResponse])
@@ -327,34 +322,13 @@ async def update_feedback(
     db: Session = Depends(get_db),
 ):
     """Update feedback triage status or internal admin note."""
-    report = db.query(FeedbackReport).filter(FeedbackReport.id == feedback_id).first()
-    if not report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Feedback not found")
-
-    data = payload.model_dump(exclude_unset=True)
-    if "status" in data and data["status"] is not None:
-        allowed = {"new", "reviewing", "resolved", "closed"}
-        if data["status"] not in allowed:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Invalid feedback status. Allowed values: {', '.join(sorted(allowed))}",
-            )
-        report.status = data["status"]
-    if "admin_note" in data:
-        report.admin_note = data["admin_note"]
-
-    write_admin_audit(
+    return update_feedback_service(
         db,
-        request,
-        admin,
-        "update",
-        "feedback",
-        str(report.id),
-        detail=json.dumps(data, ensure_ascii=False),
+        feedback_id=feedback_id,
+        payload=payload,
+        request=request,
+        admin=admin,
     )
-    db.commit()
-    db.refresh(report)
-    return report
 
 
 @router.post("/feedback/cleanup-live-acceptance", response_model=AdminFeedbackCleanupResponse)
@@ -364,37 +338,7 @@ async def cleanup_live_acceptance_feedback(
     db: Session = Depends(get_db),
 ):
     """Close synthetic live-acceptance feedback probes without touching real user reports."""
-    reports = (
-        db.query(FeedbackReport)
-        .filter(
-            FeedbackReport.status.in_(["new", "reviewing"]),
-            FeedbackReport.title.ilike("live acceptance%"),
-        )
-        .all()
-    )
-
-    for report in reports:
-        report.status = "closed"
-        report.admin_note = "Closed automatically by live acceptance cleanup."
-
-    write_admin_audit(
-        db,
-        request,
-        admin,
-        "cleanup",
-        "feedback",
-        "live_acceptance",
-        detail=f"closed={len(reports)}",
-    )
-    db.commit()
-
-    remaining_open = db.query(FeedbackReport).filter(
-        FeedbackReport.status.in_(["new", "reviewing"])
-    ).count()
-    return {
-        "closed_count": len(reports),
-        "remaining_open_count": remaining_open,
-    }
+    return cleanup_live_acceptance_feedback_service(db, request=request, admin=admin)
 
 
 @router.get("/audit-logs", response_model=list[AdminAuditLogResponse])
@@ -402,9 +346,4 @@ async def list_audit_logs(
     _admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
-    return (
-        db.query(AdminAuditLog)
-        .order_by(AdminAuditLog.created_at.desc())
-        .limit(50)
-        .all()
-    )
+    return list_audit_logs_service(db)
