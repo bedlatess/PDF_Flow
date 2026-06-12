@@ -1,6 +1,6 @@
 # PDF-Flow Backend
 
-FastAPI backend for PDF-Flow. It owns authentication, account/enterprise APIs, cloud PDF jobs, OCR/Office/AI service integration, admin operations, feedback/diagnostics, file retention, email, and provider-neutral payment verification.
+FastAPI backend for PDF-Flow. It owns authentication, account and enterprise APIs, cloud PDF jobs, OCR/Office/AI integrations, admin operations, feedback diagnostics, file retention, email, and provider-neutral payment verification.
 
 For current project status and roadmap, read [../docs/PROJECT_MASTER.md](../docs/PROJECT_MASTER.md). This file is only a backend runbook.
 
@@ -15,7 +15,7 @@ pip install -r requirements.txt
 Create local environment config:
 
 ```bash
-copy .env.example .env
+cp .env.example .env
 ```
 
 Run migrations:
@@ -24,15 +24,16 @@ Run migrations:
 alembic upgrade head
 ```
 
-Start API:
+Start API and worker through the helper:
+
+```bash
+./start.sh
+```
+
+Or start them manually:
 
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Start worker in another terminal when testing async jobs:
-
-```bash
 celery -A app.celery_worker worker --loglevel=info
 ```
 
@@ -44,7 +45,7 @@ API docs are available after startup:
 
 ## Docker Compose
 
-From the repository root:
+From the repository root, start dependencies only:
 
 ```bash
 docker compose up -d postgres redis
@@ -67,6 +68,7 @@ Common targeted checks:
 ```bash
 pytest tests/test_auth.py -q
 pytest tests/test_admin.py -q
+pytest tests/test_files.py -q
 pytest tests/test_payment_domain.py -q
 ```
 
@@ -128,4 +130,4 @@ alembic current
 - [OAuth setup](../docs/OAUTH_SETUP.md)
 - [Staging deploy guide](../docs/STAGING_DEPLOY_GUIDE.md)
 - [Email service](./docs/EMAIL_SERVICE.md)
-- [Historical requirements](../开发文档/)
+- [Historical requirements](../开发文档)
