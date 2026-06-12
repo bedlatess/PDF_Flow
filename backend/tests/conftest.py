@@ -290,6 +290,30 @@ def _override_get_db():
         db.close()
 
 
+@pytest.fixture(autouse=True)
+def clear_fake_redis_state():
+    """Keep global FakeRedis-backed services isolated between tests."""
+    try:
+        from app.services.file_service import file_processing_service
+
+        store = getattr(file_processing_service.redis_client, "store", None)
+        if isinstance(store, dict):
+            store.clear()
+    except Exception:
+        pass
+
+    yield
+
+    try:
+        from app.services.file_service import file_processing_service
+
+        store = getattr(file_processing_service.redis_client, "store", None)
+        if isinstance(store, dict):
+            store.clear()
+    except Exception:
+        pass
+
+
 @pytest.fixture(scope="function")
 def client():
     """每个测试函数一套干净的表结构 + TestClient"""
