@@ -6,7 +6,7 @@ import os
 import tempfile
 from typing import List, Optional
 from celery import Task
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 from PIL import Image
 import logging
 

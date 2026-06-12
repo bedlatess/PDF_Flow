@@ -1,7 +1,7 @@
 """
 Utility function to extract text from PDF
 """
-import PyPDF2
+from pypdf import PdfReader
 from typing import Optional
 
 
@@ -17,7 +17,7 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
     """
     try:
         with open(pdf_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
+            pdf_reader = PdfReader(file)
             text_parts = []
 
             for page in pdf_reader.pages:

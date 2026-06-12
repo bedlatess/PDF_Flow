@@ -234,6 +234,7 @@ def _install_stubs():
 
     # PIL + PIL.Image
     pil_mod = types.ModuleType("PIL")
+    pil_mod.__version__ = "10.2.0"
     image_mod = types.ModuleType("PIL.Image")
     image_mod.Image = MagicMock
     image_mod.open = MagicMock()

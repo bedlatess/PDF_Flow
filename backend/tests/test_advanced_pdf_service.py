@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 
 from app.services.advanced_pdf_service import AdvancedPDFService
 

@@ -7,8 +7,8 @@ import io
 from pathlib import Path
 
 try:
-    from PyPDF2 import PdfReader, PdfWriter
-    from PyPDF2.generic import (
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.generic import (
         ArrayObject,
         BooleanObject,
         DictionaryObject,
@@ -21,17 +21,17 @@ try:
     from reportlab.lib.pagesizes import letter
     from reportlab.lib.colors import Color
     from reportlab.lib.utils import ImageReader
-    PYPDF2_AVAILABLE = True
+    PYPDF_AVAILABLE = True
 except ImportError:
-    PYPDF2_AVAILABLE = False
+    PYPDF_AVAILABLE = False
 
 
 class AdvancedPDFService:
     """Service for advanced PDF operations"""
 
     def __init__(self):
-        if not PYPDF2_AVAILABLE:
-            raise ImportError("PyPDF2 and reportlab not installed")
+        if not PYPDF_AVAILABLE:
+            raise ImportError("pypdf and reportlab not installed")
 
     # ============================================================================
     # Watermark
@@ -234,7 +234,7 @@ class AdvancedPDFService:
         output_path: str,
     ) -> str:
         """
-        Rebuild a PDF into a clean copy when PyPDF2 can still read its pages.
+        Rebuild a PDF into a clean copy when pypdf can still read its pages.
 
         This is intentionally conservative: it can help with light structure
         issues, but severely corrupted PDFs may still fail to open.

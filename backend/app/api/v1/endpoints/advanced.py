@@ -3,7 +3,7 @@ Advanced PDF endpoints
 水印 / 表单填写 / 表单字段读取 / 注释 / 高亮 / 签名字段
 
 注：基础水印已在前端纯本地实现（src/utils/pdf/watermark.ts）。
-本端点为云端/企业 API 调用提供后端能力（表单、注释等需服务端 PyPDF2/reportlab）。
+本端点为云端/企业 API 调用提供后端能力（表单、注释等需服务端 pypdf/reportlab）。
 """
 import json
 import os

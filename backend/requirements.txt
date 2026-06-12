@@ -23,7 +23,6 @@ redis==5.0.1
 celery==5.3.6
 
 # File Processing
-PyPDF2==3.0.1
 pdf2image==1.17.0
 pypdf==4.0.1
 pytesseract==0.3.10
