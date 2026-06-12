@@ -16,7 +16,6 @@ from app.models.user import (
     ProcessingJob,
     User,
     UserRole,
-    Webhook,
 )
 from app.domains.admin.audit import write_admin_audit
 from app.domains.admin.content import (
@@ -31,6 +30,16 @@ from app.domains.admin.content import (
     update_setting as update_setting_service,
 )
 from app.domains.admin.payment_ops import get_payment_operations_summary
+from app.domains.admin.users import (
+    cleanup_test_users as cleanup_test_users_service,
+    delete_user as delete_user_service,
+    is_test_account,
+    list_users as list_users_service,
+    role_value,
+    serialize_admin_user,
+    test_user_query,
+    update_user as update_user_service,
+)
 from app.services.file_service import file_processing_service
 from app.services.file_retention_service import file_retention_service
 from app.celery_worker import celery_app
@@ -59,48 +68,6 @@ from app.schemas.admin import (
 from app.schemas.feedback import AdminFeedbackResponse, AdminFeedbackUpdate
 
 router = APIRouter()
-
-
-def _role_value(user: User) -> str:
-    return user.role.value if hasattr(user.role, "value") else str(user.role)
-
-
-def _is_test_account(user: User) -> bool:
-    email = (user.email or "").lower()
-    return (
-        email.startswith("smoke-")
-        or email.startswith("ocr-")
-        or email.startswith("office-")
-        or email.endswith("@example.com")
-    )
-
-
-def _test_user_query(db: Session, admin: User | None = None):
-    query = db.query(User).filter(User.role != UserRole.ADMIN)
-    if admin is not None:
-        query = query.filter(User.id != admin.id)
-    audited_admin_ids = db.query(AdminAuditLog.admin_user_id)
-    query = query.filter(~User.id.in_(audited_admin_ids))
-    return query.filter(
-        (User.email.ilike("smoke-%"))
-        | (User.email.ilike("ocr-%"))
-        | (User.email.ilike("office-%"))
-        | (User.email.ilike("%@example.com"))
-    )
-
-
-def _serialize_admin_user(user: User) -> dict:
-    return {
-        "id": user.id,
-        "email": user.email,
-        "full_name": user.full_name,
-        "role": _role_value(user),
-        "is_active": user.is_active,
-        "is_verified": user.is_verified,
-        "is_test_account": _is_test_account(user),
-        "created_at": user.created_at,
-        "last_login_at": user.last_login_at,
-    }
 
 
 def _datetime_from_epoch(value) -> datetime | None:
@@ -338,7 +305,7 @@ def _build_diagnostic_summary(
 
 def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
     """Require an authenticated admin user."""
-    if _role_value(current_user) != UserRole.ADMIN.value:
+    if role_value(current_user) != UserRole.ADMIN.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
@@ -374,12 +341,12 @@ async def get_operations_overview(
         "total_users": len(all_users),
         "active_users": len([user for user in all_users if user.is_active]),
         "banned_users": len([user for user in all_users if not user.is_active]),
-        "test_users": len([user for user in all_users if _is_test_account(user)]),
+        "test_users": len([user for user in all_users if is_test_account(user)]),
         "total_jobs": db.query(ProcessingJob).count(),
         "visible_jobs": len(jobs),
         "failed_jobs": len(failed_jobs),
         "running_jobs": len(running_jobs),
-        "recent_users": [_serialize_admin_user(user) for user in users],
+        "recent_users": [serialize_admin_user(user) for user in users],
         "recent_failed_jobs": failed_jobs[:5],
         "recent_jobs": jobs[:8],
     }
@@ -528,15 +495,7 @@ async def list_users(
     db: Session = Depends(get_db),
 ):
     """Return recent users for hidden admin operations."""
-    query = db.query(User).order_by(User.created_at.desc())
-    if search:
-        pattern = f"%{search.strip()}%"
-        query = query.filter(
-            (User.email.ilike(pattern)) | (User.full_name.ilike(pattern))
-        )
-
-    users = query.limit(min(max(limit, 1), 100)).all()
-    return [_serialize_admin_user(user) for user in users]
+    return list_users_service(db, search=search, limit=limit)
 
 
 @router.patch("/users/{user_id}", response_model=AdminUserResponse)
@@ -548,46 +507,13 @@ async def update_user(
     db: Session = Depends(get_db),
 ):
     """Update a user's operational status or role."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    data = payload.model_dump(exclude_unset=True)
-    if user.id == admin.id and (
-        data.get("is_active") is False
-        or (data.get("role") is not None and data["role"] != UserRole.ADMIN.value)
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You cannot remove your own admin access.",
-        )
-
-    if "role" in data:
-        try:
-            user.role = UserRole(data["role"])
-        except ValueError as exc:
-            allowed = ", ".join(role.value for role in UserRole)
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Invalid role. Allowed values: {allowed}",
-            ) from exc
-    if "is_active" in data:
-        user.is_active = data["is_active"]
-    if "is_verified" in data:
-        user.is_verified = data["is_verified"]
-
-    write_admin_audit(
+    return update_user_service(
         db,
-        request,
-        admin,
-        "update",
-        "user",
-        user.email,
-        detail=", ".join(sorted(data.keys())),
+        user_id=user_id,
+        payload=payload,
+        request=request,
+        admin=admin,
     )
-    db.commit()
-    db.refresh(user)
-    return _serialize_admin_user(user)
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -598,19 +524,7 @@ async def delete_user(
     db: Session = Depends(get_db),
 ):
     """Delete a non-current user account and related owned records."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    if user.id == admin.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You cannot delete your own admin account.",
-        )
-
-    email = user.email
-    write_admin_audit(db, request, admin, "delete", "user", email)
-    db.delete(user)
-    db.commit()
+    delete_user_service(db, user_id=user_id, request=request, admin=admin)
     return None
 
 
@@ -621,45 +535,7 @@ async def cleanup_test_users(
     db: Session = Depends(get_db),
 ):
     """Delete synthetic test accounts while preserving admin and real user accounts."""
-    users = _test_user_query(db, admin).all()
-    user_ids = [user.id for user in users]
-    deleted_emails = [user.email for user in users]
-
-    if user_ids:
-        db.query(FeedbackReport).filter(FeedbackReport.user_id.in_(user_ids)).update(
-            {FeedbackReport.user_id: None},
-            synchronize_session=False,
-        )
-        db.query(ApiErrorLog).filter(ApiErrorLog.user_id.in_(user_ids)).update(
-            {ApiErrorLog.user_id: None},
-            synchronize_session=False,
-        )
-        db.query(ProcessingJob).filter(ProcessingJob.user_id.in_(user_ids)).delete(
-            synchronize_session=False
-        )
-        db.query(Webhook).filter(Webhook.user_id.in_(user_ids)).delete(
-            synchronize_session=False
-        )
-
-        for user in users:
-            db.delete(user)
-
-    write_admin_audit(
-        db,
-        request,
-        admin,
-        "cleanup",
-        "user",
-        "test_accounts",
-        detail=f"deleted={len(users)}",
-    )
-    db.commit()
-
-    return {
-        "deleted_count": len(users),
-        "deleted_emails": deleted_emails,
-        "remaining_test_users_count": _test_user_query(db, admin).count(),
-    }
+    return cleanup_test_users_service(db, request=request, admin=admin)
 
 
 @router.get("/jobs", response_model=list[AdminJobResponse])
@@ -773,7 +649,7 @@ async def get_maintenance_summary(
     """Return safe cleanup counts for hidden admin maintenance actions."""
     jobs = _list_all_jobs_for_admin(db, limit=50)
     return {
-        "test_users_count": _test_user_query(db, admin).count(),
+        "test_users_count": test_user_query(db, admin).count(),
         "live_acceptance_feedback_count": db.query(FeedbackReport).filter(
             FeedbackReport.status.in_(["new", "reviewing"]),
             FeedbackReport.title.ilike("live acceptance%"),
