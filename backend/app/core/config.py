@@ -19,15 +19,15 @@ class Settings(BaseSettings):
     # Project Info
     PROJECT_NAME: str = "PDF-Flow API"
     VERSION: str = "2.0.0"
-    ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
-    DEBUG: bool = Field(default=True, env="DEBUG")
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = True
 
     # API Configuration
     API_V1_PREFIX: str = "/api/v1"
-    BACKEND_PUBLIC_URL: str = Field(default="http://localhost:8000", env="BACKEND_PUBLIC_URL")
+    BACKEND_PUBLIC_URL: str = "http://localhost:8000"
 
     # Security - JWT
-    SECRET_KEY: str = Field(..., env="SECRET_KEY")
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -43,12 +43,12 @@ class Settings(BaseSettings):
     )
 
     # Database (Supabase PostgreSQL)
-    DATABASE_URL: str = Field(..., env="DATABASE_URL")
+    DATABASE_URL: str
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
 
     # Redis Configuration
-    REDIS_URL: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
+    REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_QUEUE_NAME: str = "pdf_processing_queue"
 
     # File Storage
@@ -56,10 +56,10 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 500 * 1024 * 1024  # 500MB for Pro users
     FREE_TIER_MAX_SIZE: int = 20 * 1024 * 1024  # 20MB for free users
     ALLOWED_EXTENSIONS: List[str] = ["pdf", "jpg", "jpeg", "png", "docx", "xlsx", "pptx"]
-    CLOUD_FILE_UPLOAD_TTL_SECONDS: int = Field(default=3600, env="CLOUD_FILE_UPLOAD_TTL_SECONDS")
-    CLOUD_FILE_RESULT_TTL_SECONDS: int = Field(default=3600, env="CLOUD_FILE_RESULT_TTL_SECONDS")
-    CLOUD_FILE_DOWNLOAD_TTL_SECONDS: int = Field(default=1800, env="CLOUD_FILE_DOWNLOAD_TTL_SECONDS")
-    CLOUD_FILE_CLEANUP_INTERVAL_SECONDS: int = Field(default=300, env="CLOUD_FILE_CLEANUP_INTERVAL_SECONDS")
+    CLOUD_FILE_UPLOAD_TTL_SECONDS: int = 3600
+    CLOUD_FILE_RESULT_TTL_SECONDS: int = 3600
+    CLOUD_FILE_DOWNLOAD_TTL_SECONDS: int = 1800
+    CLOUD_FILE_CLEANUP_INTERVAL_SECONDS: int = 300
 
     # Rate Limiting (Redis sliding window)
     RATE_LIMIT_FREE: int = 3  # 3 requests per day for free users
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_WINDOW: int = 86400  # 24 hours in seconds
 
     # OCR Configuration
-    TESSERACT_PATH: Optional[str] = Field(default=None, env="TESSERACT_PATH")
+    TESSERACT_PATH: Optional[str] = None
     OCR_LANGUAGES: List[str] = ["eng", "chi_sim", "spa"]
 
     # Payment provider registry
@@ -77,63 +77,63 @@ class Settings(BaseSettings):
         alias="PAYMENT_PROVIDER_ORDER",
     )
     PAYMENT_PROVIDER_CHECKOUT_URLS_RAW: str = Field(default="{}", alias="PAYMENT_PROVIDER_CHECKOUT_URLS")
-    PAYMENT_ORDER_TTL_MINUTES: int = Field(default=30, env="PAYMENT_ORDER_TTL_MINUTES")
+    PAYMENT_ORDER_TTL_MINUTES: int = 30
 
     # Stripe Configuration (legacy compatibility; will move behind provider adapter)
-    STRIPE_SECRET_KEY: Optional[str] = Field(default=None, env="STRIPE_SECRET_KEY")
-    STRIPE_PUBLISHABLE_KEY: Optional[str] = Field(default=None, env="STRIPE_PUBLISHABLE_KEY")
-    STRIPE_WEBHOOK_SECRET: Optional[str] = Field(default=None, env="STRIPE_WEBHOOK_SECRET")
-    STRIPE_PRICE_ID_MONTHLY: Optional[str] = Field(default=None, env="STRIPE_PRICE_ID_MONTHLY")
-    STRIPE_PRICE_ID_YEARLY: Optional[str] = Field(default=None, env="STRIPE_PRICE_ID_YEARLY")
+    STRIPE_SECRET_KEY: Optional[str] = None
+    STRIPE_PUBLISHABLE_KEY: Optional[str] = None
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None
+    STRIPE_PRICE_ID_MONTHLY: Optional[str] = None
+    STRIPE_PRICE_ID_YEARLY: Optional[str] = None
 
     # PayPal Configuration
-    PAYPAL_CLIENT_ID: Optional[str] = Field(default=None, env="PAYPAL_CLIENT_ID")
-    PAYPAL_CLIENT_SECRET: Optional[str] = Field(default=None, env="PAYPAL_CLIENT_SECRET")
-    PAYPAL_WEBHOOK_ID: Optional[str] = Field(default=None, env="PAYPAL_WEBHOOK_ID")
-    PAYPAL_API_BASE_URL: str = Field(default="https://api-m.sandbox.paypal.com", env="PAYPAL_API_BASE_URL")
+    PAYPAL_CLIENT_ID: Optional[str] = None
+    PAYPAL_CLIENT_SECRET: Optional[str] = None
+    PAYPAL_WEBHOOK_ID: Optional[str] = None
+    PAYPAL_API_BASE_URL: str = "https://api-m.sandbox.paypal.com"
 
     # Alipay Configuration
-    ALIPAY_APP_ID: Optional[str] = Field(default=None, env="ALIPAY_APP_ID")
-    ALIPAY_PRIVATE_KEY: Optional[str] = Field(default=None, env="ALIPAY_PRIVATE_KEY")
-    ALIPAY_PUBLIC_KEY: Optional[str] = Field(default=None, env="ALIPAY_PUBLIC_KEY")
-    ALIPAY_GATEWAY_URL: str = Field(default="https://openapi-sandbox.dl.alipaydev.com/gateway.do", env="ALIPAY_GATEWAY_URL")
+    ALIPAY_APP_ID: Optional[str] = None
+    ALIPAY_PRIVATE_KEY: Optional[str] = None
+    ALIPAY_PUBLIC_KEY: Optional[str] = None
+    ALIPAY_GATEWAY_URL: str = "https://openapi-sandbox.dl.alipaydev.com/gateway.do"
 
     # WeChat Pay Configuration
-    WECHAT_PAY_APP_ID: Optional[str] = Field(default=None, env="WECHAT_PAY_APP_ID")
-    WECHAT_PAY_MCH_ID: Optional[str] = Field(default=None, env="WECHAT_PAY_MCH_ID")
-    WECHAT_PAY_SERIAL_NO: Optional[str] = Field(default=None, env="WECHAT_PAY_SERIAL_NO")
-    WECHAT_PAY_PRIVATE_KEY: Optional[str] = Field(default=None, env="WECHAT_PAY_PRIVATE_KEY")
-    WECHAT_PAY_API_V3_KEY: Optional[str] = Field(default=None, env="WECHAT_PAY_API_V3_KEY")
-    WECHAT_PAY_PLATFORM_CERT: Optional[str] = Field(default=None, env="WECHAT_PAY_PLATFORM_CERT")
-    WECHAT_PAY_API_BASE_URL: str = Field(default="https://api.mch.weixin.qq.com", env="WECHAT_PAY_API_BASE_URL")
+    WECHAT_PAY_APP_ID: Optional[str] = None
+    WECHAT_PAY_MCH_ID: Optional[str] = None
+    WECHAT_PAY_SERIAL_NO: Optional[str] = None
+    WECHAT_PAY_PRIVATE_KEY: Optional[str] = None
+    WECHAT_PAY_API_V3_KEY: Optional[str] = None
+    WECHAT_PAY_PLATFORM_CERT: Optional[str] = None
+    WECHAT_PAY_API_BASE_URL: str = "https://api.mch.weixin.qq.com"
 
     # Hosted gateway / crypto gateway configuration.
     # JSON object keyed by provider: epay, tokenpay, bepusdt, epusdt, okpay.
     PAYMENT_GATEWAY_CONFIGS_RAW: str = Field(default="{}", alias="PAYMENT_GATEWAY_CONFIGS")
 
     # Email Configuration (Resend)
-    RESEND_API_KEY: Optional[str] = Field(default=None, env="RESEND_API_KEY")
-    EMAIL_FROM: str = Field(default="PDF-Flow <noreply@pdf-flow.com>", env="EMAIL_FROM")
-    FRONTEND_URL: str = Field(default="http://localhost:5173", env="FRONTEND_URL")
+    RESEND_API_KEY: Optional[str] = None
+    EMAIL_FROM: str = "PDF-Flow <noreply@pdf-flow.com>"
+    FRONTEND_URL: str = "http://localhost:5173"
     PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 1
 
     # OAuth Configuration
-    GOOGLE_CLIENT_ID: Optional[str] = Field(default=None, env="GOOGLE_CLIENT_ID")
-    GOOGLE_CLIENT_SECRET: Optional[str] = Field(default=None, env="GOOGLE_CLIENT_SECRET")
-    GITHUB_CLIENT_ID: Optional[str] = Field(default=None, env="GITHUB_CLIENT_ID")
-    GITHUB_CLIENT_SECRET: Optional[str] = Field(default=None, env="GITHUB_CLIENT_SECRET")
-    OAUTH_REDIRECT_URL: str = Field(default="http://localhost:8000", env="OAUTH_REDIRECT_URL")
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GITHUB_CLIENT_ID: Optional[str] = None
+    GITHUB_CLIENT_SECRET: Optional[str] = None
+    OAUTH_REDIRECT_URL: str = "http://localhost:8000"
 
     # Monitoring & Analytics
-    SENTRY_DSN: Optional[str] = Field(default=None, env="SENTRY_DSN")
-    POSTHOG_API_KEY: Optional[str] = Field(default=None, env="POSTHOG_API_KEY")
+    SENTRY_DSN: Optional[str] = None
+    POSTHOG_API_KEY: Optional[str] = None
 
     # AI / Gemini
-    GEMINI_API_KEY: Optional[str] = Field(default=None, env="GEMINI_API_KEY")
+    GEMINI_API_KEY: Optional[str] = None
 
     # Celery Configuration
-    CELERY_BROKER_URL: str = Field(default="redis://localhost:6379/0", env="CELERY_BROKER_URL")
-    CELERY_RESULT_BACKEND: str = Field(default="redis://localhost:6379/1", env="CELERY_RESULT_BACKEND")
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
 
     # Security - STRIDE Model Implementation
     # S (Spoofing): API Keys stored as SHA-256 hashes only

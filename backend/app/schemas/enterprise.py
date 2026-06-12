@@ -4,7 +4,7 @@ API Key management, usage tracking, webhooks
 """
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # ============================================================================
@@ -32,8 +32,7 @@ class APIKeyResponse(BaseModel):
     # Only returned on creation
     api_key: Optional[str] = Field(None, description="Full API key (only shown once)")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class APIKeyUpdate(BaseModel):
@@ -68,8 +67,7 @@ class UsageLogResponse(BaseModel):
     ip_address: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UsageStatsResponse(BaseModel):
@@ -123,18 +121,20 @@ class WebhookEventType(str):
 class WebhookCreate(BaseModel):
     """Request to create a webhook"""
     url: str = Field(..., min_length=1, max_length=500, description="Webhook endpoint URL")
-    events: List[str] = Field(..., min_items=1, description="Event types to subscribe to")
+    events: List[str] = Field(..., min_length=1, description="Event types to subscribe to")
     secret: Optional[str] = Field(None, max_length=100, description="Optional secret for signature verification")
     is_active: bool = Field(True, description="Whether webhook is active")
 
-    @validator('url')
+    @field_validator('url')
+    @classmethod
     def validate_url(cls, v):
         """Ensure URL is HTTPS in production"""
         if not v.startswith(('http://', 'https://')):
             raise ValueError('URL must start with http:// or https://')
         return v
 
-    @validator('events')
+    @field_validator('events')
+    @classmethod
     def validate_events(cls, v):
         """Validate event types"""
         valid_events = [
@@ -153,11 +153,12 @@ class WebhookCreate(BaseModel):
 class WebhookUpdate(BaseModel):
     """Update webhook settings"""
     url: Optional[str] = Field(None, min_length=1, max_length=500)
-    events: Optional[List[str]] = Field(None, min_items=1)
+    events: Optional[List[str]] = Field(None, min_length=1)
     secret: Optional[str] = Field(None, max_length=100)
     is_active: Optional[bool] = None
 
-    @validator('url')
+    @field_validator('url')
+    @classmethod
     def validate_url(cls, v):
         if v and not v.startswith(('http://', 'https://')):
             raise ValueError('URL must start with http:// or https://')
@@ -179,8 +180,7 @@ class WebhookResponse(BaseModel):
     successful_deliveries: int = 0
     failed_deliveries: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WebhookList(BaseModel):

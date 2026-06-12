@@ -1,7 +1,7 @@
 """Schemas for user feedback and admin feedback triage."""
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class FeedbackCreate(BaseModel):
@@ -21,8 +21,7 @@ class FeedbackResponse(BaseModel):
     diagnostic_code: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminFeedbackResponse(BaseModel):
@@ -43,8 +42,7 @@ class AdminFeedbackResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminFeedbackUpdate(BaseModel):

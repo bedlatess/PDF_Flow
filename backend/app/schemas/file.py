@@ -3,7 +3,7 @@ File Processing Schemas
 文件处理相关的数据模型
 """
 from typing import Optional, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from enum import Enum
 
 
@@ -45,8 +45,8 @@ class FileUploadResponse(BaseModel):
     mime_type: str = Field(..., description="MIME 类型")
     upload_time: float = Field(..., description="上传时间戳")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_id": "a1b2c3d4e5f6",
                 "filename": "document.pdf",
@@ -55,20 +55,21 @@ class FileUploadResponse(BaseModel):
                 "upload_time": 1234567890.123
             }
         }
-
+    )
 
 class PDFMergeRequest(BaseModel):
     """PDF 合并请求"""
     file_ids: List[str] = Field(..., min_length=2, description="要合并的文件 ID 列表")
     output_filename: Optional[str] = Field(None, description="输出文件名")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_ids": ["file1_id", "file2_id", "file3_id"],
                 "output_filename": "merged.pdf"
             }
         }
+    )
 
 
 class PDFSplitRequest(BaseModel):
@@ -79,7 +80,8 @@ class PDFSplitRequest(BaseModel):
         description="页面范围列表，例如 [[1,3], [5,7]] 表示提取 1-3 页和 5-7 页"
     )
 
-    @validator("page_ranges")
+    @field_validator("page_ranges")
+    @classmethod
     def validate_page_ranges(cls, v):
         for range_item in v:
             if len(range_item) != 2:
@@ -90,13 +92,14 @@ class PDFSplitRequest(BaseModel):
                 raise ValueError("Page numbers must start from 1")
         return v
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_id": "abc123",
                 "page_ranges": [[1, 3], [5, 7]]
             }
         }
+    )
 
 
 class PDFCompressRequest(BaseModel):
@@ -104,13 +107,14 @@ class PDFCompressRequest(BaseModel):
     file_id: str = Field(..., description="PDF 文件 ID")
     quality: QualityLevel = Field(QualityLevel.MEDIUM, description="压缩质量级别")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_id": "abc123",
                 "quality": "medium"
             }
         }
+    )
 
 
 class PDFRotateRequest(BaseModel):
@@ -119,20 +123,22 @@ class PDFRotateRequest(BaseModel):
     rotation: int = Field(..., description="旋转角度（90, 180, 270）")
     pages: Optional[List[int]] = Field(None, description="要旋转的页面，None 表示所有页面")
 
-    @validator("rotation")
+    @field_validator("rotation")
+    @classmethod
     def validate_rotation(cls, v):
         if v not in [90, 180, 270]:
             raise ValueError("Rotation must be 90, 180, or 270 degrees")
         return v
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_id": "abc123",
                 "rotation": 90,
                 "pages": [1, 3, 5]
             }
         }
+    )
 
 
 class ImageToPDFRequest(BaseModel):
@@ -140,13 +146,14 @@ class ImageToPDFRequest(BaseModel):
     file_ids: List[str] = Field(..., min_length=1, description="图片文件 ID 列表")
     output_filename: Optional[str] = Field("converted.pdf", description="输出文件名")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_ids": ["img1_id", "img2_id"],
                 "output_filename": "images.pdf"
             }
         }
+    )
 
 
 class PDFToImageRequest(BaseModel):
@@ -156,8 +163,8 @@ class PDFToImageRequest(BaseModel):
     pages: Optional[List[int]] = Field(None, description="要转换的页面，None 表示所有页面")
     dpi: int = Field(300, ge=72, le=600, description="输出 DPI")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_id": "abc123",
                 "format": "png",
@@ -165,6 +172,7 @@ class PDFToImageRequest(BaseModel):
                 "dpi": 300
             }
         }
+    )
 
 
 class OCRRequest(BaseModel):
@@ -173,14 +181,15 @@ class OCRRequest(BaseModel):
     language: str = Field("eng", description="OCR 语言（eng, chi_sim, etc.）")
     pages: Optional[List[int]] = Field(None, description="要识别的页面，None 表示所有页面")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_id": "abc123",
                 "language": "eng",
                 "pages": [1, 2]
             }
         }
+    )
 
 
 class ProcessingJobResponse(BaseModel):
@@ -192,8 +201,8 @@ class ProcessingJobResponse(BaseModel):
     result_url: Optional[str] = Field(None, description="结果下载链接")
     error: Optional[str] = Field(None, description="错误信息")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "job_id": "job_abc123",
                 "status": "processing",
@@ -203,6 +212,7 @@ class ProcessingJobResponse(BaseModel):
                 "error": None
             }
         }
+    )
 
 
 class ProcessingJobStatusResponse(BaseModel):
@@ -215,8 +225,8 @@ class ProcessingJobStatusResponse(BaseModel):
     result: Optional[dict] = None
     error: Optional[str] = None
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "job_id": "job_abc123",
                 "status": "completed",
@@ -230,3 +240,4 @@ class ProcessingJobStatusResponse(BaseModel):
                 "error": None
             }
         }
+    )
