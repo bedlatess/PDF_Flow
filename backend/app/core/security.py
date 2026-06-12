@@ -37,7 +37,8 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode.update({"exp": expire, "type": "access"})
+    to_encode.update({"exp": expire})
+    to_encode.setdefault("type", "access")
 
     # JWT 规范要求 sub 为字符串；python-jose 解码时会强校验，故统一转为 str
     if "sub" in to_encode:
