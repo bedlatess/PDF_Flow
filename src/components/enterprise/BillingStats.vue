@@ -4,8 +4,34 @@
       {{ t('enterprise.billing.title') }}
     </h2>
 
+    <div
+      v-if="errorState"
+      class="space-y-3"
+    >
+      <DiagnosticAlert
+        :title="errorState.title"
+        :message="errorState.message"
+        :diagnostic-code="errorState.diagnosticCode"
+        :support-hint="t('enterprise.billing.failureHint')"
+        tone="warning"
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        :loading="loading"
+        @click="loadBillingStats"
+      >
+        {{ t('enterprise.billing.retry') }}
+      </Button>
+    </div>
+
+    <div v-if="loading" class="space-y-4">
+      <Skeleton class="h-44 w-full" />
+      <Skeleton class="h-28 w-full" />
+    </div>
+
     <!-- Current Period Stats -->
-    <div v-if="billingStats" class="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
+    <div v-if="billingStats" class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
       <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">
         {{ t('enterprise.billing.currentPeriod') }}
       </h3>
@@ -73,7 +99,7 @@
             </div>
             <div class="flex justify-between text-base font-bold border-t border-slate-300 dark:border-slate-600 pt-2 mt-2">
               <span class="text-slate-900 dark:text-white">{{ t('enterprise.billing.total') }}</span>
-              <span class="text-blue-600 dark:text-blue-400">
+              <span class="text-sky-700 dark:text-sky-300">
                 ${{ (billingStats.total_cost / 100).toFixed(2) }}
               </span>
             </div>
@@ -83,7 +109,7 @@
     </div>
 
     <!-- Next Billing -->
-    <div v-if="billingStats" class="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
+    <div v-if="billingStats" class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
       <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">
         {{ t('enterprise.billing.nextBilling') }}
       </h3>
@@ -100,7 +126,7 @@
           <p class="text-sm text-slate-600 dark:text-slate-400 mb-1">
             {{ t('enterprise.billing.estimatedBill') }}
           </p>
-          <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+          <p class="text-2xl font-bold text-sky-700 dark:text-sky-300">
             ${{ (billingStats.estimated_next_bill / 100).toFixed(2) }}
           </p>
         </div>
@@ -108,7 +134,7 @@
     </div>
 
     <!-- Pricing Information -->
-    <div v-if="pricing" class="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
+    <div v-if="pricing" class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
       <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">
         {{ t('enterprise.billing.pricingInfo') }}
       </h3>
@@ -157,11 +183,17 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertTriangle } from 'lucide-vue-next'
 import { enterpriseAPI } from '@/services/api'
+import Button from '@/components/common/Button.vue'
+import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
+import Skeleton from '@/components/common/Skeleton.vue'
+import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 
 const { t } = useI18n()
 
 const billingStats = ref<any>(null)
 const pricing = ref<any>(null)
+const loading = ref(false)
+const errorState = ref<FormattedUserError | null>(null)
 
 const usagePercentage = computed(() => {
   if (!billingStats.value) return 0
@@ -174,6 +206,8 @@ const formatDate = (dateString: string) => {
 
 const loadBillingStats = async () => {
   try {
+    loading.value = true
+    errorState.value = null
     const [statsResponse, pricingResponse] = await Promise.all([
       enterpriseAPI.getBillingStats(),
       enterpriseAPI.getPricing()
@@ -181,7 +215,13 @@ const loadBillingStats = async () => {
     billingStats.value = statsResponse
     pricing.value = pricingResponse
   } catch (error) {
-    console.error('Failed to load billing stats:', error)
+    errorState.value = formatUserFacingError(error, {
+      area: 'ENTERPRISE',
+      fallbackTitle: t('enterprise.billing.loadFailedTitle'),
+      fallbackMessage: t('enterprise.billing.loadFailedMessage'),
+    })
+  } finally {
+    loading.value = false
   }
 }
 

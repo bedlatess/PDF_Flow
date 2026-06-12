@@ -13,14 +13,16 @@ import Card from '@/components/common/Card.vue'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
 import { flattenPDF } from '@/utils/pdf/flatten'
 import { getPDFPageCount } from '@/utils/pdf/merge'
 import { historyManager } from '@/utils/history-manager'
 import { memoryManager } from '@/utils/memory-manager'
 
-const { locale } = useI18n()
+const { tm } = useI18n()
+
+type ToolPageCopy = Record<string, any>
 
 const selectedFile = ref<File | null>(null)
 const pageCount = ref(0)
@@ -32,119 +34,7 @@ const resultUrl = ref('')
 const resultSize = ref(0)
 const errorMessage = ref('')
 
-const isZh = computed(() => locale.value.toLowerCase().startsWith('zh'))
-const isEs = computed(() => locale.value.toLowerCase().startsWith('es'))
-
-const copy = computed(() => {
-  if (isZh.value) {
-    return {
-      title: '扁平化 PDF',
-      subtitle: '把可填写表单内容固定到页面上，生成更适合提交、归档和分享的 PDF 副本。',
-      badge: '本地工具',
-      notice: '扁平化主要用于锁定表单外观，让字段不再继续编辑。它不是加密、不是权限保护，也不是安全脱敏；敏感内容请使用真正的脱敏工具。',
-      uploadLabel: 'PDF 文件',
-      uploadTitleIdle: '选择需要扁平化的 PDF',
-      uploadTitleReady: '文件已准备好',
-      uploadDescriptionIdle: '适合已经填写完成的表单、申请表、回执和确认文件。原文件不会被修改。',
-      uploadDescriptionReady: '点击处理后会生成一个新副本，尽量把表单字段固化为普通页面内容。',
-      dropTitle: '拖放 PDF 到这里',
-      dropSubtitle: '或点击选择文件',
-      action: '生成扁平化 PDF',
-      processing: '正在固化表单字段...',
-      done: '扁平化副本已生成',
-      download: '下载扁平化 PDF',
-      successTitle: '扁平化完成',
-      successMessage: '新的 PDF 副本已准备好，可以下载检查表单内容是否固定。',
-      resultLabel: '处理结果',
-      waitingTitle: '等待处理',
-      waitingBody: '上传 PDF 后开始扁平化。处理过程在浏览器本地完成。',
-      fieldLabel: '可填写字段',
-      pages: '页数',
-      outputSize: '输出大小',
-      noFieldsTitle: '没有检测到可填写表单字段',
-      noFieldsBody: '这份 PDF 可能已经是普通页面内容。你仍然可以下载整理后的副本，但外观变化可能很小。',
-      localTitle: '适合提交前锁定表单',
-      localDesc: '填写完成后扁平化，可以减少对方再次修改表单字段的概率，也能提升不同阅读器打开时的稳定性。',
-      step1: '上传已填写 PDF',
-      step2: '固化表单外观',
-      step3: '下载归档副本',
-      errorLoad: '无法读取这份 PDF，请重新选择文件后再试。',
-      errorFailed: '扁平化失败，请确认文件是标准 PDF 后再试。',
-    }
-  }
-
-  if (isEs.value) {
-    return {
-      title: 'Aplanar PDF',
-      subtitle: 'Convierte campos rellenables en contenido fijo para enviar, archivar o compartir con mas estabilidad.',
-      badge: 'Herramienta local',
-      notice: 'Aplanar bloquea la apariencia de formularios. No es cifrado, control de permisos ni redaccion segura.',
-      uploadLabel: 'Archivo PDF',
-      uploadTitleIdle: 'Elige el PDF para aplanar',
-      uploadTitleReady: 'Archivo listo',
-      uploadDescriptionIdle: 'Ideal para formularios completados, solicitudes y recibos.',
-      uploadDescriptionReady: 'Se creara una copia nueva con campos de formulario fijados.',
-      dropTitle: 'Arrastra tu PDF aqui',
-      dropSubtitle: 'o haz clic para elegir un archivo',
-      action: 'Crear PDF aplanado',
-      processing: 'Fijando campos...',
-      done: 'Copia aplanada lista',
-      download: 'Descargar PDF aplanado',
-      successTitle: 'PDF aplanado',
-      successMessage: 'La nueva copia esta lista para revisar.',
-      resultLabel: 'Resultado',
-      waitingTitle: 'Esperando inicio',
-      waitingBody: 'Sube un PDF y comienza. El proceso ocurre localmente.',
-      fieldLabel: 'Campos rellenables',
-      pages: 'Paginas',
-      outputSize: 'Tamano de salida',
-      noFieldsTitle: 'No se detectaron campos rellenables',
-      noFieldsBody: 'Este PDF puede estar ya aplanado. Puedes descargar la copia, aunque el cambio visual puede ser pequeno.',
-      localTitle: 'Bloquea formularios antes de enviar',
-      localDesc: 'Aplanar reduce la posibilidad de que otros editen campos y mejora la estabilidad entre lectores PDF.',
-      step1: 'Subir PDF rellenado',
-      step2: 'Fijar apariencia',
-      step3: 'Descargar copia',
-      errorLoad: 'No se pudo leer este PDF. Elige el archivo de nuevo.',
-      errorFailed: 'No se pudo aplanar el PDF. Confirma que sea un PDF estandar.',
-    }
-  }
-
-  return {
-    title: 'Flatten PDF',
-    subtitle: 'Turn fillable form fields into fixed page content for submission, archiving, and sharing.',
-    badge: 'Local tool',
-    notice: 'Flattening locks form appearance. It is not encryption, permission control, or secure redaction. Use a true redaction workflow for sensitive content.',
-    uploadLabel: 'PDF file',
-    uploadTitleIdle: 'Choose the PDF to flatten',
-    uploadTitleReady: 'File is ready',
-    uploadDescriptionIdle: 'Best for completed forms, applications, receipts, and confirmation files. The original file is not modified.',
-    uploadDescriptionReady: 'A new copy will be generated with form fields fixed into the page appearance.',
-    dropTitle: 'Drop your PDF here',
-    dropSubtitle: 'or click to choose a file',
-    action: 'Create flattened PDF',
-    processing: 'Flattening form fields...',
-    done: 'Flattened copy is ready',
-    download: 'Download flattened PDF',
-    successTitle: 'Flatten complete',
-    successMessage: 'Your new PDF copy is ready to review.',
-    resultLabel: 'Result',
-    waitingTitle: 'Waiting to start',
-    waitingBody: 'Upload a PDF and start flattening. Processing happens locally in your browser.',
-    fieldLabel: 'Fillable fields',
-    pages: 'Pages',
-    outputSize: 'Output size',
-    noFieldsTitle: 'No fillable fields detected',
-    noFieldsBody: 'This PDF may already be ordinary page content. You can still download the processed copy, but the visible change may be small.',
-    localTitle: 'Lock form appearance before sending',
-    localDesc: 'Flattening helps reduce accidental field edits and improves stability across different PDF readers.',
-    step1: 'Upload completed PDF',
-    step2: 'Fix field appearance',
-    step3: 'Download archive copy',
-    errorLoad: 'Could not read this PDF. Please choose the file again.',
-    errorFailed: 'Failed to flatten the PDF. Please confirm this is a standard PDF.',
-  }
-})
+const copy = computed<ToolPageCopy>(() => tm('tools.flatten.page') as ToolPageCopy)
 
 const canFlatten = computed(() => !!selectedFile.value && !isProcessing.value)
 
@@ -237,19 +127,17 @@ onUnmounted(clearResult)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-stone-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-950 dark:to-stone-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="copy.title"
       :subtitle="copy.subtitle"
       :badge="copy.badge"
       accent="blue"
-    >
+    width="lg"
+  >
+
       <template #badgeIcon>
         <Layers3 class="h-4 w-4" />
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-6xl px-4 pb-16 pt-6">
       <ToolNoticeBar variant="blue">
         <template #icon>
           <ShieldAlert class="h-5 w-5" />
@@ -259,14 +147,14 @@ onUnmounted(clearResult)
 
       <div
         v-if="errorMessage"
-        class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700 shadow-sm dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-100"
+        class="mt-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700 shadow-sm dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-100"
       >
         {{ errorMessage }}
       </div>
 
       <div class="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <div class="space-y-6">
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 dark:text-slate-300">
@@ -307,10 +195,8 @@ onUnmounted(clearResult)
             </div>
           </Card>
 
-          <Card class="overflow-hidden rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
-            <div class="relative">
-              <div class="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-slate-300/25 blur-3xl dark:bg-slate-500/15" />
-              <div class="relative space-y-5">
+          <Card class="overflow-hidden rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+            <div class="space-y-5">
                 <div>
                   <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
                     {{ copy.localTitle }}
@@ -323,7 +209,7 @@ onUnmounted(clearResult)
                   <div
                     v-for="(step, index) in [copy.step1, copy.step2, copy.step3]"
                     :key="step"
-                    class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40"
+                    class="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40"
                   >
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white dark:bg-slate-100 dark:text-slate-950">
                       {{ index + 1 }}
@@ -333,13 +219,12 @@ onUnmounted(clearResult)
                     </span>
                   </div>
                 </div>
-              </div>
             </div>
           </Card>
         </div>
 
         <div class="space-y-6">
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-5">
               <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -365,7 +250,7 @@ onUnmounted(clearResult)
               </div>
 
               <div class="grid gap-3 sm:grid-cols-3">
-                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="rounded-md border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40">
                   <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                     {{ copy.pages }}
                   </p>
@@ -373,7 +258,7 @@ onUnmounted(clearResult)
                     {{ pageCount || '-' }}
                   </p>
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="rounded-md border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40">
                   <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                     {{ copy.fieldLabel }}
                   </p>
@@ -381,7 +266,7 @@ onUnmounted(clearResult)
                     {{ fieldCount ?? '-' }}
                   </p>
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="rounded-md border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40">
                   <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                     {{ copy.outputSize }}
                   </p>
@@ -401,7 +286,7 @@ onUnmounted(clearResult)
 
               <div
                 v-if="fieldCount === 0 && resultUrl"
-                class="rounded-[24px] border border-amber-200 bg-amber-50 p-5 dark:border-amber-500/20 dark:bg-amber-500/10"
+                class="rounded-md border border-amber-200 bg-amber-50 p-5 dark:border-amber-500/20 dark:bg-amber-500/10"
               >
                 <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
                   {{ copy.noFieldsTitle }}
@@ -439,7 +324,7 @@ onUnmounted(clearResult)
 
           <Card
             v-if="resultUrl"
-            class="rounded-[28px] border border-emerald-200 bg-emerald-50/90 shadow-xl shadow-emerald-100/70 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
+            class="rounded-lg border border-emerald-200 bg-emerald-50/90 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
           >
             <div class="flex items-start gap-4">
               <BadgeCheck class="mt-0.5 h-6 w-6 shrink-0 text-emerald-500" />
@@ -455,6 +340,5 @@ onUnmounted(clearResult)
           </Card>
         </div>
       </div>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

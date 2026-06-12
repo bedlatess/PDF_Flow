@@ -62,7 +62,6 @@ class HistoryManager {
       if (!data) return []
       return JSON.parse(data) as HistoryItem[]
     } catch (error) {
-      console.error('Failed to load history:', error)
       return []
     }
   }
@@ -114,51 +113,8 @@ class HistoryManager {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history))
     } catch (error) {
-      console.error('Failed to save history:', error)
     }
   }
 }
 
 export const historyManager = new HistoryManager()
-
-export function formatToolType(type: HistoryToolType): string {
-  const typeNames: Record<HistoryToolType, string> = {
-    merge: '合并 PDF',
-    split: '拆分 PDF',
-    rotate: '旋转 PDF',
-    compress: '压缩 PDF',
-    imageToPdf: '图片转 PDF',
-    pdfToImage: 'PDF 转图片',
-    deletePages: '删除 PDF 页面',
-    organize: '整理 PDF 页面',
-    pageNumbers: '添加 PDF 页码',
-    crop: '裁剪 PDF',
-    protect: '保护 PDF',
-    unlock: '解锁 PDF',
-    sign: '签署 PDF',
-    extractText: '提取 PDF 文字',
-    extractImages: '提取 PDF 图片',
-    watermark: '添加水印',
-    flatten: '扁平化 PDF',
-    repair: '修复 PDF',
-  }
-  return typeNames[type]
-}
-
-export function formatHistoryTime(timestamp: number): string {
-  const diff = Date.now() - timestamp
-
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes} 分钟前`
-  if (hours < 24) return `${hours} 小时前`
-  if (days < 7) return `${days} 天前`
-
-  return new Date(timestamp).toLocaleDateString('zh-CN', {
-    month: 'short',
-    day: 'numeric',
-  })
-}

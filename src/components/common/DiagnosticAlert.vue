@@ -49,7 +49,7 @@ const iconComponent = computed(() => {
 </script>
 
 <template>
-  <div :class="['rounded-[24px] border px-5 py-4 shadow-sm', toneClasses.box]">
+  <div :class="['rounded-lg border px-5 py-4 shadow-sm', toneClasses.box]">
     <div class="flex items-start gap-3">
       <component :is="iconComponent" :class="['mt-0.5 h-5 w-5 flex-shrink-0', toneClasses.icon]" />
       <div class="min-w-0 space-y-2">

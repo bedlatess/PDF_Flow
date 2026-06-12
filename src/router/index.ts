@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { watch } from 'vue'
 import i18n from '@/i18n'
 import { guestGuard, authGuard, enterpriseGuard, adminGuard, featureFlagGuard } from './guards'
+import { useSiteConfigStore } from '@/stores/siteConfig'
 
 const router = createRouter({
   history: createWebHistory('/'),
@@ -27,7 +28,7 @@ const router = createRouter({
       path: '/history',
       name: 'history',
       component: () => import('@/views/History.vue'),
-      meta: { title: '处理记录' }
+      meta: { titleKey: 'history.title' }
     },
     {
       path: '/privacy',
@@ -110,8 +111,21 @@ const router = createRouter({
       meta: { title: 'Control Room' }
     },
     {
+      path: '/availability/feature-disabled',
+      name: 'feature-disabled',
+      component: () => import('@/views/AvailabilityState.vue'),
+      meta: { titleKey: 'availability.featureDisabledTitle' }
+    },
+    {
       path: '/tools',
+      component: () => import('@/views/ToolsLayout.vue'),
       children: [
+        {
+          path: '',
+          name: 'tools-center',
+          component: () => import('@/views/ToolsCenter.vue'),
+          meta: { titleKey: 'nav.tools' }
+        },
         {
           path: 'merge',
           name: 'merge-pdf',
@@ -275,6 +289,12 @@ const router = createRouter({
         },
       ],
     },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/views/AvailabilityState.vue'),
+      meta: { titleKey: 'availability.notFoundTitle' },
+    },
   ],
 })
 
@@ -312,7 +332,27 @@ const resolveDocumentTitle = (route = router.currentRoute.value) => {
 }
 
 // 全局前置守卫 - 设置页面标题
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
+  const featureKey = to.meta.featureKey as string | undefined
+  if (featureKey) {
+    const siteConfigStore = useSiteConfigStore()
+    await siteConfigStore.fetchPublicConfig(true)
+    const flag = siteConfigStore.getFeatureFlag(featureKey, String(to.meta.titleKey || featureKey))
+
+    if (!flag.enabled) {
+      next({
+        path: '/availability/feature-disabled',
+        query: {
+          state: 'feature-disabled',
+          feature: featureKey,
+          message: flag.maintenance_message || 'feature_unavailable',
+          returnTo: to.fullPath,
+        },
+      })
+      return
+    }
+  }
+
   resolveDocumentTitle(to)
   next()
 })

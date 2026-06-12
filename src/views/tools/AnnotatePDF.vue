@@ -21,7 +21,7 @@ import ProgressBar from '@/components/common/ProgressBar.vue'
 import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
 import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
 import { useUserStore } from '@/stores/user'
@@ -29,7 +29,7 @@ import { formatUserFacingError, type FormattedUserError } from '@/utils/error-me
 import { redirectForFeatureAccess } from '@/utils/feature-access'
 import { memoryManager } from '@/utils/memory-manager'
 
-const { t, locale } = useI18n()
+const { t, tm } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
@@ -40,8 +40,10 @@ const annotationType = ref<'text' | 'highlight'>('text')
 const progress = ref(0)
 const errorState = ref<FormattedUserError | null>(null)
 const resultUrl = ref('')
-const isChinese = computed(() => locale.value.toLowerCase().startsWith('zh'))
-const stepText = (value: number) => isChinese.value ? `步骤 ${value}` : `Step ${value}`
+type ToolPageCopy = Record<string, any>
+
+const copy = computed<ToolPageCopy>(() => tm('tools.annotate') as ToolPageCopy)
+const stepText = (value: number) => t('tools.annotate.stepLabel', { step: value })
 
 const textAnnotation = ref({
   text: '',
@@ -60,42 +62,8 @@ const highlightAnnotation = ref({
   color: '#FFFF00',
 })
 
-const textColors = computed(() => {
-  if (locale.value.toLowerCase().startsWith('zh')) {
-    return [
-      { name: '红色', value: '#FF0000' },
-      { name: '蓝色', value: '#2563EB' },
-      { name: '绿色', value: '#059669' },
-      { name: '黑色', value: '#111827' },
-    ]
-  }
-
-  return [
-    { name: 'Red', value: '#FF0000' },
-    { name: 'Blue', value: '#2563EB' },
-    { name: 'Green', value: '#059669' },
-    { name: 'Black', value: '#111827' },
-  ]
-})
-
-const highlightColors = computed(() => {
-  if (locale.value.toLowerCase().startsWith('zh')) {
-    return [
-      { name: '黄色', value: '#FACC15' },
-      { name: '薄荷绿', value: '#34D399' },
-      { name: '天蓝色', value: '#38BDF8' },
-      { name: '粉色', value: '#F472B6' },
-    ]
-  }
-
-  return [
-    { name: 'Yellow', value: '#FACC15' },
-    { name: 'Mint', value: '#34D399' },
-    { name: 'Sky', value: '#38BDF8' },
-    { name: 'Pink', value: '#F472B6' },
-  ]
-})
-
+const textColors = computed(() => copy.value.textColors || [])
+const highlightColors = computed(() => copy.value.highlightColors || [])
 const canUseTool = computed(() => userStore.isAuthenticated && userStore.canUseCloudFeatures)
 
 const primaryActionLabel = computed(() => {
@@ -260,26 +228,24 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 dark:from-slate-950 dark:via-slate-950 dark:to-purple-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="t('tools.annotate.title')"
       :subtitle="t('tools.annotate.description')"
       :badge="t('tools.annotate.proOnly')"
       pro
       accent="purple"
-    >
+    width="md"
+  >
+
       <template #badgeIcon>
         <Crown class="h-4 w-4" />
       </template>
 
-      <template #extra>
+      <template #headerExtra>
         <p class="mx-auto max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
           {{ t('tools.annotate.pageExtra') }}
         </p>
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <ToolNoticeBar variant="purple">
         <template #icon>
           <Crown class="h-5 w-5" />
@@ -321,7 +287,7 @@ onUnmounted(() => {
           v-if="step === 1 && canUseTool"
           class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
         >
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
               <div class="space-y-2">
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
@@ -354,7 +320,7 @@ onUnmounted(() => {
             </div>
           </Card>
 
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
@@ -365,24 +331,24 @@ onUnmounted(() => {
                 </p>
               </div>
 
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
+              <div class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
                   {{ t('tools.annotate.flowTitle') }}
                 </p>
                 <div class="mt-4 space-y-3">
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500 text-sm font-semibold text-white">1</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.annotate.flowStep1') }}
                     </p>
                   </div>
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-fuchsia-500 text-sm font-semibold text-white">2</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.annotate.flowStep2') }}
                     </p>
                   </div>
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500 text-sm font-semibold text-white">3</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.annotate.flowStep3') }}
@@ -396,7 +362,7 @@ onUnmounted(() => {
 
         <Card
           v-if="step === 2"
-          class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none"
+          class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none"
         >
           <div class="space-y-6">
             <div class="space-y-2">
@@ -419,7 +385,7 @@ onUnmounted(() => {
 
             <div class="grid gap-6 lg:grid-cols-[0.86fr_1.14fr]">
               <div class="space-y-6">
-                <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
+                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                   <label class="block text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
                     {{ t('tools.annotate.modeLabel') }}
                   </label>
@@ -427,7 +393,7 @@ onUnmounted(() => {
                   <div class="mt-4 space-y-3">
                     <button
                       :class="[
-                        'w-full rounded-2xl border px-4 py-4 text-left transition-all',
+                        'w-full rounded-md border px-4 py-4 text-left transition-all',
                         annotationType === 'text'
                           ? 'border-purple-300 bg-purple-50 shadow-sm dark:border-purple-700 dark:bg-purple-950/30'
                           : 'border-slate-200 bg-white hover:border-purple-200 dark:border-slate-700 dark:bg-slate-900',
@@ -449,7 +415,7 @@ onUnmounted(() => {
 
                     <button
                       :class="[
-                        'w-full rounded-2xl border px-4 py-4 text-left transition-all',
+                        'w-full rounded-md border px-4 py-4 text-left transition-all',
                         annotationType === 'highlight'
                           ? 'border-amber-300 bg-amber-50 shadow-sm dark:border-amber-700 dark:bg-amber-950/20'
                           : 'border-slate-200 bg-white hover:border-amber-200 dark:border-slate-700 dark:bg-slate-900',
@@ -471,7 +437,7 @@ onUnmounted(() => {
                   </div>
                 </div>
 
-                <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 text-sm leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300">
+                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-5 text-sm leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300">
                   <p class="font-semibold text-slate-900 dark:text-white">
                     {{ t('tools.annotate.coordinateHintTitle') }}
                   </p>
@@ -484,32 +450,40 @@ onUnmounted(() => {
               <div class="space-y-6">
                 <div
                   v-if="annotationType === 'text'"
-                  class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50"
+                  class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50"
                 >
                   <div class="space-y-4">
                     <div>
-                      <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+                      <label
+                        for="annotate-text-content"
+                        class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white"
+                      >
                         {{ t('tools.annotate.text.content') }}
                       </label>
                       <textarea
+                        id="annotate-text-content"
                         v-model="textAnnotation.text"
                         rows="4"
                         :placeholder="t('tools.annotate.text.placeholder')"
-                        class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-purple-400 dark:focus:ring-purple-500/20"
+                        class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-purple-400 dark:focus:ring-purple-500/20"
                       />
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+                        <label
+                          for="annotate-text-page"
+                          class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white"
+                        >
                           {{ t('tools.annotate.text.page') }}
                         </label>
                         <input
+                          id="annotate-text-page"
                           v-model.number="textAnnotation.page"
                           type="number"
                           min="1"
                           :placeholder="t('tools.annotate.text.pagePlaceholder')"
-                          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-purple-400 dark:focus:ring-purple-500/20"
+                          class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-purple-400 dark:focus:ring-purple-500/20"
                         >
                       </div>
 
@@ -537,26 +511,34 @@ onUnmounted(() => {
 
                     <div class="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+                        <label
+                          for="annotate-text-x"
+                          class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white"
+                        >
                           {{ t('tools.annotate.text.x') }}
                         </label>
                         <input
+                          id="annotate-text-x"
                           v-model.number="textAnnotation.x"
                           type="number"
                           min="0"
-                          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-purple-400 dark:focus:ring-purple-500/20"
+                          class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-purple-400 dark:focus:ring-purple-500/20"
                         >
                       </div>
 
                       <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+                        <label
+                          for="annotate-text-y"
+                          class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white"
+                        >
                           {{ t('tools.annotate.text.y') }}
                         </label>
                         <input
+                          id="annotate-text-y"
                           v-model.number="textAnnotation.y"
                           type="number"
                           min="0"
-                          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-purple-400 dark:focus:ring-purple-500/20"
+                          class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-purple-400 dark:focus:ring-purple-500/20"
                         >
                       </div>
                     </div>
@@ -565,20 +547,24 @@ onUnmounted(() => {
 
                 <div
                   v-else
-                  class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50"
+                  class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50"
                 >
                   <div class="space-y-4">
                     <div class="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+                        <label
+                          for="annotate-highlight-page"
+                          class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white"
+                        >
                           {{ t('tools.annotate.highlight.page') }}
                         </label>
                         <input
+                          id="annotate-highlight-page"
                           v-model.number="highlightAnnotation.page"
                           type="number"
                           min="1"
                           :placeholder="t('tools.annotate.highlight.pagePlaceholder')"
-                          class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
+                          class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
                         >
                       </div>
 
@@ -605,33 +591,40 @@ onUnmounted(() => {
                     </div>
 
                     <div>
-                      <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+                      <label
+                        id="annotate-highlight-coordinates-label"
+                        class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white"
+                      >
                         {{ t('tools.annotate.highlight.coordinates') }}
                       </label>
                       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         <input
                           v-model.number="highlightAnnotation.x1"
+                          aria-labelledby="annotate-highlight-coordinates-label"
                           type="number"
                           placeholder="x1"
-                          class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
+                          class="rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
                         >
                         <input
                           v-model.number="highlightAnnotation.y1"
+                          aria-labelledby="annotate-highlight-coordinates-label"
                           type="number"
                           placeholder="y1"
-                          class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
+                          class="rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
                         >
                         <input
                           v-model.number="highlightAnnotation.x2"
+                          aria-labelledby="annotate-highlight-coordinates-label"
                           type="number"
                           placeholder="x2"
-                          class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
+                          class="rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
                         >
                         <input
                           v-model.number="highlightAnnotation.y2"
+                          aria-labelledby="annotate-highlight-coordinates-label"
                           type="number"
                           placeholder="y2"
-                          class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
+                          class="rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
                         >
                       </div>
                       <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -667,7 +660,7 @@ onUnmounted(() => {
 
         <Card
           v-if="step === 3"
-          class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none"
+          class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none"
         >
           <div class="space-y-6 py-6 text-center">
             <div class="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-purple-100 border-t-purple-500 dark:border-purple-950 dark:border-t-purple-400" />
@@ -694,7 +687,7 @@ onUnmounted(() => {
 
         <Card
           v-if="step === 4"
-          class="rounded-[28px] border border-emerald-200 bg-emerald-50/90 shadow-xl shadow-emerald-100/70 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
+          class="rounded-lg border border-emerald-200 bg-emerald-50/90 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
         >
           <div class="space-y-6 py-4 text-center">
             <CheckCircle2 class="mx-auto h-16 w-16 text-emerald-500" />
@@ -733,6 +726,5 @@ onUnmounted(() => {
           </div>
         </Card>
       </div>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

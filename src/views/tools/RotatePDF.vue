@@ -15,12 +15,14 @@ import { usePDFWorker } from '@/composables/usePDFWorker'
 import { useCloudProcessing } from '@/composables/useCloudProcessing'
 import { fileAPI } from '@/services/api'
 import { historyManager } from '@/utils/history-manager'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import { useUserStore } from '@/stores/user'
 import { shouldPreferCloudProcessing } from '@/utils/cloud-recommendation'
 
-const { t, locale } = useI18n()
+const { t, tm } = useI18n()
 const userStore = useUserStore()
+
+type ToolPageCopy = Record<string, any>
 
 const selectedFile = ref<File | null>(null)
 const selectedAngle = ref<90 | 180 | 270>(90)
@@ -36,61 +38,7 @@ const errorMessage = ref('')
 const { submitTask, getTask, waitForTask, destroyWorker } = usePDFWorker()
 const { processInCloud } = useCloudProcessing()
 
-const copy = computed(() => locale.value.startsWith('zh')
-  ? {
-      badge: '本地工具',
-      setupLabel: '旋转设置',
-      setupTitle: '修正页面方向',
-      setupDesc: '适合处理扫描件、拍照 PDF，或方向不一致的页面内容。',
-      actionLabel: '输出动作',
-      actionTitle: '确认角度后生成新文件',
-      actionTips: [
-        '90° 和 270° 适合修正横竖方向错误。',
-        '180° 适合整页上下颠倒的扫描内容。',
-        '处理完成后会生成新的 PDF，不会覆盖原文件。',
-      ],
-      action: '旋转 PDF',
-      successTitle: '旋转完成',
-      successMessage: '旋转后的 PDF 已准备好，可以立即下载。',
-      errorFailed: '旋转失败，请稍后重试。',
-      errorCloudFailed: '云端旋转失败，请稍后再试。',
-      statusPreparing: '正在准备处理...',
-      statusProcessing: '正在旋转页面...',
-      statusProgress: '处理中... {progress}%',
-      statusDone: '处理完成',
-      angleOptions: [
-        { value: 90 as 90, label: '90°', hint: '顺时针' },
-        { value: 180 as 180, label: '180°', hint: '上下翻转' },
-        { value: 270 as 270, label: '270°', hint: '逆时针' },
-      ],
-    }
-  : {
-      badge: 'Local tool',
-      setupLabel: 'Rotation setup',
-      setupTitle: 'Correct the page direction',
-      setupDesc: 'Useful for scanned files, camera-made PDFs, or documents with inconsistent page orientation.',
-      actionLabel: 'Output',
-      actionTitle: 'Confirm the angle, then generate a new file',
-      actionTips: [
-        '90° and 270° are useful when pages are sideways.',
-        '180° works well for upside-down scans.',
-        'A new PDF is generated after processing. The original file stays unchanged.',
-      ],
-      action: 'Rotate PDF',
-      successTitle: 'Rotation complete',
-      successMessage: 'Your rotated PDF is ready to download.',
-      errorFailed: 'Rotation failed. Please try again later.',
-      errorCloudFailed: 'Cloud rotation failed. Please try again later.',
-      statusPreparing: 'Preparing...',
-      statusProcessing: 'Rotating pages...',
-      statusProgress: 'Processing... {progress}%',
-      statusDone: 'Completed',
-      angleOptions: [
-        { value: 90 as 90, label: '90°', hint: 'Clockwise' },
-        { value: 180 as 180, label: '180°', hint: 'Upside down' },
-        { value: 270 as 270, label: '270°', hint: 'Counterclockwise' },
-      ],
-    })
+const copy = computed<ToolPageCopy>(() => tm('tools.rotate.page') as ToolPageCopy)
 
 const handleFilesSelected = (files: File[]) => {
   selectedFile.value = files[0]
@@ -220,19 +168,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-amber-50 via-white to-yellow-50 dark:from-slate-950 dark:via-slate-950 dark:to-amber-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="t('tools.rotate.title')"
       :subtitle="t('tools.rotate.desc')"
       :badge="copy.badge"
       accent="amber"
-    >
+    width="md"
+  >
+
       <template #badgeIcon>
         <FileText class="h-4 w-4" />
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <div
         v-if="errorMessage"
         class="mb-4 rounded-lg bg-error-light p-4 text-error-dark dark:bg-error/20 dark:text-error"
@@ -259,7 +205,7 @@ onUnmounted(() => {
             @preview="handlePreview"
           />
 
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-amber-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-5">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-500">
@@ -299,7 +245,7 @@ onUnmounted(() => {
           </Card>
         </div>
 
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-amber-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+        <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-5">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-500">
@@ -310,7 +256,7 @@ onUnmounted(() => {
               </h3>
             </div>
 
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40">
+            <div class="rounded-md border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40">
               <ul class="space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 <li
                   v-for="tip in copy.actionTips"
@@ -373,6 +319,5 @@ onUnmounted(() => {
           </Button>
         </div>
       </Modal>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

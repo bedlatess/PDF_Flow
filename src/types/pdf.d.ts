@@ -1,5 +1,5 @@
 /**
- * PDF 相关类型定义
+ * Shared PDF-related types.
  */
 
 export interface PDFDocument {
@@ -30,11 +30,11 @@ export interface PDFMergeOptions extends PDFProcessingOptions {
 }
 
 export interface PDFSplitOptions {
-  ranges?: string // 例如: "1-3,5,7-9"
+  ranges?: string
   pages?: number[]
 }
 
 export interface PDFRotateOptions {
   angle: 90 | 180 | 270
-  pages?: number[] // 如果为空，则旋转所有页面
+  pages?: number[]
 }

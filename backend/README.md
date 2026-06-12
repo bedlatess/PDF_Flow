@@ -1,226 +1,131 @@
-# PDF-Flow Backend API
+# PDF-Flow Backend
 
-企业级后端 API，支持云端 PDF 处理、OCR、用户认证和商业化功能。
+FastAPI backend for PDF-Flow. It owns authentication, account/enterprise APIs, cloud PDF jobs, OCR/Office/AI service integration, admin operations, feedback/diagnostics, file retention, email, and provider-neutral payment verification.
 
-## 🚀 快速开始
+For current project status and roadmap, read [../docs/PROJECT_MASTER.md](../docs/PROJECT_MASTER.md). This file is only a backend runbook.
 
-### 使用 Docker Compose（推荐）
+## Quick Start
+
+Install dependencies:
 
 ```bash
-# 启动所有服务（PostgreSQL + Redis + FastAPI + Celery）
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f backend
-
-# 停止服务
-docker-compose down
+pip install -r requirements.txt
 ```
 
-访问:
-- API 文档: http://localhost:8000/api/docs
-- ReDoc: http://localhost:8000/api/redoc
-- Health Check: http://localhost:8000/health
-
-### 本地开发
+Create local environment config:
 
 ```bash
-# 1. 安装依赖
-pip install -r requirements.txt
+copy .env.example .env
+```
 
-# 2. 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，填入你的配置
+Run migrations:
 
-# 3. 启动 PostgreSQL 和 Redis（使用 Docker）
-docker-compose up -d db redis
-
-# 4. 运行数据库迁移
+```bash
 alembic upgrade head
+```
 
-# 5. 启动开发服务器
+Start API:
+
+```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-# 6. 启动 Celery Worker（另一个终端）
+Start worker in another terminal when testing async jobs:
+
+```bash
 celery -A app.celery_worker worker --loglevel=info
 ```
 
-## 📚 API 端点
+API docs are available after startup:
 
-### 健康检查
-- `GET /health` - 基本健康检查
-- `GET /api/v1/health/detailed` - 详细健康检查（数据库、Redis）
-- `GET /api/v1/health/metrics` - 系统指标
+- `http://localhost:8000/api/docs`
+- `http://localhost:8000/api/redoc`
+- `http://localhost:8000/health`
 
-### 认证
-- `POST /api/v1/auth/register` - 用户注册
-- `POST /api/v1/auth/login` - 用户登录
-- `POST /api/v1/auth/refresh` - 刷新令牌
-- `GET /api/v1/auth/me` - 获取当前用户
-- `POST /api/v1/auth/logout` - 登出
+## Docker Compose
 
-### 用户管理
-- `GET /api/v1/users/me/stats` - 获取使用统计
-- `PATCH /api/v1/users/me` - 更新用户信息
-- `DELETE /api/v1/users/me` - 删除账户（GDPR）
-
-## 🏗️ 技术架构
-
-### 技术栈
-- **FastAPI** - 现代化 Python Web 框架
-- **PostgreSQL** - 关系型数据库（Supabase）
-- **Redis** - 缓存和消息队列
-- **Celery** - 异步任务处理
-- **SQLAlchemy** - ORM
-- **Alembic** - 数据库迁移
-- **JWT** - 认证令牌
-
-### 安全特性（STRIDE 模型）
-- ✅ **S (Spoofing)**: JWT 认证，API Key SHA-256 散列
-- ✅ **T (Tampering)**: 魔术数字文件验证
-- ✅ **R (Repudiation)**: 审计日志只读流
-- ✅ **I (Information Disclosure)**: CSP 头，Tmpfs 临时存储
-- ✅ **D (Denial of Service)**: Redis 滑动窗口限流
-- ✅ **E (Elevation of Privilege)**: 非 root 容器，最小权限
-
-## 📁 项目结构
-
-```
-backend/
-├── app/
-│   ├── api/
-│   │   └── v1/
-│   │       ├── endpoints/
-│   │       │   ├── auth.py         # 认证端点
-│   │       │   ├── users.py        # 用户管理
-│   │       │   └── health.py       # 健康检查
-│   │       └── __init__.py
-│   ├── core/
-│   │   ├── config.py               # 配置
-│   │   ├── security.py             # 安全工具
-│   │   └── database.py             # 数据库连接
-│   ├── models/
-│   │   └── user.py                 # 数据库模型
-│   ├── schemas/
-│   │   └── user.py                 # Pydantic 模型
-│   ├── services/                   # 业务逻辑
-│   ├── utils/                      # 工具函数
-│   └── main.py                     # FastAPI 应用
-├── alembic/                        # 数据库迁移
-├── tests/                          # 测试
-├── Dockerfile                      # Docker 镜像
-├── docker-compose.yml              # Docker Compose 配置
-├── requirements.txt                # Python 依赖
-└── .env.example                    # 环境变量模板
-```
-
-## 🔧 开发任务
-
-### 已完成 ✅
-- [x] FastAPI 项目结构
-- [x] 数据库模型（User, APIKey, UsageLog, ProcessingJob）
-- [x] JWT 认证系统
-- [x] OAuth 社交登录（Google/GitHub）
-- [x] 用户注册/登录 API
-- [x] 健康检查端点
-- [x] Docker 配置
-- [x] 数据库迁移脚本
-- [x] STRIDE 安全模型实现
-- [x] Celery 任务队列配置
-- [x] Redis 限流中间件
-- [x] 文件上传端点
-- [x] PDF 处理 API（6个工具）
-- [x] OCR 功能框架
-- [x] Office 转换功能（LibreOffice）
-- [x] WebSocket 实时进度
-- [x] 文件下载端点
-- [x] 35个后端单元测试
-- [x] Stripe 支付集成（订阅创建/管理/Webhook）
-- [x] OAuth 社交登录（Google/GitHub）
-- [x] 邮件系统（Resend：欢迎/密码重置/订阅确认/流失预警）
-
-### 进行中 🚧
-- [ ] 前后端集成测试
-- [ ] 生产环境部署配置
-- [ ] Docker 真实环境联调
-
-### 待开发 📋
-- [ ] 监控集成（Sentry, PostHog）真实凭据测试
-- [ ] 外部服务真实凭据验证（OAuth / Stripe / Resend / Gemini）
-
-## 🧪 测试
+From the repository root:
 
 ```bash
-# 运行所有测试
-pytest
-
-# 运行特定测试
-pytest tests/test_auth.py
-
-# 生成覆盖率报告
-pytest --cov=app --cov-report=html
+docker compose up -d postgres redis
 ```
 
-## 📝 环境变量
-
-参考 `.env.example` 文件，主要配置项：
-
-- `SECRET_KEY` - JWT 密钥（生产环境必须更改）
-- `DATABASE_URL` - PostgreSQL 连接字符串
-- `REDIS_URL` - Redis 连接字符串
-- `STRIPE_SECRET_KEY` - Stripe 密钥
-- `GOOGLE_CLIENT_ID` - Google OAuth
-- `GITHUB_CLIENT_ID` - GitHub OAuth
-- `RESEND_API_KEY` - Resend 邮件服务密钥
-- `EMAIL_FROM` - 发件人邮箱
-- `FRONTEND_URL` - 前端应用地址（用于邮件链接）
-
-## 🚢 部署
-
-### Docker Swarm（初期）
-```bash
-docker swarm init
-docker stack deploy -c docker-compose.yml pdfflow
-```
-
-### Kubernetes（企业级）
-参考 v4.0 文档的 K8s 配置
-
-### 单服务器 staging 部署
-
-推荐在单服务器上只部署 `staging` 分支做真实验证，不直接在服务器上跑 `main`。
+For the full local stack:
 
 ```bash
-chmod +x ../scripts/deploy-staging.sh ../scripts/rollback-staging.sh ../scripts/smoke-test.sh
-bash ../scripts/deploy-staging.sh
+docker compose up -d --build
 ```
 
-回滚：
+## Test Commands
 
 ```bash
-bash ../scripts/rollback-staging.sh
+pytest tests -q
 ```
 
-说明：
+Common targeted checks:
 
-- 服务器本地 `.env` / `backend/.env` 不提交到仓库
-- 部署脚本会自动备份本地环境文件和当前 commit
-- 冒烟测试默认检查 `/health` 和 `/api/docs`
-- 如需数据库备份，可通过 `DEPLOY_BACKUP_COMMAND` 注入自定义命令
+```bash
+pytest tests/test_auth.py -q
+pytest tests/test_admin.py -q
+pytest tests/test_payment_domain.py -q
+```
 
-## 📖 相关文档
+## Main API Areas
 
-- [开发主文档](../docs/PROJECT_MASTER.md) — 项目唯一状态文档
-- [Staging 部署手册](../docs/STAGING_DEPLOY_GUIDE.md) — 单服务器 staging 部署、冒烟测试与回滚
-- [原始需求规格 v1.0–v4.0](../开发文档/) — 只读源材料
-- [API 文档](http://localhost:8000/api/docs) — 服务启动后访问
-- [OAuth 配置指南](../docs/OAUTH_SETUP.md) — Google/GitHub OAuth 凭据配置
-- [邮件服务文档](./docs/EMAIL_SERVICE.md) — Resend 邮件系统完整指南
+- Auth and OAuth
+- Users and account usage
+- File upload, download, and processing jobs
+- Cloud PDF/OCR/Office/AI workflows
+- Enterprise API keys, usage, billing, webhooks, and documentation data
+- Feedback and diagnostic logging
+- Admin Control Room APIs
+- Payment providers, payment orders, provider callbacks/webhooks, and payment event ledgering
+- Health and operational checks
 
-## 📄 许可证
+## Payment Boundary
 
-MIT License
+The backend is the payment trust boundary. Frontend return pages are never payment proof. Entitlements are granted only after backend-created orders are verified through provider callbacks, captures, amount/currency checks, and idempotent `PaymentEvent` handling.
 
----
+Supported provider framework:
 
-*Generated by PDF-Flow Development Team*
+- Stripe
+- PayPal
+- 易支付
+- 支付宝
+- 微信支付
+- TokenPay
+- BEPUSDT
+- EPUSDT
+- OKPay
+
+Real acceptance requires merchant credentials, dashboard callback setup, and sandbox or low-value live smoke tests.
+
+## Environment Notes
+
+Use `.env.example` as the template. Important groups:
+
+- Core: `SECRET_KEY`, `DATABASE_URL`, `REDIS_URL`, `BACKEND_PUBLIC_URL`, `FRONTEND_URL`
+- OAuth: Google/GitHub client ids and secrets
+- Email: Resend config, see [docs/EMAIL_SERVICE.md](./docs/EMAIL_SERVICE.md)
+- AI/OCR/Office: Gemini and processing service settings
+- Payments: provider credentials, signing secrets, webhook ids, and hosted gateway configs
+- Monitoring: Sentry/PostHog keys
+
+Never commit real credentials.
+
+## Migrations
+
+Alembic migrations are database history and must not be deleted during cleanup.
+
+```bash
+alembic upgrade head
+alembic current
+```
+
+## Related Docs
+
+- [Project master manual](../docs/PROJECT_MASTER.md)
+- [OAuth setup](../docs/OAUTH_SETUP.md)
+- [Staging deploy guide](../docs/STAGING_DEPLOY_GUIDE.md)
+- [Email service](./docs/EMAIL_SERVICE.md)
+- [Historical requirements](../开发文档/)

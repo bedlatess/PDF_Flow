@@ -20,12 +20,12 @@ const emit = defineEmits<{
 }>()
 
 const cardClasses = computed(() => {
-  const classes = ['rounded-xl transition-all duration-200']
+  const classes = ['rounded-lg transition-colors duration-200']
 
   // Variant styles
   switch (props.variant) {
     case 'default':
-      classes.push('bg-white dark:bg-gray-800 shadow-sm')
+      classes.push('bg-white shadow-sm dark:bg-gray-800')
       break
     case 'glass':
       classes.push('glass glass-shadow')
@@ -56,7 +56,7 @@ const cardClasses = computed(() => {
 
   // Hoverable
   if (props.hoverable) {
-    classes.push('hover:shadow-lg hover:scale-[1.02]')
+    classes.push('hover:shadow-md')
   }
 
   // Clickable

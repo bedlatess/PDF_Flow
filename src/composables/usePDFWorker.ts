@@ -1,8 +1,3 @@
-/**
- * PDF Worker 组合式函数
- * 封装 Web Worker 逻辑，提供进度追踪
- */
-
 import { ref } from 'vue'
 import type { WorkerMessage, WorkerResponse } from '@/workers/pdf.worker'
 
@@ -19,31 +14,6 @@ export function usePDFWorker() {
   const tasks = ref<Map<string, PDFWorkerTask>>(new Map())
   const worker = ref<Worker | null>(null)
 
-  /**
-   * 初始化 Worker
-   */
-  const initWorker = () => {
-    if (worker.value) return
-
-    try {
-      // Vite 支持 Worker 导入
-      worker.value = new Worker(new URL('../workers/pdf.worker.ts', import.meta.url), {
-        type: 'module',
-      })
-
-      worker.value.onmessage = handleWorkerMessage
-      worker.value.onerror = handleWorkerError
-
-      console.log('PDF Worker initialized successfully')
-    } catch (error) {
-      console.warn('Worker not available, will process in main thread:', error)
-      worker.value = null
-    }
-  }
-
-  /**
-   * 处理 Worker 消息
-   */
   const handleWorkerMessage = (event: MessageEvent<WorkerResponse>) => {
     const { id, type, payload } = event.data
     const task = tasks.value.get(id)
@@ -71,26 +41,46 @@ export function usePDFWorker() {
     tasks.value.set(id, { ...task })
   }
 
-  /**
-   * 处理 Worker 错误
-   */
-  const handleWorkerError = (error: ErrorEvent) => {
-    console.error('Worker error:', error)
+  const markOpenTasksFailed = (message: string) => {
+    tasks.value.forEach((task, id) => {
+      if (task.status === 'pending' || task.status === 'processing') {
+        tasks.value.set(id, {
+          ...task,
+          status: 'error',
+          error: message,
+        })
+      }
+    })
   }
 
-  /**
-   * 生成任务 ID
-   */
+  const initWorker = (): Worker | null => {
+    if (worker.value) return worker.value
+
+    try {
+      const nextWorker = new Worker(new URL('../workers/pdf.worker.ts', import.meta.url), {
+        type: 'module',
+      })
+
+      nextWorker.onmessage = handleWorkerMessage
+      nextWorker.onerror = (event) => {
+        markOpenTasksFailed(event.message || 'PDF worker failed')
+      }
+
+      worker.value = nextWorker
+      return nextWorker
+    } catch (error) {
+      worker.value = null
+      return null
+    }
+  }
+
   const generateTaskId = (): string => {
-    return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    return `task-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
   }
 
-  /**
-   * 提交任务到 Worker
-   */
   const submitTask = async (
     type: WorkerMessage['type'],
-    payload: WorkerMessage['payload']
+    payload: WorkerMessage['payload'],
   ): Promise<string> => {
     const taskId = generateTaskId()
 
@@ -103,29 +93,26 @@ export function usePDFWorker() {
 
     tasks.value.set(taskId, task)
 
-    // 如果 Worker 可用，发送到 Worker
-    if (worker.value) {
-      const message: WorkerMessage = {
-        id: taskId,
-        type,
-        payload,
-      }
-      worker.value.postMessage(message)
+    const activeWorker = initWorker()
+    const message: WorkerMessage = {
+      id: taskId,
+      type,
+      payload,
+    }
+
+    if (activeWorker) {
+      activeWorker.postMessage(message)
     } else {
-      // 否则在主线程处理（带进度模拟）
       processInMainThread(taskId, type, payload)
     }
 
     return taskId
   }
 
-  /**
-   * 在主线程处理（回退方案）
-   */
   const processInMainThread = async (
     taskId: string,
     type: WorkerMessage['type'],
-    payload: WorkerMessage['payload']
+    payload: WorkerMessage['payload'],
   ) => {
     const task = tasks.value.get(taskId)
     if (!task) return
@@ -134,7 +121,6 @@ export function usePDFWorker() {
       task.status = 'processing'
       task.progress = 10
 
-      // 动态导入处理函数
       let result: Blob | Blob[]
 
       switch (type) {
@@ -193,16 +179,10 @@ export function usePDFWorker() {
     }
   }
 
-  /**
-   * 获取任务状态
-   */
   const getTask = (taskId: string): PDFWorkerTask | undefined => {
     return tasks.value.get(taskId)
   }
 
-  /**
-   * 等待任务完成
-   */
   const waitForTask = (taskId: string): Promise<Blob | Blob[]> => {
     return new Promise((resolve, reject) => {
       const checkInterval = setInterval(() => {
@@ -225,23 +205,14 @@ export function usePDFWorker() {
     })
   }
 
-  /**
-   * 清除任务
-   */
   const clearTask = (taskId: string) => {
     tasks.value.delete(taskId)
   }
 
-  /**
-   * 清除所有任务
-   */
   const clearAllTasks = () => {
     tasks.value.clear()
   }
 
-  /**
-   * 销毁 Worker
-   */
   const destroyWorker = () => {
     if (worker.value) {
       worker.value.terminate()
@@ -249,9 +220,6 @@ export function usePDFWorker() {
     }
     clearAllTasks()
   }
-
-  // 初始化
-  initWorker()
 
   return {
     tasks,

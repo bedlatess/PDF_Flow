@@ -15,32 +15,19 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const userStore = useUserStore()
 
 const canUseCloud = computed(() => userStore.canUseCloudFeatures)
 
-const copy = computed(() => {
-  if (locale.value.startsWith('zh')) {
-    return {
-      localTitle: '本地即时处理',
-      localDesc: '小文件通常更快，文件尽量留在浏览器内完成。',
-      cloudTitle: 'Pro 云端加速',
-      cloudDesc: '适合大文件、长任务、批量处理，以及 OCR / Office / AI 等服务器能力。',
-      lockedDesc: '升级后可使用大文件、长任务、OCR / Office / AI 等云端能力。',
-      switchLabel: '切换云端处理',
-    }
-  }
-
-  return {
-    localTitle: 'Instant local processing',
-    localDesc: 'Usually faster for small files and keeps work in the browser.',
-    cloudTitle: 'Pro cloud boost',
-    cloudDesc: 'Best for large files, long-running jobs, batch work, OCR / Office / AI, and server-powered workflows.',
-    lockedDesc: 'Upgrade for large files, long jobs, OCR / Office / AI, and cloud workflows.',
-    switchLabel: 'Toggle cloud processing',
-  }
-})
+const copy = computed(() => ({
+  localTitle: t('common.cloudToggle.localTitle'),
+  localDesc: t('common.cloudToggle.localDesc'),
+  cloudTitle: t('common.cloudToggle.cloudTitle'),
+  cloudDesc: t('common.cloudToggle.cloudDesc'),
+  lockedDesc: t('common.cloudToggle.lockedDesc'),
+  switchLabel: t('common.cloudToggle.switchLabel'),
+}))
 
 const title = computed(() => (props.modelValue && canUseCloud.value ? copy.value.cloudTitle : copy.value.localTitle))
 const description = computed(() => {

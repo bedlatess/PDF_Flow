@@ -121,6 +121,48 @@ class TestProtectedEndpoints:
         assert body["role"] == "free"
         assert body["quota_limit"] >= 0  # free 有配额上限
 
+    def test_stats_sums_usage_log_file_sizes(self, client):
+        from app.core.database import get_db
+        from app.models.user import UsageLog, User
+
+        _register(client, email="storage@example.com")
+        token = _login(client, email="storage@example.com").json()["access_token"]
+
+        db = next(client.app.dependency_overrides[get_db]())
+        try:
+            user = db.query(User).filter(User.email == "storage@example.com").first()
+            db.add_all([
+                UsageLog(
+                    user_id=user.id,
+                    endpoint="/api/v1/files/upload",
+                    method="POST",
+                    file_size=1024,
+                    success=True,
+                ),
+                UsageLog(
+                    user_id=user.id,
+                    endpoint="/api/v1/files/merge",
+                    method="POST",
+                    file_size=2048,
+                    success=True,
+                ),
+                UsageLog(
+                    user_id=user.id,
+                    endpoint="/api/v1/auth/me",
+                    method="GET",
+                    file_size=None,
+                    success=True,
+                ),
+            ])
+            db.commit()
+        finally:
+            db.close()
+
+        r = client.get("/api/v1/users/me/stats", headers={"Authorization": f"Bearer {token}"})
+
+        assert r.status_code == 200
+        assert r.json()["storage_used"] == 3072
+
 
 class TestRefresh:
     def test_refresh_returns_new_tokens(self, client):

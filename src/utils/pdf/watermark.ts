@@ -60,8 +60,10 @@ export async function addWatermark(
     const totalPages = pdf.getPageCount()
     const pageIndices =
       pages && pages.length > 0
-        ? pages.map((num) => num - 1).filter((i) => i >= 0 && i < totalPages)
+        ? pages.map((num) => num - 1)
         : Array.from({ length: totalPages }, (_, i) => i)
+
+    validatePageIndices(pageIndices, totalPages)
 
     const watermark = await renderWatermarkImage(text.trim(), fontSize, color)
     const embeddedWatermark = await pdf.embedPng(watermark.bytes)
@@ -104,7 +106,6 @@ export async function addWatermark(
     const pdfBytes = await pdf.save()
     return pdfBytesToBlob(pdfBytes)
   } catch (error) {
-    console.error('PDF watermark error:', error)
     throw new Error(
       `Failed to add watermark: ${error instanceof Error ? error.message : 'Unknown error'}`
     )
@@ -231,4 +232,11 @@ export async function addDiagonalWatermark(
   text: string
 ): Promise<Blob> {
   return addWatermark(file, { text, position: 'center', rotation: 45 })
+}
+
+function validatePageIndices(pageIndices: number[], totalPages: number): void {
+  const invalidIndices = pageIndices.filter((index) => index < 0 || index >= totalPages)
+  if (invalidIndices.length > 0) {
+    throw new Error(`Invalid page numbers: ${invalidIndices.map((index) => index + 1).join(', ')}`)
+  }
 }

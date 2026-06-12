@@ -1,117 +1,97 @@
-import { test, expect } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { waitForPageReady, uploadMultipleFiles, uploadFile } from '../helpers/test-utils'
+import { waitForPageReady } from '../helpers/test-utils'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-test.describe('合并 PDF 功能', () => {
+const sampleOne = path.join(__dirname, '../fixtures/sample1.pdf')
+const sampleTwo = path.join(__dirname, '../fixtures/sample2.pdf')
+
+async function mockPublicApp(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('pdf-flow-locale', 'en')
+    window.localStorage.removeItem('access_token')
+    window.localStorage.removeItem('refresh_token')
+  })
+
+  await page.route('**/api/v1/admin/public-config', async (route) => {
+    await route.fulfill({ json: { settings: {}, feature_flags: {}, content_blocks: {} } })
+  })
+
+  await page.route('**/api/v1/auth/me', async (route) => {
+    await route.fulfill({ status: 401, json: { detail: 'Not authenticated' } })
+  })
+}
+
+async function openMergePage(page: Page) {
+  await mockPublicApp(page)
+  await page.goto('/tools/merge')
+  await waitForPageReady(page)
+}
+
+async function uploadPdfs(page: Page, files: string[]) {
+  await page.locator('[data-testid="drag-drop-zone"]').first().waitFor({ state: 'visible' })
+  await page.locator('input[type="file"]').first().setInputFiles(files)
+  await expect(page.locator('[data-testid="file-preview"]')).toHaveCount(files.length, { timeout: 20000 })
+}
+
+test.describe('Merge PDF tool', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/tools/merge')
-    await waitForPageReady(page)
+    await openMergePage(page)
   })
 
-  test('应该显示合并 PDF 页面', async ({ page }) => {
-    await expect(page).toHaveURL(/\/merge/i)
-    const heading = page.locator('h1').first()
-    // 支持多语言：中文"合并"或英文"Merge"
-    await expect(heading).toContainText(/合并|merge/i)
+  test('opens the current tool shell with the upload drop zone', async ({ page }) => {
+    await expect(page).toHaveURL(/\/tools\/merge/)
+    await expect(page.getByRole('heading', { name: 'Merge PDF', level: 1 })).toBeVisible()
+    await expect(page.locator('[data-testid="drag-drop-zone"]').first()).toBeVisible()
+    await expect(page.locator('main main')).toHaveCount(0)
   })
 
-  test('应该显示拖拽上传区域', async ({ page }) => {
-    const dropZone = page.locator('[data-testid="drag-drop-zone"]')
-    await expect(dropZone).toBeVisible({ timeout: 10000 })
+  test('shows the merge queue after PDFs are uploaded', async ({ page }) => {
+    await uploadPdfs(page, [sampleOne, sampleTwo])
+
+    await expect(page.getByRole('heading', { name: 'Selected files' })).toBeVisible()
+    await expect(page.locator('[data-testid="file-preview"]').nth(0)).toContainText('sample1.pdf')
+    await expect(page.locator('[data-testid="file-preview"]').nth(1)).toContainText('sample2.pdf')
+    await expect(page.getByText(/total pages/)).toBeVisible()
+    await expect(page.getByText('Add more files')).toBeVisible()
   })
 
-  test('应该可以上传 PDF 文件', async ({ page }) => {
-    const filePaths = [
-      path.join(__dirname, '../fixtures/sample1.pdf'),
-      path.join(__dirname, '../fixtures/sample2.pdf'),
-    ]
+  test('requires at least two files before merging', async ({ page }) => {
+    await uploadPdfs(page, [sampleOne])
 
-    await uploadMultipleFiles(page, filePaths)
-
-    // 检查文件列表提示
-    await expect(page.locator('text=/已选择.*2.*个文件/i')).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('button', { name: 'Merge PDF' })).toBeDisabled()
+    await expect(page.getByText('Files').first()).toBeVisible()
+    await expect(page.getByText('Pages').first()).toBeVisible()
   })
 
-  test('应该可以重新排序文件', async ({ page }) => {
-    const filePaths = [
-      path.join(__dirname, '../fixtures/sample1.pdf'),
-      path.join(__dirname, '../fixtures/sample2.pdf'),
-    ]
+  test('enables merge when two PDFs are queued', async ({ page }) => {
+    await uploadPdfs(page, [sampleOne, sampleTwo])
 
-    await uploadMultipleFiles(page, filePaths)
-
-    // 等待文件加载
-    await page.waitForTimeout(500)
-
-    // 检查文件列表存在
-    await expect(page.locator('text=/已选择.*2.*个文件/i')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Confirm the order, then merge' })).toBeVisible()
+    await expect(page.getByText('Local processing')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Merge PDF' })).toBeEnabled()
   })
 
-  test('应该可以删除文件', async ({ page }) => {
-    await uploadFile(page, path.join(__dirname, '../fixtures/sample1.pdf'))
+  test('removes queued files and returns to upload state when the list is empty', async ({ page }) => {
+    await uploadPdfs(page, [sampleOne])
 
-    // 等待文件加载
-    await page.waitForTimeout(500)
+    await page.getByRole('button', { name: 'Remove sample1.pdf' }).click()
 
-    // 查找并点击删除按钮（SVG 图标）
-    const deleteButton = page.locator('button').filter({ has: page.locator('svg') }).filter({ hasText: '' }).first()
-    await deleteButton.click()
-
-    // 检查文件被删除 - 应该重新显示拖拽区域
-    await expect(page.locator('[data-testid="drag-drop-zone"]')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('[data-testid="file-preview"]')).toHaveCount(0)
+    await expect(page.locator('[data-testid="drag-drop-zone"]').first()).toBeVisible()
   })
 
-  test('应该显示合并按钮', async ({ page }) => {
-    // 上传文件后才会显示合并按钮
-    await uploadFile(page, path.join(__dirname, '../fixtures/sample1.pdf'))
+  test('runs a local merge and shows the success dialog', async ({ page }) => {
+    await uploadPdfs(page, [sampleOne, sampleTwo])
 
-    const mergeButton = page.getByRole('button', { name: /合并 PDF|Merge PDF/i })
-    await expect(mergeButton).toBeVisible({ timeout: 10000 })
-  })
+    await page.getByRole('button', { name: 'Merge PDF' }).click()
 
-  test('初始状态合并按钮应该禁用', async ({ page }) => {
-    // 只上传一个文件，按钮应该禁用（需要至少2个文件）
-    await uploadFile(page, path.join(__dirname, '../fixtures/sample1.pdf'))
-
-    const mergeButton = page.getByRole('button', { name: /合并 PDF|Merge PDF/i })
-    await expect(mergeButton).toBeDisabled({ timeout: 10000 })
-  })
-
-  test('上传文件后合并按钮应该启用', async ({ page }) => {
-    const filePaths = [
-      path.join(__dirname, '../fixtures/sample1.pdf'),
-      path.join(__dirname, '../fixtures/sample2.pdf'),
-    ]
-
-    await uploadMultipleFiles(page, filePaths)
-
-    // 等待一下确保状态更新
-    await page.waitForTimeout(500)
-
-    const mergeButton = page.getByRole('button', { name: /合并 PDF|Merge PDF/i })
-    await expect(mergeButton).toBeEnabled({ timeout: 10000 })
-  })
-
-  test('应该显示进度条（合并时）', async ({ page }) => {
-    const filePaths = [
-      path.join(__dirname, '../fixtures/sample1.pdf'),
-      path.join(__dirname, '../fixtures/sample2.pdf'),
-    ]
-
-    await uploadMultipleFiles(page, filePaths)
-
-    // 点击合并
-    const mergeButton = page.getByRole('button', { name: /合并 PDF|Merge PDF/i })
-    await mergeButton.waitFor({ state: 'enabled', timeout: 10000 })
-    await mergeButton.click()
-
-    // 检查进度条显示（可能很快消失）
-    // 使用 or 逻辑：要么看到进度条，要么直接看到成功提示
-    const progressOrSuccess = page.locator('[data-testid="progress-bar"], text=/成功|完成/i').first()
-    await expect(progressOrSuccess).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('dialog', { name: 'Merge complete' })).toBeVisible({ timeout: 20000 })
+    await expect(page.getByRole('dialog')).toContainText('Successfully merged 2 PDF files')
+    await expect(page.getByRole('button', { name: 'Download' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Merge more files' })).toBeVisible()
   })
 })

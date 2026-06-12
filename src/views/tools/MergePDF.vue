@@ -9,7 +9,7 @@ import Card from '@/components/common/Card.vue'
 import Modal from '@/components/common/Modal.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import CloudToggle from '@/components/common/CloudToggle.vue'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import { getPDFPageCount } from '@/utils/pdf/merge'
 import { memoryManager } from '@/utils/memory-manager'
 import { useDragSort } from '@/composables/useDragSort'
@@ -21,8 +21,10 @@ import { historyManager } from '@/utils/history-manager'
 import { useUserStore } from '@/stores/user'
 import { shouldPreferCloudProcessing } from '@/utils/cloud-recommendation'
 
-const { t, locale } = useI18n()
+const { t, tm } = useI18n()
 const userStore = useUserStore()
+
+type ToolPageCopy = Record<string, any>
 
 interface FileWithPages {
   file: File
@@ -76,7 +78,7 @@ const handleFilesSelected = async (files: File[]) => {
     )
     errorMessage.value = ''
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '加载 PDF 文件失败'
+    errorMessage.value = error instanceof Error ? error.message : copy.value.errorLoad
   }
 }
 
@@ -107,7 +109,7 @@ const clearAll = () => {
 
 const mergePDFFiles = async () => {
   if (sortedFiles.value.length < 2) {
-    errorMessage.value = '请至少选择 2 个 PDF 文件进行合并'
+    errorMessage.value = copy.value.errorMinFiles
     return
   }
 
@@ -118,12 +120,12 @@ const mergePDFFiles = async () => {
 
   isProcessing.value = true
   processingProgress.value = 0
-  processingStatus.value = '准备处理...'
+  processingStatus.value = copy.value.statusPreparing
   errorMessage.value = ''
 
   try {
     const filesToMerge = sortedFiles.value.map((item) => item.file)
-    processingStatus.value = `正在合并 ${filesToMerge.length} 个文件...`
+    processingStatus.value = t('tools.merge.page.statusProcessing', { count: filesToMerge.length })
     const taskId = await submitTask('merge', { files: filesToMerge })
 
     const progressInterval = setInterval(() => {
@@ -131,7 +133,7 @@ const mergePDFFiles = async () => {
       if (task) {
         processingProgress.value = task.progress
         if (task.progress < 100) {
-          processingStatus.value = `处理中... ${Math.round(task.progress)}%`
+          processingStatus.value = t('tools.merge.page.statusProgress', { progress: Math.round(task.progress) })
         }
       }
     }, 100)
@@ -140,7 +142,7 @@ const mergePDFFiles = async () => {
     clearInterval(progressInterval)
 
     processingProgress.value = 100
-    processingStatus.value = '处理完成'
+    processingStatus.value = copy.value.statusDone
 
     resultUrl.value = memoryManager.createTemporaryURL(mergedBlob)
     const timestamp = new Date().toISOString().slice(0, 10)
@@ -155,7 +157,7 @@ const mergePDFFiles = async () => {
 
     showSuccessModal.value = true
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '合并 PDF 失败'
+    errorMessage.value = error instanceof Error ? error.message : copy.value.errorFailed
   } finally {
     isProcessing.value = false
     processingProgress.value = 0
@@ -192,7 +194,7 @@ const mergeInCloud = async () => {
 
     showSuccessModal.value = true
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '云端合并失败'
+    errorMessage.value = error instanceof Error ? error.message : copy.value.errorCloudFailed
   } finally {
     isProcessing.value = false
   }
@@ -216,45 +218,10 @@ const totalPages = computed(() => {
   return sortedFiles.value.reduce((sum, item) => sum + item.pageCount, 0)
 })
 
-const copy = computed(() => locale.value.startsWith('zh')
-  ? {
-      badge: '本地工具',
-      queueLabel: '合并队列',
-      queueTitle: '已选择文件',
-      queueDesc: '共 {pages} 页。你可以直接拖拽卡片调整最终合并顺序。',
-      clear: '清空列表',
-      addMore: '继续添加更多文件',
-      actionLabel: '输出动作',
-      actionTitle: '确认顺序后开始合并',
-      actionDesc: '可以选择本地处理或云端处理，处理完成后会生成新的合并文件。',
-      fileCount: '文件数量',
-      pageCount: '总页数',
-      merge: '合并 PDF',
-      successTitle: '合并完成',
-      successMessage: '已成功合并 {count} 个 PDF 文件，共 {pages} 页。',
-      mergeMore: '继续合并其他文件',
-      pagesSuffix: '页',
-      morePages: '还有 {count} 页...',
-    }
-  : {
-      badge: 'Local tool',
-      queueLabel: 'Merge queue',
-      queueTitle: 'Selected files',
-      queueDesc: '{pages} total pages. Drag the cards to adjust the final merge order.',
-      clear: 'Clear list',
-      addMore: 'Add more files',
-      actionLabel: 'Output',
-      actionTitle: 'Confirm the order, then merge',
-      actionDesc: 'Choose local or cloud processing. A new merged file will be generated when the task finishes.',
-      fileCount: 'Files',
-      pageCount: 'Pages',
-      merge: 'Merge PDF',
-      successTitle: 'Merge complete',
-      successMessage: 'Successfully merged {count} PDF files with {pages} total pages.',
-      mergeMore: 'Merge more files',
-      pagesSuffix: 'pages',
-      morePages: '{count} more pages...',
-    })
+const copy = computed<ToolPageCopy>(() => ({
+  ...(tm('tools.merge.page') as ToolPageCopy),
+  queueDesc: t('tools.merge.page.queueDesc', { pages: totalPages.value }),
+}))
 
 onUnmounted(() => {
   destroyWorker()
@@ -265,19 +232,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-blue-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="t('tools.merge.title')"
       :subtitle="t('tools.merge.desc')"
       :badge="copy.badge"
       accent="blue"
-    >
+    width="lg"
+  >
+
       <template #badgeIcon>
         <FileText class="h-4 w-4" />
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-6xl px-4 pb-16 pt-6">
       <div
         v-if="errorMessage"
         class="mb-4 rounded-lg bg-error-light p-4 text-error-dark dark:bg-error/20 dark:text-error"
@@ -298,7 +263,7 @@ onUnmounted(() => {
         v-else
         class="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]"
       >
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-blue-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+        <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-6">
             <div class="flex items-start justify-between gap-4">
               <div>
@@ -309,7 +274,7 @@ onUnmounted(() => {
                   {{ copy.queueTitle }}
                 </h2>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {{ copy.queueDesc.replace('{pages}', String(totalPages)) }}
+                  {{ copy.queueDesc }}
                 </p>
               </div>
               <Button
@@ -325,8 +290,9 @@ onUnmounted(() => {
               <div
                 v-for="(item, index) in sortedFiles"
                 :key="`${item.file.name}-${index}`"
+                data-testid="file-preview"
                 :class="[
-                  'rounded-[24px] border p-4 shadow-sm transition-all dark:bg-slate-950/40',
+                  'rounded-md border p-4 shadow-sm transition-all dark:bg-slate-950/40',
                   isDragOver(index)
                     ? 'border-blue-300 bg-blue-50/80 shadow-blue-100'
                     : 'border-slate-200 bg-slate-50/80 dark:border-slate-800',
@@ -366,6 +332,7 @@ onUnmounted(() => {
 
                   <button
                     class="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-error dark:hover:bg-slate-800"
+                    :aria-label="`Remove ${item.file.name}`"
                     @click="removeFile(index)"
                   >
                     <svg
@@ -421,7 +388,7 @@ onUnmounted(() => {
           </div>
         </Card>
 
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-blue-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+        <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-5">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-blue-500">
@@ -504,6 +471,5 @@ onUnmounted(() => {
           </div>
         </div>
       </Modal>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

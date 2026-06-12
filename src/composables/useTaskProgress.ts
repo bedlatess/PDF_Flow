@@ -113,14 +113,12 @@ export function useTaskProgress() {
     if (supportsWebSocket) {
       try {
         // 尝试使用WebSocket
-        console.log('Attempting WebSocket connection...')
         const cleanup = trackWithWebSocket(jobId, onComplete)
 
         // 等待连接或超时（3秒）
         await new Promise((resolve, reject) => {
           const timeout = setTimeout(() => {
             if (!isConnected.value) {
-              console.log('WebSocket connection timeout, falling back to polling')
               cleanup()
               reject(new Error('WebSocket timeout'))
             }
@@ -136,10 +134,8 @@ export function useTaskProgress() {
           }, 100)
         })
 
-        console.log('Using WebSocket for progress tracking')
       } catch (e) {
         // WebSocket失败，回退到轮询
-        console.log('Falling back to polling due to WebSocket error:', e)
         return await trackWithPolling(jobId, (prog) => {
           if (onComplete && prog === 100) {
             onComplete({ status: 'completed', progress: 100 })
@@ -148,7 +144,6 @@ export function useTaskProgress() {
       }
     } else {
       // 不支持WebSocket或强制轮询，直接使用轮询
-      console.log('Using polling for progress tracking')
       return await trackWithPolling(jobId, (prog) => {
         if (onComplete && prog === 100) {
           onComplete({ status: 'completed', progress: 100 })

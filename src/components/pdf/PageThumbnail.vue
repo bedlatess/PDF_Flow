@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { usePDFThumbnail } from '@/composables/usePDFThumbnail'
 
 interface PageThumbnailProps {
@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<PageThumbnailProps>(), {
 })
 
 const emit = defineEmits<{
-  click: [pageNumber: number]
+  click: [pageNumber: number, event: MouseEvent | KeyboardEvent]
   remove: [pageNumber: number]
   rotate: [pageNumber: number]
   dragstart: [event: DragEvent, pageNumber: number]
@@ -26,25 +26,16 @@ const emit = defineEmits<{
 
 const { generateThumbnail, getThumbnail } = usePDFThumbnail()
 
-const thumbnailUrl = ref<string>('')
+const thumbnailUrl = ref('')
 const isLoading = ref(true)
 const isHovered = ref(false)
 const hasError = ref(false)
-
-onMounted(async () => {
-  await loadThumbnail()
-})
-
-watch(() => props.file, async () => {
-  await loadThumbnail()
-})
 
 const loadThumbnail = async () => {
   isLoading.value = true
   hasError.value = false
 
   try {
-    // 先检查是否已有缓存
     const cached = getThumbnail(props.file, props.pageNumber)
     if (cached) {
       thumbnailUrl.value = cached
@@ -52,7 +43,6 @@ const loadThumbnail = async () => {
       return
     }
 
-    // 生成缩略图
     const result = await generateThumbnail(props.file, props.pageNumber, {
       width: 200,
       quality: 0.8,
@@ -64,37 +54,40 @@ const loadThumbnail = async () => {
       hasError.value = true
     }
   } catch (error) {
-    console.error('Failed to load thumbnail:', error)
     hasError.value = true
   } finally {
     isLoading.value = false
   }
 }
 
-const handleClick = () => {
-  emit('click', props.pageNumber)
+onMounted(loadThumbnail)
+
+watch(() => props.file, loadThumbnail)
+
+const handleClick = (event: MouseEvent | KeyboardEvent) => {
+  emit('click', props.pageNumber, event)
 }
 
-const handleRemove = (e: Event) => {
-  e.stopPropagation()
+const handleRemove = (event: Event) => {
+  event.stopPropagation()
   emit('remove', props.pageNumber)
 }
 
-const handleRotate = (e: Event) => {
-  e.stopPropagation()
+const handleRotate = (event: Event) => {
+  event.stopPropagation()
   emit('rotate', props.pageNumber)
 }
 
-const handleDragStart = (e: DragEvent) => {
+const handleDragStart = (event: DragEvent) => {
   if (!props.draggable) {
-    e.preventDefault()
+    event.preventDefault()
     return
   }
-  emit('dragstart', e, props.pageNumber)
+  emit('dragstart', event, props.pageNumber)
 }
 
-const handleDragEnd = (e: DragEvent) => {
-  emit('dragend', e)
+const handleDragEnd = (event: DragEvent) => {
+  emit('dragend', event)
 }
 </script>
 
@@ -109,17 +102,19 @@ const handleDragEnd = (e: DragEvent) => {
       draggable ? 'cursor-move' : 'cursor-pointer',
     ]"
     :draggable="draggable"
+    role="button"
+    tabindex="0"
+    :aria-label="`Page ${pageNumber}`"
+    :aria-pressed="selected"
     @click="handleClick"
+    @keydown.enter.prevent="handleClick"
+    @keydown.space.prevent="handleClick"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
     @dragstart="handleDragStart"
     @dragend="handleDragEnd"
   >
-    <!-- Thumbnail Image -->
-    <div
-      class="relative aspect-[3/4] overflow-hidden rounded bg-gray-100 dark:bg-gray-800"
-    >
-      <!-- Loading State -->
+    <div class="relative aspect-[3/4] overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
       <div
         v-if="isLoading"
         class="flex h-full w-full items-center justify-center"
@@ -129,6 +124,7 @@ const handleDragEnd = (e: DragEvent) => {
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <circle
             class="opacity-25"
@@ -146,7 +142,6 @@ const handleDragEnd = (e: DragEvent) => {
         </svg>
       </div>
 
-      <!-- Error State -->
       <div
         v-else-if="hasError"
         class="flex h-full w-full flex-col items-center justify-center text-gray-400"
@@ -155,6 +150,7 @@ const handleDragEnd = (e: DragEvent) => {
           class="h-12 w-12"
           fill="currentColor"
           viewBox="0 0 20 20"
+          aria-hidden="true"
         >
           <path
             fill-rule="evenodd"
@@ -163,11 +159,10 @@ const handleDragEnd = (e: DragEvent) => {
           />
         </svg>
         <p class="mt-2 text-xs">
-          加载失败
+          Preview unavailable
         </p>
       </div>
 
-      <!-- Thumbnail -->
       <img
         v-else-if="thumbnailUrl"
         :src="thumbnailUrl"
@@ -176,7 +171,6 @@ const handleDragEnd = (e: DragEvent) => {
         class="h-full w-full object-contain transition-transform"
       >
 
-      <!-- Placeholder -->
       <div
         v-else
         class="flex h-full w-full items-center justify-center text-gray-400"
@@ -185,6 +179,7 @@ const handleDragEnd = (e: DragEvent) => {
           class="h-12 w-12"
           fill="currentColor"
           viewBox="0 0 20 20"
+          aria-hidden="true"
         >
           <path
             fill-rule="evenodd"
@@ -194,16 +189,17 @@ const handleDragEnd = (e: DragEvent) => {
         </svg>
       </div>
 
-      <!-- Actions Overlay -->
       <div
         :class="[
-          'absolute inset-0 flex items-center justify-center gap-2 bg-black/50 transition-opacity',
+          'absolute inset-0 flex items-center justify-center gap-2 bg-black/50 transition-opacity group-focus-within:opacity-100',
           isHovered ? 'opacity-100' : 'opacity-0',
         ]"
       >
         <button
           class="rounded-full bg-white p-2 text-gray-700 transition-colors hover:bg-gray-100"
           title="Rotate"
+          type="button"
+          :aria-label="`Rotate page ${pageNumber}`"
           @click="handleRotate"
         >
           <svg
@@ -211,6 +207,7 @@ const handleDragEnd = (e: DragEvent) => {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               stroke-linecap="round"
@@ -224,6 +221,8 @@ const handleDragEnd = (e: DragEvent) => {
         <button
           class="rounded-full bg-white p-2 text-error transition-colors hover:bg-gray-100"
           title="Remove"
+          type="button"
+          :aria-label="`Remove page ${pageNumber}`"
           @click="handleRemove"
         >
           <svg
@@ -231,6 +230,7 @@ const handleDragEnd = (e: DragEvent) => {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               stroke-linecap="round"
@@ -242,10 +242,10 @@ const handleDragEnd = (e: DragEvent) => {
         </button>
       </div>
 
-      <!-- Selected Badge -->
       <div
         v-if="selected"
         class="absolute right-2 top-2 rounded-full bg-primary p-1"
+        aria-hidden="true"
       >
         <svg
           class="h-4 w-4 text-white"
@@ -260,10 +260,10 @@ const handleDragEnd = (e: DragEvent) => {
         </svg>
       </div>
 
-      <!-- Drag Handle (if draggable) -->
       <div
         v-if="draggable"
         class="absolute left-2 top-2 rounded bg-white/90 p-1 shadow-sm"
+        aria-hidden="true"
       >
         <svg
           class="h-4 w-4 text-gray-600"
@@ -277,7 +277,6 @@ const handleDragEnd = (e: DragEvent) => {
       </div>
     </div>
 
-    <!-- Page Number -->
     <div class="mt-2 text-center">
       <span class="text-xs font-medium text-gray-600 dark:text-gray-400">
         Page {{ pageNumber }}

@@ -24,6 +24,7 @@ class Settings(BaseSettings):
 
     # API Configuration
     API_V1_PREFIX: str = "/api/v1"
+    BACKEND_PUBLIC_URL: str = Field(default="http://localhost:8000", env="BACKEND_PUBLIC_URL")
 
     # Security - JWT
     SECRET_KEY: str = Field(..., env="SECRET_KEY")
@@ -69,12 +70,46 @@ class Settings(BaseSettings):
     TESSERACT_PATH: Optional[str] = Field(default=None, env="TESSERACT_PATH")
     OCR_LANGUAGES: List[str] = ["eng", "chi_sim", "spa"]
 
-    # Stripe Configuration (for Pro subscription)
+    # Payment provider registry
+    PAYMENT_ENABLED_PROVIDERS_RAW: str = Field(default="stripe", alias="PAYMENT_ENABLED_PROVIDERS")
+    PAYMENT_PROVIDER_ORDER_RAW: str = Field(
+        default="stripe,paypal,epay,alipay,wechat,tokenpay,bepusdt,epusdt,okpay",
+        alias="PAYMENT_PROVIDER_ORDER",
+    )
+    PAYMENT_PROVIDER_CHECKOUT_URLS_RAW: str = Field(default="{}", alias="PAYMENT_PROVIDER_CHECKOUT_URLS")
+    PAYMENT_ORDER_TTL_MINUTES: int = Field(default=30, env="PAYMENT_ORDER_TTL_MINUTES")
+
+    # Stripe Configuration (legacy compatibility; will move behind provider adapter)
     STRIPE_SECRET_KEY: Optional[str] = Field(default=None, env="STRIPE_SECRET_KEY")
     STRIPE_PUBLISHABLE_KEY: Optional[str] = Field(default=None, env="STRIPE_PUBLISHABLE_KEY")
     STRIPE_WEBHOOK_SECRET: Optional[str] = Field(default=None, env="STRIPE_WEBHOOK_SECRET")
     STRIPE_PRICE_ID_MONTHLY: Optional[str] = Field(default=None, env="STRIPE_PRICE_ID_MONTHLY")
     STRIPE_PRICE_ID_YEARLY: Optional[str] = Field(default=None, env="STRIPE_PRICE_ID_YEARLY")
+
+    # PayPal Configuration
+    PAYPAL_CLIENT_ID: Optional[str] = Field(default=None, env="PAYPAL_CLIENT_ID")
+    PAYPAL_CLIENT_SECRET: Optional[str] = Field(default=None, env="PAYPAL_CLIENT_SECRET")
+    PAYPAL_WEBHOOK_ID: Optional[str] = Field(default=None, env="PAYPAL_WEBHOOK_ID")
+    PAYPAL_API_BASE_URL: str = Field(default="https://api-m.sandbox.paypal.com", env="PAYPAL_API_BASE_URL")
+
+    # Alipay Configuration
+    ALIPAY_APP_ID: Optional[str] = Field(default=None, env="ALIPAY_APP_ID")
+    ALIPAY_PRIVATE_KEY: Optional[str] = Field(default=None, env="ALIPAY_PRIVATE_KEY")
+    ALIPAY_PUBLIC_KEY: Optional[str] = Field(default=None, env="ALIPAY_PUBLIC_KEY")
+    ALIPAY_GATEWAY_URL: str = Field(default="https://openapi-sandbox.dl.alipaydev.com/gateway.do", env="ALIPAY_GATEWAY_URL")
+
+    # WeChat Pay Configuration
+    WECHAT_PAY_APP_ID: Optional[str] = Field(default=None, env="WECHAT_PAY_APP_ID")
+    WECHAT_PAY_MCH_ID: Optional[str] = Field(default=None, env="WECHAT_PAY_MCH_ID")
+    WECHAT_PAY_SERIAL_NO: Optional[str] = Field(default=None, env="WECHAT_PAY_SERIAL_NO")
+    WECHAT_PAY_PRIVATE_KEY: Optional[str] = Field(default=None, env="WECHAT_PAY_PRIVATE_KEY")
+    WECHAT_PAY_API_V3_KEY: Optional[str] = Field(default=None, env="WECHAT_PAY_API_V3_KEY")
+    WECHAT_PAY_PLATFORM_CERT: Optional[str] = Field(default=None, env="WECHAT_PAY_PLATFORM_CERT")
+    WECHAT_PAY_API_BASE_URL: str = Field(default="https://api.mch.weixin.qq.com", env="WECHAT_PAY_API_BASE_URL")
+
+    # Hosted gateway / crypto gateway configuration.
+    # JSON object keyed by provider: epay, tokenpay, bepusdt, epusdt, okpay.
+    PAYMENT_GATEWAY_CONFIGS_RAW: str = Field(default="{}", alias="PAYMENT_GATEWAY_CONFIGS")
 
     # Email Configuration (Resend)
     RESEND_API_KEY: Optional[str] = Field(default=None, env="RESEND_API_KEY")
@@ -124,6 +159,30 @@ class Settings(BaseSettings):
     @property
     def ALLOWED_HOSTS(self) -> List[str]:
         return self._parse_list_setting(self.ALLOWED_HOSTS_RAW)
+
+    @property
+    def PAYMENT_ENABLED_PROVIDERS(self) -> List[str]:
+        return self._parse_list_setting(self.PAYMENT_ENABLED_PROVIDERS_RAW)
+
+    @property
+    def PAYMENT_PROVIDER_ORDER(self) -> List[str]:
+        return self._parse_list_setting(self.PAYMENT_PROVIDER_ORDER_RAW)
+
+    @property
+    def PAYMENT_PROVIDER_CHECKOUT_URLS(self) -> dict[str, str]:
+        value = (self.PAYMENT_PROVIDER_CHECKOUT_URLS_RAW or "").strip()
+        if not value:
+            return {}
+        parsed = json.loads(value)
+        return {str(key): str(url) for key, url in parsed.items() if str(url).strip()}
+
+    @property
+    def PAYMENT_GATEWAY_CONFIGS(self) -> dict[str, dict]:
+        value = (self.PAYMENT_GATEWAY_CONFIGS_RAW or "").strip()
+        if not value:
+            return {}
+        parsed = json.loads(value)
+        return {str(key): dict(config) for key, config in parsed.items()}
 
 
 # Create settings instance

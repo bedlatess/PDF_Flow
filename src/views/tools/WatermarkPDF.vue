@@ -12,9 +12,11 @@ import PDFViewer from '@/components/pdf/PDFViewer.vue'
 import { memoryManager } from '@/utils/memory-manager'
 import { historyManager } from '@/utils/history-manager'
 import { addWatermark, type WatermarkPosition } from '@/utils/pdf/watermark'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 
-const { t, locale } = useI18n()
+const { t, tm } = useI18n()
+
+type ToolPageCopy = Record<string, any>
 
 const selectedFile = ref<File | null>(null)
 const watermarkText = ref('CONFIDENTIAL')
@@ -32,89 +34,15 @@ const showPDFViewer = ref(false)
 const resultUrl = ref('')
 const errorMessage = ref('')
 
-const isChinese = computed(() => locale.value.startsWith('zh'))
+const copy = computed<ToolPageCopy>(() => tm('tools.watermark.page') as ToolPageCopy)
 
-const copy = computed(() => isChinese.value
-  ? {
-      badge: '本地工具',
-      setupLabel: '水印设置',
-      setupTitle: '调整文案和样式',
-      setupDesc: '适合为合同、报告、草稿或对外传阅文件添加清晰但不过分抢眼的标记。',
-      outputLabel: '导出动作',
-      outputTitle: '生成带水印的新文件',
-      outputTips: [
-        '建议使用简短清晰的水印文字，方便识别文件状态。',
-        '透明度高会更醒目，透明度低更适合阅读型文件。',
-        '处理完成后会生成新的 PDF 文件，不会修改原文件。',
-      ],
-      localTitle: '浏览器本地处理',
-      localDesc: '水印会在当前浏览器中完成处理，适合快速添加文件状态、版本说明或传阅标记。',
-      action: '添加水印',
-      successTitle: '水印添加完成',
-      successMessage: '带水印的 PDF 已准备好，可以立即下载。',
-      placeholder: '例如：草稿 / 已审核 / 仅供预览',
-      color: '水印颜色',
-      text: '水印文字',
-      position: '位置',
-      opacity: '透明度',
-      rotation: '旋转角度',
-      fontSize: '字体大小',
-      errorNoText: '请输入水印文字后再继续。',
-      errorFailed: '添加水印失败，请稍后重试。',
-      processing: '正在生成水印...',
-      done: '处理完成',
-      defaultText: '仅供预览',
-      positions: [
-        { value: 'center' as WatermarkPosition, label: '居中' },
-        { value: 'tile' as WatermarkPosition, label: '平铺' },
-        { value: 'top' as WatermarkPosition, label: '顶部' },
-        { value: 'bottom' as WatermarkPosition, label: '底部' },
-      ],
-    }
-  : {
-      badge: 'Local tool',
-      setupLabel: 'Watermark setup',
-      setupTitle: 'Adjust the message and style',
-      setupDesc: 'Useful for contracts, reports, drafts, and shared files that need a clear but unobtrusive status mark.',
-      outputLabel: 'Output',
-      outputTitle: 'Generate a new watermarked file',
-      outputTips: [
-        'Keep the watermark short and easy to identify.',
-        'Higher opacity is more visible, while lower opacity is better for reading-heavy files.',
-        'A new PDF is generated after processing. Your original file remains unchanged.',
-      ],
-      localTitle: 'Local browser processing',
-      localDesc: 'The watermark is applied locally in your browser, which fits quick status marks, review labels, and privacy-sensitive documents.',
-      action: 'Apply watermark',
-      successTitle: 'Watermark applied',
-      successMessage: 'Your watermarked PDF is ready to download.',
-      placeholder: 'Example: Draft / Reviewed / Preview only',
-      color: 'Watermark color',
-      text: 'Watermark text',
-      position: 'Position',
-      opacity: 'Opacity',
-      rotation: 'Rotation',
-      fontSize: 'Font size',
-      errorNoText: 'Enter watermark text before continuing.',
-      errorFailed: 'Failed to apply the watermark. Please try again later.',
-      processing: 'Applying watermark...',
-      done: 'Completed',
-      defaultText: 'CONFIDENTIAL',
-      positions: [
-        { value: 'center' as WatermarkPosition, label: 'Center' },
-        { value: 'tile' as WatermarkPosition, label: 'Tile' },
-        { value: 'top' as WatermarkPosition, label: 'Top' },
-        { value: 'bottom' as WatermarkPosition, label: 'Bottom' },
-      ],
-    })
-
-watch(isChinese, (zh) => {
+watch(copy, (nextCopy, previousCopy) => {
+  const previousDefault = previousCopy?.defaultText ?? ''
   const trimmed = watermarkText.value.trim()
-  if (!trimmed || trimmed === 'CONFIDENTIAL' || trimmed === '仅供预览') {
-    watermarkText.value = zh ? '仅供预览' : 'CONFIDENTIAL'
+  if (!trimmed || trimmed === previousDefault) {
+    watermarkText.value = nextCopy.defaultText
   }
 }, { immediate: true })
-
 const handleFilesSelected = (files: File[]) => {
   selectedFile.value = files[0]
   errorMessage.value = ''
@@ -212,19 +140,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 dark:from-slate-950 dark:via-slate-950 dark:to-pink-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="t('tools.watermark.title')"
       :subtitle="t('tools.watermark.desc')"
       :badge="copy.badge"
       accent="pink"
-    >
+    width="md"
+  >
+
       <template #badgeIcon>
         <FileText class="h-4 w-4" />
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <div
         v-if="errorMessage"
         class="mb-4 rounded-lg bg-error-light p-4 text-error-dark dark:bg-error/20 dark:text-error"
@@ -251,7 +177,7 @@ onUnmounted(() => {
             @preview="handlePreview"
           />
 
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-pink-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-5">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-500">
@@ -266,14 +192,18 @@ onUnmounted(() => {
               </div>
 
               <div>
-                <label class="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                <label
+                  for="watermark-text"
+                  class="mb-2 block text-sm font-medium text-slate-900 dark:text-white"
+                >
                   {{ copy.text }}
                 </label>
                 <input
+                  id="watermark-text"
                   v-model="watermarkText"
                   type="text"
                   :placeholder="copy.placeholder"
-                  class="w-full rounded-2xl border border-slate-300 px-4 py-3 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                  class="w-full rounded-md border border-slate-300 px-4 py-3 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </div>
 
@@ -315,7 +245,7 @@ onUnmounted(() => {
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label class="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
-                    {{ copy.rotation }}: {{ rotation }}°
+                    {{ copy.rotation }}: {{ rotation }} deg
                   </label>
                   <input
                     v-model.number="rotation"
@@ -348,7 +278,7 @@ onUnmounted(() => {
                 <input
                   v-model="watermarkColor"
                   type="color"
-                  class="h-11 w-24 cursor-pointer rounded-2xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900"
+                  class="h-11 w-24 cursor-pointer rounded-md border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900"
                 >
               </div>
             </div>
@@ -356,7 +286,7 @@ onUnmounted(() => {
         </div>
 
         <div class="space-y-6">
-          <div class="rounded-[28px] border border-emerald-100 bg-emerald-50/80 p-5 text-sm leading-6 text-emerald-800 shadow-lg shadow-emerald-100/40 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300 dark:shadow-none">
+          <div class="rounded-lg border border-emerald-100 bg-emerald-50/80 p-5 text-sm leading-6 text-emerald-800 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300 dark:shadow-none">
             <p class="font-semibold">
               {{ copy.localTitle }}
             </p>
@@ -365,7 +295,7 @@ onUnmounted(() => {
             </p>
           </div>
 
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-pink-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-5">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-500">
@@ -376,7 +306,7 @@ onUnmounted(() => {
                 </h3>
               </div>
 
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40">
+              <div class="rounded-md border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40">
                 <ul class="space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                   <li
                     v-for="tip in copy.outputTips"
@@ -440,6 +370,5 @@ onUnmounted(() => {
           </Button>
         </div>
       </Modal>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

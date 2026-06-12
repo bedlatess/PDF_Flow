@@ -1,24 +1,22 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-fuchsia-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-950 dark:to-fuchsia-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="t('ai.title')"
       :subtitle="t('ai.subtitle')"
       :badge="t('ai.proBadge')"
       pro
       accent="pink"
-    >
+    width="md"
+  >
+
       <template #badgeIcon>
         <Sparkles class="h-4 w-4" />
       </template>
 
-      <template #extra>
+      <template #headerExtra>
         <p class="mx-auto max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
           {{ t('ai.pageExtra') }}
         </p>
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <ToolNoticeBar variant="purple">
         <template #icon>
           <Sparkles class="h-5 w-5" />
@@ -56,7 +54,7 @@
       </ToolAccessPanel>
 
       <div class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-fuchsia-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+        <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-6">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-500">
@@ -91,7 +89,7 @@
               v-else
               class="space-y-4"
             >
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
+              <div class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <div class="flex items-center justify-between gap-4">
                   <div class="flex items-center gap-3">
                     <FileText class="h-8 w-8 text-fuchsia-500" />
@@ -116,7 +114,7 @@
                 </div>
               </div>
 
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 text-sm leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300">
+              <div class="rounded-md border border-slate-200 bg-slate-50/70 p-5 text-sm leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300">
                 <p class="font-semibold text-slate-900 dark:text-white">
                   {{ t('ai.suggestedFlowTitle') }}
                 </p>
@@ -128,7 +126,7 @@
           </div>
         </Card>
 
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-fuchsia-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+        <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-6">
             <div class="flex flex-wrap gap-2">
               <button
@@ -158,12 +156,16 @@
               </div>
 
               <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200">
+                <label
+                  for="ai-summary-length"
+                  class="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                >
                   {{ t('ai.summarize.length') }}
                 </label>
                 <select
+                  id="ai-summary-length"
                   v-model="summaryLength"
-                  class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-fuchsia-400 dark:focus:ring-fuchsia-500/20"
+                  class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-fuchsia-400 dark:focus:ring-fuchsia-500/20"
                 >
                   <option value="short">
                     {{ t('ai.summarize.short') }}
@@ -189,7 +191,7 @@
 
               <div
                 v-if="summaryResult"
-                class="space-y-4 rounded-[24px] border border-fuchsia-100 bg-fuchsia-50/70 p-5 dark:border-fuchsia-900/30 dark:bg-fuchsia-950/20"
+                class="space-y-4 rounded-md border border-fuchsia-100 bg-fuchsia-50/70 p-5 dark:border-fuchsia-900/30 dark:bg-fuchsia-950/20"
               >
                 <div>
                   <h4 class="font-semibold text-slate-900 dark:text-white">
@@ -242,13 +244,17 @@
               </div>
 
               <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200">
+                <label
+                  for="ai-question"
+                  class="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                >
                   {{ t('ai.ask.question') }}
                 </label>
                 <textarea
+                  id="ai-question"
                   v-model="question"
                   rows="4"
-                  class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-fuchsia-400 dark:focus:ring-fuchsia-500/20"
+                  class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-fuchsia-400 dark:focus:ring-fuchsia-500/20"
                   :placeholder="t('ai.ask.placeholder')"
                 />
               </div>
@@ -265,7 +271,7 @@
 
               <div
                 v-if="qaResult"
-                class="space-y-4 rounded-[24px] border border-sky-100 bg-sky-50/70 p-5 dark:border-sky-900/30 dark:bg-sky-950/20"
+                class="space-y-4 rounded-md border border-sky-100 bg-sky-50/70 p-5 dark:border-sky-900/30 dark:bg-sky-950/20"
               >
                 <div class="flex items-center justify-between gap-3">
                   <h4 class="font-semibold text-slate-900 dark:text-white">
@@ -297,7 +303,7 @@
                     <div
                       v-for="(excerpt, index) in qaResult.relevant_excerpts"
                       :key="index"
-                      class="rounded-2xl bg-white px-4 py-3 text-sm italic text-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                      class="rounded-md bg-white px-4 py-3 text-sm italic text-slate-600 dark:bg-slate-900 dark:text-slate-300"
                     >
                       "{{ excerpt }}"
                     </div>
@@ -317,12 +323,16 @@
               </div>
 
               <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200">
+                <label
+                  for="ai-extract-type"
+                  class="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                >
                   {{ t('ai.extract.type') }}
                 </label>
                 <select
+                  id="ai-extract-type"
                   v-model="extractType"
-                  class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-fuchsia-400 dark:focus:ring-fuchsia-500/20"
+                  class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-fuchsia-400 dark:focus:ring-fuchsia-500/20"
                 >
                   <option value="general">
                     {{ t('ai.extract.general') }}
@@ -351,22 +361,22 @@
 
               <div
                 v-if="extractResult"
-                class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50"
+                class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50"
               >
                 <h4 class="font-semibold text-slate-900 dark:text-white">
                   {{ t('ai.extract.extractedData') }}
                 </h4>
-                <pre class="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-2xl bg-white p-4 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-300">{{ JSON.stringify(extractResult.extracted_data, null, 2) }}</pre>
+                <pre class="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-white p-4 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-300">{{ JSON.stringify(extractResult.extracted_data, null, 2) }}</pre>
               </div>
             </div>
 
             <div v-else-if="activeTab === 'batch'" class="space-y-5">
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
-                  批量分析
+                  {{ t('ai.batch.title') }}
                 </h3>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  一次选择多个分析任务，适合快速了解长文档的摘要、结构化信息与文档类型。
+                  {{ t('ai.batch.description') }}
                 </p>
               </div>
 
@@ -407,20 +417,20 @@
               >
                 <Layers3 v-if="!processing" class="mr-2 h-4 w-4" />
                 <Loader2 v-else class="mr-2 h-4 w-4 animate-spin" />
-                {{ processing ? t('common.processing') : '开始批量分析' }}
+                {{ processing ? t('common.processing') : t('ai.batch.start') }}
               </Button>
 
               <div
                 v-if="batchResult"
-                class="space-y-4 rounded-[24px] border border-fuchsia-100 bg-fuchsia-50/70 p-5 dark:border-fuchsia-900/30 dark:bg-fuchsia-950/20"
+                class="space-y-4 rounded-md border border-fuchsia-100 bg-fuchsia-50/70 p-5 dark:border-fuchsia-900/30 dark:bg-fuchsia-950/20"
               >
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h4 class="font-semibold text-slate-900 dark:text-white">
-                      分析完成
+                      {{ t('ai.batch.complete') }}
                     </h4>
                     <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                      已完成 {{ batchResult.operations_completed?.length || batchOperations.length }} 项分析。
+                      {{ t('ai.batch.completedCount', { count: batchResult.operations_completed?.length || batchOperations.length }) }}
                     </p>
                   </div>
                   <span
@@ -431,14 +441,13 @@
                   </span>
                 </div>
 
-                <pre class="max-h-96 overflow-auto whitespace-pre-wrap rounded-2xl bg-white p-4 text-sm leading-6 text-slate-700 dark:bg-slate-900 dark:text-slate-300">{{ JSON.stringify(batchResult.results || batchResult, null, 2) }}</pre>
+                <pre class="max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-white p-4 text-sm leading-6 text-slate-700 dark:bg-slate-900 dark:text-slate-300">{{ JSON.stringify(batchResult.results || batchResult, null, 2) }}</pre>
               </div>
             </div>
           </div>
         </Card>
       </div>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>
 
 <script setup lang="ts">
@@ -450,7 +459,7 @@ import Card from '@/components/common/Card.vue'
 import Button from '@/components/common/Button.vue'
 import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
 import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
 import {
@@ -504,29 +513,29 @@ const tabs = computed(() => [
   { id: 'summarize', label: t('ai.tabs.summarize'), icon: BookOpen },
   { id: 'ask', label: t('ai.tabs.ask'), icon: HelpCircle },
   { id: 'extract', label: t('ai.tabs.extract'), icon: FileJson },
-  { id: 'batch', label: '批量分析', icon: Layers3 },
+  { id: 'batch', label: t('ai.tabs.batch'), icon: Layers3 },
 ])
 
-const batchOperationOptions = [
+const batchOperationOptions = computed(() => [
   {
     value: 'summarize',
-    label: '智能摘要',
-    description: '提炼核心内容与要点',
+    label: t('ai.batch.operations.summarize.label'),
+    description: t('ai.batch.operations.summarize.description'),
     icon: BookOpen,
   },
   {
     value: 'extract',
-    label: '数据提取',
-    description: '整理关键字段与结构',
+    label: t('ai.batch.operations.extract.label'),
+    description: t('ai.batch.operations.extract.description'),
     icon: FileJson,
   },
   {
     value: 'classify',
-    label: '文档识别',
-    description: '判断文档类型与用途',
+    label: t('ai.batch.operations.classify.label'),
+    description: t('ai.batch.operations.classify.description'),
     icon: Layers3,
   },
-]
+])
 
 const canUseAI = computed(() => userStore.isAuthenticated && userStore.canUseCloudFeatures)
 
@@ -649,11 +658,10 @@ const batchAnalyzePDF = async () => {
   } catch (error) {
     errorState.value = formatUserFacingError(error, {
       area: 'AI',
-      fallbackMessage: '批量分析暂时无法完成，请稍后重试或联系管理员。',
+      fallbackMessage: t('ai.errors.batchFailed'),
     })
   } finally {
     processing.value = false
   }
 }
 </script>
-

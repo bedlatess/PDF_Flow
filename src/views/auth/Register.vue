@@ -1,55 +1,5 @@
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.16),transparent_32%),radial-gradient(circle_at_100%_0%,rgba(56,189,248,0.15),transparent_24%),linear-gradient(145deg,#f7fffd_0%,#effcf7_48%,#f8fafc_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.14),transparent_26%),radial-gradient(circle_at_100%_0%,rgba(56,189,248,0.12),transparent_20%),linear-gradient(145deg,#02110f_0%,#0f172a_50%,#111827_100%)]">
-    <div class="absolute inset-0">
-      <div class="absolute left-[-8rem] top-16 h-72 w-72 rounded-full bg-teal-200/50 blur-3xl dark:bg-teal-500/14" />
-      <div class="absolute right-[-7rem] top-14 h-64 w-64 rounded-full bg-sky-200/40 blur-3xl dark:bg-sky-500/12" />
-      <div class="absolute bottom-[-8rem] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-white/70 blur-3xl dark:bg-white/5" />
-    </div>
-
-    <div class="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl items-center gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-      <section class="px-2 py-8 lg:px-4">
-        <div class="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-teal-700 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/55 dark:text-teal-300">
-          PDF-Flow
-        </div>
-
-        <div class="mt-8 max-w-xl">
-          <h1 class="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            {{ marketingCopy.heroTitle }}
-          </h1>
-          <p class="mt-5 text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
-            {{ marketingCopy.heroDescription }}
-          </p>
-        </div>
-
-        <div class="mt-10 space-y-4">
-          <div class="rounded-[32px] border border-white/80 bg-white/82 p-6 shadow-xl shadow-teal-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/58 dark:shadow-none">
-            <p class="text-sm font-semibold uppercase tracking-[0.22em] text-teal-700 dark:text-teal-300">
-              {{ marketingCopy.panelTitle }}
-            </p>
-            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {{ marketingCopy.panelDescription }}
-            </p>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-3">
-            <article
-              v-for="item in marketingCopy.highlights"
-              :key="item.title"
-              class="rounded-[24px] border border-white/80 bg-white/76 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/50"
-            >
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                {{ item.title }}
-              </p>
-              <p class="mt-2 text-xs leading-6 text-slate-600 dark:text-slate-300">
-                {{ item.description }}
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="py-8">
-        <div class="mx-auto w-full max-w-xl rounded-[36px] border border-white/80 bg-white/90 p-6 shadow-2xl shadow-teal-100/70 backdrop-blur dark:border-white/10 dark:bg-slate-900/82 dark:shadow-none sm:p-8">
+  <AuthWorkspaceShell :copy="marketingCopy" accent="teal">
           <div class="flex items-start justify-between gap-4">
             <div>
               <h2 class="mt-3 text-3xl font-semibold text-slate-950 dark:text-white">
@@ -62,7 +12,7 @@
 
             <router-link
               to="/auth/login"
-              class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-200 hover:text-teal-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-teal-500/40 dark:hover:text-teal-300"
+              class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-200 hover:text-teal-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-teal-500/40 dark:hover:text-teal-300"
             >
               {{ $t('auth.login') }}
             </router-link>
@@ -89,7 +39,7 @@
                 required
                 autocomplete="name"
                 :disabled="loading"
-                class="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-slate-900 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-500/20"
+                class="w-full rounded-md border border-slate-200 bg-white/80 px-4 py-3 text-slate-900 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-500/20"
               />
               <p v-if="errors.fullName" class="mt-2 text-sm text-rose-600 dark:text-rose-300">
                 {{ errors.fullName }}
@@ -107,7 +57,7 @@
                 required
                 autocomplete="email"
                 :disabled="loading"
-                class="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-slate-900 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-500/20"
+                class="w-full rounded-md border border-slate-200 bg-white/80 px-4 py-3 text-slate-900 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-500/20"
               />
               <p v-if="errors.email" class="mt-2 text-sm text-rose-600 dark:text-rose-300">
                 {{ errors.email }}
@@ -126,11 +76,12 @@
                   required
                   autocomplete="new-password"
                   :disabled="loading"
-                  class="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-500/20"
+                  class="w-full rounded-md border border-slate-200 bg-white/80 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-500/20"
                 />
                 <button
                   type="button"
                   :disabled="loading"
+                  :aria-label="showPassword ? $t('auth.hidePassword') : $t('auth.showPassword')"
                   class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
                   @click="showPassword = !showPassword"
                 >
@@ -169,11 +120,12 @@
                   required
                   autocomplete="new-password"
                   :disabled="loading"
-                  class="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-500/20"
+                  class="w-full rounded-md border border-slate-200 bg-white/80 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-500/20"
                 />
                 <button
                   type="button"
                   :disabled="loading"
+                  :aria-label="showConfirmPassword ? $t('auth.hidePassword') : $t('auth.showPassword')"
                   class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
                   @click="showConfirmPassword = !showConfirmPassword"
                 >
@@ -185,22 +137,22 @@
               </p>
             </div>
 
-            <div class="rounded-[24px] bg-slate-50/90 px-4 py-4 dark:bg-slate-950/50">
-              <label for="terms" class="flex items-start gap-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
+            <div class="rounded-md bg-slate-50/90 px-4 py-4 dark:bg-slate-950/50">
+              <label for="terms" class="flex min-h-8 items-start gap-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
                 <input
                   id="terms"
                   v-model="form.acceptTerms"
                   type="checkbox"
-                  class="mt-1 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  class="mt-1 h-5 w-5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                   :disabled="loading"
                 />
                 <span>
                   {{ $t('auth.iAgree') }}
-                  <a href="/terms" target="_blank" class="font-semibold text-teal-600 transition hover:text-teal-500 dark:text-teal-300">
+                  <a href="/terms" target="_blank" class="inline-flex min-h-8 items-center px-1 font-semibold text-teal-600 transition hover:text-teal-500 dark:text-teal-300">
                     {{ $t('auth.terms') }}
                   </a>
                   {{ $t('auth.and') }}
-                  <a href="/privacy" target="_blank" class="font-semibold text-teal-600 transition hover:text-teal-500 dark:text-teal-300">
+                  <a href="/privacy" target="_blank" class="inline-flex min-h-8 items-center px-1 font-semibold text-teal-600 transition hover:text-teal-500 dark:text-teal-300">
                     {{ $t('auth.privacy') }}
                   </a>
                 </span>
@@ -213,7 +165,7 @@
             <button
               type="submit"
               :disabled="loading || !form.acceptTerms"
-              class="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-teal-500 dark:hover:bg-teal-400"
+              class="inline-flex w-full items-center justify-center rounded-md bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-teal-500 dark:hover:bg-teal-400"
             >
               <Loader2 v-if="loading" class="mr-2 h-4 w-4 animate-spin" />
               {{ loading ? $t('auth.creatingAccount') : $t('auth.signUp') }}
@@ -222,14 +174,11 @@
 
           <p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
             {{ $t('auth.alreadyHaveAccount') }}
-            <router-link to="/auth/login" class="font-semibold text-teal-600 transition hover:text-teal-500 dark:text-teal-300">
+            <router-link to="/auth/login" class="inline-flex min-h-8 items-center px-1 font-semibold text-teal-600 transition hover:text-teal-500 dark:text-teal-300">
               {{ $t('auth.login') }}
             </router-link>
           </p>
-        </div>
-      </section>
-    </div>
-  </div>
+  </AuthWorkspaceShell>
 </template>
 
 <script setup lang="ts">
@@ -239,11 +188,25 @@ import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
 import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
+import AuthWorkspaceShell from '@/components/auth/AuthWorkspaceShell.vue'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 
 const router = useRouter()
 const userStore = useUserStore()
-const { t, locale } = useI18n()
+const { t, tm } = useI18n()
+
+interface AuthMarketingHighlight {
+  title: string
+  description: string
+}
+
+interface AuthMarketingCopy {
+  heroTitle: string
+  heroDescription: string
+  panelTitle: string
+  panelDescription: string
+  highlights: AuthMarketingHighlight[]
+}
 
 const form = reactive({
   fullName: '',
@@ -266,74 +229,7 @@ const showConfirmPassword = ref(false)
 const loading = ref(false)
 const errorState = ref<FormattedUserError | null>(null)
 
-const marketingCopy = computed(() => {
-  if (locale.value === 'zh') {
-    return {
-      heroTitle: '\u51e0\u5206\u949f\u5185\u5f00\u542f\u4f60\u7684 PDF \u5de5\u4f5c\u53f0',
-      heroDescription: '\u521b\u5efa\u8d26\u53f7\u540e\uff0c\u4f60\u53ef\u4ee5\u7ba1\u7406\u4efb\u52a1\u3001\u67e5\u770b\u7ed3\u679c\uff0c\u5e76\u5728\u9700\u8981\u65f6\u5f00\u542f\u66f4\u9ad8\u7ea7\u7684\u4e91\u7aef\u80fd\u529b\u3002',
-      panelTitle: '\u6ce8\u518c\u540e\u4f1a\u66f4\u987a',
-      panelDescription: '\u8d26\u53f7\u4f1a\u628a\u5de5\u5177\u3001\u8bb0\u5f55\u548c\u5957\u9910\u72b6\u6001\u4e32\u5728\u4e00\u8d77\uff0c\u8ba9\u540e\u7eed\u5904\u7406\u66f4\u7701\u5fc3\u3002',
-      highlights: [
-        {
-          title: '\u5de5\u5177\u66f4\u597d\u7ba1\u7406',
-          description: '\u5c06\u5e38\u7528 PDF \u5de5\u5177\u3001\u4efb\u52a1\u4e0e\u5904\u7406\u7ed3\u679c\u653e\u5728\u540c\u4e00\u5957\u8d26\u53f7\u4f53\u7cfb\u91cc\u3002',
-        },
-        {
-          title: '\u4fdd\u7559\u6700\u8fd1\u8fdb\u5ea6',
-          description: '\u65b9\u4fbf\u56de\u770b\u6700\u8fd1\u7684\u4e0b\u8f7d\u3001\u5386\u53f2\u7ed3\u679c\u548c\u4f60\u5f53\u524d\u7684\u5904\u7406\u8282\u594f\u3002',
-        },
-        {
-          title: '\u6309\u9700\u5f00\u542f\u9ad8\u7ea7\u80fd\u529b',
-          description: '\u5f53\u4f60\u9700\u8981 OCR\u3001Office \u8f6c PDF \u6216\u5176\u4ed6\u8fdb\u9636\u529f\u80fd\u65f6\uff0c\u53ef\u4ee5\u518d\u5b8c\u6210\u5347\u7ea7\u3002',
-        },
-      ],
-    }
-  }
-
-  if (locale.value === 'es') {
-    return {
-      heroTitle: 'Empieza tu espacio de trabajo PDF en minutos',
-      heroDescription: 'Crea tu cuenta para gestionar tareas, revisar resultados y activar funciones avanzadas solo cuando las necesites.',
-      panelTitle: 'Despues de registrarte',
-      panelDescription: 'Tu cuenta conecta herramientas, historial y estado del plan para que el flujo se sienta mas continuo.',
-      highlights: [
-        {
-          title: 'Herramientas organizadas',
-          description: 'Reune tareas PDF, resultados y accesos en una misma cuenta.',
-        },
-        {
-          title: 'Progreso reciente',
-          description: 'Vuelve a tus ultimas descargas y archivos procesados con menos friccion.',
-        },
-        {
-          title: 'Funciones bajo demanda',
-          description: 'Activa OCR, Office a PDF y otras funciones avanzadas solo cuando haga falta.',
-        },
-      ],
-    }
-  }
-
-  return {
-    heroTitle: 'Start your PDF workspace in minutes',
-    heroDescription: 'Create an account to manage document tasks, review results, and unlock advanced tools only when you actually need them.',
-    panelTitle: 'After you register',
-    panelDescription: 'Your account keeps tools, recent activity, and plan access connected so the workflow feels more complete from the start.',
-    highlights: [
-      {
-        title: 'Organized tools',
-        description: 'Keep your core PDF tools, tasks, and results connected inside one account.',
-      },
-      {
-        title: 'Recent progress',
-        description: 'Return to your latest downloads and processed files with less friction.',
-      },
-      {
-        title: 'Advanced features on demand',
-        description: 'Turn on OCR, Office to PDF, and other advanced workflows only when the job calls for them.',
-      },
-    ],
-  }
-})
+const marketingCopy = computed(() => tm('auth.registerMarketing') as AuthMarketingCopy)
 
 const passwordStrength = computed(() => {
   const password = form.password

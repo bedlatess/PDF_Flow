@@ -155,7 +155,7 @@ class FileProcessingService:
 
         # 若 Redis 中已是终态（completed/failed），直接信任，不再被 Celery 覆盖
         # （Celery 结果可能已过期，AsyncResult 会退回 PENDING，不能据此降级）
-        if status_data.get("status") in ("completed", "failed"):
+        if status_data.get("status") in ("completed", "failed", "cancelled"):
             return status_data
 
         # 否则结合 Celery 执行状态
@@ -187,6 +187,47 @@ class FileProcessingService:
         except Exception as e:  # Celery 不可用时降级为 Redis 原始记录
             logger.warning(f"Celery status lookup failed for {job_id}: {e}")
 
+        return status_data
+
+    def cancel_job(self, job_id: str) -> Dict:
+        """Cancel a queued or running processing job.
+
+        Redis remains the source of truth for currently active jobs. Celery
+        revocation is best-effort because the worker may be unavailable in
+        local or test environments.
+        """
+        status_data = self.get_job_status(job_id)
+        if not status_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Job not found: {job_id}"
+            )
+
+        job_status = status_data.get("status")
+        if job_status == "cancelled":
+            return status_data
+        if job_status in ("completed", "failed"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Job cannot be cancelled after status: {job_status}"
+            )
+
+        try:
+            from celery.result import AsyncResult
+            from app.celery_worker import celery_app
+
+            AsyncResult(job_id, app=celery_app).revoke(terminate=True)
+        except Exception as e:
+            logger.warning(f"Celery revoke failed for {job_id}: {e}")
+
+        now = time.time()
+        status_data.update({
+            "status": "cancelled",
+            "progress": status_data.get("progress") or 0,
+            "updated_at": now,
+            "error": "Job cancelled by user",
+        })
+        self._save_job_status(job_id, status_data)
         return status_data
 
     def get_download_path(self, job_id: str) -> Path:

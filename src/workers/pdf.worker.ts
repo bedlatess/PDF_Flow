@@ -1,13 +1,3 @@
-/**
- * PDF 处理 Web Worker
- * 在后台线程处理 PDF 操作，避免阻塞主线程
- */
-
-import { mergePDFs } from '../utils/pdf/merge'
-import { splitPDF } from '../utils/pdf/split'
-import { rotatePDF } from '../utils/pdf/rotate'
-import { imagesToPDF, pdfToImages } from '../utils/pdf/convert'
-
 export interface WorkerMessage {
   id: string
   type: 'merge' | 'split' | 'rotate' | 'imageToPdf' | 'pdfToImage'
@@ -28,51 +18,66 @@ export interface WorkerResponse {
   }
 }
 
-// Worker 消息处理
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const { id, type, payload } = event.data
 
   try {
-    // 发送开始处理消息
-    postProgress(id, 0)
-
-    let result: Blob | Blob[]
-
-    switch (type) {
-      case 'merge':
-        if (!payload.files) throw new Error('No files provided')
-        result = await mergePDFs(payload.files)
-        break
-
-      case 'split':
-        if (!payload.file) throw new Error('No file provided')
-        result = await splitPDF(payload.file, payload.options as any)
-        break
-
-      case 'rotate':
-        if (!payload.file) throw new Error('No file provided')
-        result = await rotatePDF(payload.file, payload.options as any)
-        break
-
-      case 'imageToPdf':
-        if (!payload.files) throw new Error('No files provided')
-        result = await imagesToPDF(payload.files, payload.options as any)
-        break
-
-      case 'pdfToImage':
-        if (!payload.file) throw new Error('No file provided')
-        result = await pdfToImages(payload.file, payload.options as any)
-        break
-
-      default:
-        throw new Error(`Unknown operation type: ${type}`)
-    }
-
-    // 发送完成消息
+    postProgress(id, 5)
+    const result = await runTask(type, payload, id)
     postSuccess(id, result)
   } catch (error) {
-    // 发送错误消息
     postError(id, error instanceof Error ? error.message : 'Processing failed')
+  }
+}
+
+async function runTask(
+  type: WorkerMessage['type'],
+  payload: WorkerMessage['payload'],
+  id: string,
+): Promise<Blob | Blob[]> {
+  switch (type) {
+    case 'merge': {
+      if (!payload.files) throw new Error('No files provided')
+      postProgress(id, 20)
+      const { mergePDFs } = await import('../utils/pdf/merge')
+      postProgress(id, 35)
+      return mergePDFs(payload.files)
+    }
+
+    case 'split': {
+      if (!payload.file) throw new Error('No file provided')
+      postProgress(id, 20)
+      const { splitPDF } = await import('../utils/pdf/split')
+      postProgress(id, 35)
+      return splitPDF(payload.file, payload.options as any)
+    }
+
+    case 'rotate': {
+      if (!payload.file) throw new Error('No file provided')
+      postProgress(id, 20)
+      const { rotatePDF } = await import('../utils/pdf/rotate')
+      postProgress(id, 35)
+      return rotatePDF(payload.file, payload.options as any)
+    }
+
+    case 'imageToPdf': {
+      if (!payload.files) throw new Error('No files provided')
+      postProgress(id, 20)
+      const { imagesToPDF } = await import('../utils/pdf/convert')
+      postProgress(id, 35)
+      return imagesToPDF(payload.files, payload.options as any)
+    }
+
+    case 'pdfToImage': {
+      if (!payload.file) throw new Error('No file provided')
+      postProgress(id, 20)
+      const { pdfToImages } = await import('../utils/pdf/convert')
+      postProgress(id, 35)
+      return pdfToImages(payload.file, payload.options as any)
+    }
+
+    default:
+      throw new Error(`Unknown operation type: ${type}`)
   }
 }
 

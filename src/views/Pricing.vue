@@ -1,22 +1,28 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
   Building2,
   CheckCircle2,
   Cloud,
+  Copy,
+  CreditCard,
   Crown,
   FileText,
   LockKeyhole,
+  QrCode,
   Receipt,
+  RefreshCw,
   ShieldCheck,
-  Sparkles,
   Zap,
 } from 'lucide-vue-next'
 import Button from '@/components/common/Button.vue'
+import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
 import ProBadge from '@/components/common/ProBadge.vue'
 import { useUserStore } from '@/stores/user'
+import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
+import type { PaymentProviderKey, PaymentProviderOption } from '@/services/api'
 
 type PlanId = 'free' | 'pro' | 'enterprise'
 type ButtonVariant = 'primary' | 'outline' | 'ghost'
@@ -37,118 +43,111 @@ interface Plan {
   current?: boolean
 }
 
+interface PricingProofCopy {
+  title: string
+  body: string
+}
+
+interface PricingPageCopy {
+  eyebrow: string
+  title: string
+  description: string
+  freeName: string
+  freeEyebrow: string
+  freePeriod: string
+  freeDescription: string
+  freeBestFor: string
+  freeCta: string
+  proName: string
+  proEyebrow: string
+  proPeriod: string
+  proDescription: string
+  proBestFor: string
+  proCta: string
+  enterpriseName: string
+  enterpriseEyebrow: string
+  enterprisePrice: string
+  enterprisePeriod: string
+  enterpriseDescription: string
+  enterpriseBestFor: string
+  enterpriseCta: string
+  currentPlan: string
+  popular: string
+  featuresLabel: string
+  notesLabel: string
+  cloudTitle: string
+  cloudBody: string
+  promiseTitle: string
+  promiseBody: string
+  faqTitle: string
+  faqSubtitle: string
+  ctaTitle: string
+  ctaBody: string
+  authHint: string
+  paymentFailed: string
+  paymentFailedTitle: string
+  paymentFailedHint: string
+  paymentMethodTitle: string
+  paymentMethodSubtitle: string
+  paymentProvidersLoading: string
+  paymentProvidersRetry: string
+  paymentProvidersFailedTitle: string
+  paymentProvidersFailedMessage: string
+  paymentProvidersFailedHint: string
+  paymentNoProviders: string
+  paymentProviderUnavailable: string
+  paymentRedirectBadge: string
+  paymentQrBadge: string
+  paymentSubscriptionBadge: string
+  paymentOneTimeBadge: string
+  paymentQrTitle: string
+  paymentQrMessage: string
+  paymentQrCodeLabel: string
+  paymentQrOpen: string
+  paymentQrCopy: string
+  paymentQrCopied: string
+  paymentQrCopyFailed: string
+  viewFeatures: string
+  freeFeatures: string[]
+  freeNotes: string[]
+  proFeatures: string[]
+  proNotes: string[]
+  enterpriseFeatures: string[]
+  enterpriseNotes: string[]
+  proofCards: PricingProofCopy[]
+  faq: [question: string, answer: string][]
+}
+
 const router = useRouter()
 const userStore = useUserStore()
-const { locale } = useI18n()
+const { tm } = useI18n()
+const checkoutLoadingPlan = ref<PlanId | null>(null)
+const checkoutError = ref<FormattedUserError | null>(null)
+const paymentProviders = ref<PaymentProviderOption[]>([])
+const paymentProvidersLoading = ref(false)
+const paymentProvidersError = ref<FormattedUserError | null>(null)
+const selectedPaymentProvider = ref<PaymentProviderKey | null>(null)
+const paymentCodeCopyState = ref<'idle' | 'copied' | 'failed'>('idle')
+const qrCheckoutResult = ref<{
+  provider: PaymentProviderKey
+  displayName: string
+  qrCodeUrl: string
+  checkoutUrl: string
+  merchantOrderId: string
+  expiresAt?: string | null
+} | null>(null)
 
-const isChinese = computed(() => locale.value.toLowerCase().startsWith('zh'))
+const QR_PAYMENT_PROVIDERS = new Set<PaymentProviderKey>([
+  'wechat',
+  'tokenpay',
+  'bepusdt',
+  'epusdt',
+  'okpay',
+])
+
 const currentTier = computed(() => userStore.user?.role || 'free')
 
-const copy = computed(() => {
-  if (isChinese.value) {
-    return {
-      eyebrow: '定价',
-      title: '按实际使用选择套餐，不为暂时用不到的能力付费',
-      description: '免费功能适合日常轻量处理。Pro 面向更大的文件、更长的任务，以及 OCR、Office、AI、表单、标注等需要云端能力的工作。',
-      freeName: '免费',
-      freeEyebrow: '日常 PDF 工具',
-      freePeriod: '永久免费开始',
-      freeDescription: '适合偶尔处理 PDF、快速完成合并拆分和轻量压缩。',
-      freeBestFor: '个人轻量使用',
-      freeCta: '开始免费使用',
-      proName: 'Pro',
-      proEyebrow: '云端增强与专业能力',
-      proPeriod: '按月订阅',
-      proDescription: '适合频繁处理文档、需要 OCR / Office / AI，或经常遇到大文件和长任务的用户。',
-      proBestFor: '高频文档工作',
-      proCta: '升级 Pro',
-      enterpriseName: '企业',
-      enterpriseEyebrow: '团队与集成',
-      enterprisePrice: '按需',
-      enterprisePeriod: '联系确认',
-      enterpriseDescription: '适合团队统一使用、需要集成、权限控制或更稳定交付支持的场景。',
-      enterpriseBestFor: '团队与业务流程',
-      enterpriseCta: '联系咨询',
-      currentPlan: '当前套餐',
-      popular: '推荐',
-      featuresLabel: '包含能力',
-      notesLabel: '适合场景',
-      cloudTitle: '为什么小文件本地反而更快？',
-      cloudBody: '本地处理省去了上传、排队和下载，小文件通常会更快。Pro 云端的价值不在于每个小任务都抢时间，而在于把浏览器不擅长的重任务交给服务器：大文件、长任务、批量处理、OCR、Office 转换、AI 分析和弱设备场景会更稳定。',
-      promiseTitle: 'Pro 的意义',
-      promiseBody: '我们会把适合本地的任务留在本地，把适合云端的任务交给云端。以后新增 Pro 能力时，也会优先放在“云端更稳、更省心”的场景，而不是制造没有必要的上传等待。',
-      faqTitle: '常见问题',
-      faqSubtitle: '把购买前最容易犹豫的地方说清楚。',
-      ctaTitle: '先免费跑通流程，再在需要时升级 Pro',
-      ctaBody: '如果你的文件很小、只是偶尔处理，免费版已经能完成很多工作。当 OCR、Office、AI 或大文件成为日常，Pro 会更有价值。',
-      authHint: '登录后可继续升级或查看当前套餐。',
-      paymentFailed: '暂时无法打开支付页面，请稍后重试或通过反馈告诉我们。',
-      freeFeatures: ['合并、拆分、旋转 PDF', '轻量压缩与常用导出', '图片转 PDF、PDF 转图片', '本地优先处理，减少不必要上传'],
-      freeNotes: ['偶尔处理文件', '小文件优先追求速度', '先验证产品是否适合你'],
-      proFeatures: ['OCR 文字识别', 'Office 转 PDF', 'AI PDF 分析器', 'PDF 表单填写与标注', '大文件与长任务云端处理'],
-      proNotes: ['频繁处理 PDF', '浏览器处理吃力的大文件', '需要服务器能力的专业任务'],
-      enterpriseFeatures: ['团队使用与权限规划', '更高额度与稳定性支持', '业务流程或 API 接入', '专属上线与维护建议'],
-      enterpriseNotes: ['多人协作', '内部流程接入', '需要更明确的支持响应'],
-      faq: [
-        ['Pro 云端一定比本地快吗？', '不一定。小文件本地通常更快；大文件、长任务、OCR、Office、AI 等任务更适合 Pro 云端。'],
-        ['免费功能会上传文件吗？', '本地处理优先在浏览器内完成。只有你主动选择云端能力，文件才会上传到服务器处理。'],
-        ['我可以先免费试用吗？', '可以。建议先用免费功能确认流程，再根据真实需求决定是否升级。'],
-        ['企业版适合谁？', '适合团队统一使用、需要更高额度、权限管理、流程接入或稳定支持的用户。'],
-      ],
-    }
-  }
-
-  return {
-    eyebrow: 'Pricing',
-    title: 'Choose by real usage, not by features you do not need yet',
-    description: 'Free covers lightweight everyday PDF work. Pro is for larger files, longer jobs, and cloud-powered OCR, Office, AI, forms, and annotation workflows.',
-    freeName: 'Free',
-    freeEyebrow: 'Everyday PDF tools',
-    freePeriod: 'Start forever',
-    freeDescription: 'For occasional PDF work such as merging, splitting, rotating, and lightweight compression.',
-    freeBestFor: 'Light personal use',
-    freeCta: 'Start free',
-    proName: 'Pro',
-    proEyebrow: 'Cloud boost and advanced tools',
-    proPeriod: 'Monthly subscription',
-    proDescription: 'For frequent document work, OCR / Office / AI tasks, large files, and long-running jobs.',
-    proBestFor: 'Frequent document work',
-    proCta: 'Upgrade to Pro',
-    enterpriseName: 'Enterprise',
-    enterpriseEyebrow: 'Teams and integration',
-    enterprisePrice: 'Custom',
-    enterprisePeriod: 'Contact us',
-    enterpriseDescription: 'For teams that need shared access, workflow integration, permissions, or delivery support.',
-    enterpriseBestFor: 'Teams and workflows',
-    enterpriseCta: 'Contact sales',
-    currentPlan: 'Current plan',
-    popular: 'Recommended',
-    featuresLabel: 'Included',
-    notesLabel: 'Best for',
-    cloudTitle: 'Why can local processing be faster for small files?',
-    cloudBody: 'Local work avoids upload, queue, and download time, so small files often finish faster in the browser. Pro cloud is valuable when the browser is the wrong place for the job: large files, long tasks, batch work, OCR, Office conversion, AI analysis, and weaker devices.',
-    promiseTitle: 'What Pro is meant to do',
-    promiseBody: 'We keep simple tasks local when that is better, and use cloud processing where it is more stable and useful. Future Pro features should follow the same principle: fewer browser limits, more reliable heavy workflows.',
-    faqTitle: 'Questions',
-    faqSubtitle: 'Clear answers before you upgrade.',
-    ctaTitle: 'Start free, upgrade when Pro becomes useful',
-    ctaBody: 'If your files are small and your usage is occasional, Free may already cover a lot. When OCR, Office, AI, or large files become routine, Pro becomes more valuable.',
-    authHint: 'Sign in to upgrade or view your current plan.',
-    paymentFailed: 'We could not open checkout. Please try again later or send feedback.',
-    freeFeatures: ['Merge, split, and rotate PDFs', 'Light compression and everyday export', 'Image to PDF and PDF to images', 'Local-first processing when possible'],
-    freeNotes: ['Occasional file work', 'Small files where speed matters', 'Trying the product first'],
-    proFeatures: ['OCR text recognition', 'Office to PDF', 'AI PDF analyzer', 'PDF form filling and annotation', 'Cloud processing for large and long jobs'],
-    proNotes: ['Frequent PDF work', 'Large files that strain the browser', 'Professional tasks that need server power'],
-    enterpriseFeatures: ['Team access planning', 'Higher usage and stability support', 'Workflow or API integration', 'Launch and maintenance guidance'],
-    enterpriseNotes: ['Multi-user teams', 'Internal workflow adoption', 'Clearer support expectations'],
-    faq: [
-      ['Is Pro cloud always faster than local?', 'No. Small files are often faster locally. Pro cloud is better for large files, long jobs, OCR, Office, and AI workflows.'],
-      ['Do free tools upload my files?', 'Local tools try to run in the browser. Files are uploaded only when you choose a cloud-powered workflow.'],
-      ['Can I start without paying?', 'Yes. Use the free tools first, then upgrade when the advanced workflows matter.'],
-      ['Who is Enterprise for?', 'Teams that need shared usage, higher limits, access planning, workflow integration, or support expectations.'],
-    ],
-  }
-})
+const copy = computed(() => tm('pricing.page') as PricingPageCopy)
 
 const plans = computed<Plan[]>(() => [
   {
@@ -198,25 +197,80 @@ const plans = computed<Plan[]>(() => [
   },
 ])
 
-const proofCards = computed(() => [
-  {
-    icon: Zap,
-    title: isChinese.value ? '小文件优先本地' : 'Local first for small files',
-    body: isChinese.value ? '减少上传等待，日常操作更直接。' : 'Avoid upload overhead for everyday work.',
-  },
-  {
-    icon: Cloud,
-    title: isChinese.value ? '重任务交给云端' : 'Cloud for heavier work',
-    body: isChinese.value ? '大文件、长任务和专业能力更稳定。' : 'More stable for large files and advanced workflows.',
-  },
-  {
-    icon: ShieldCheck,
-    title: isChinese.value ? '清楚说明处理方式' : 'Clear processing choices',
-    body: isChinese.value ? '用户能看懂本地和云端的区别。' : 'Users can understand local versus cloud tradeoffs.',
-  },
-])
+const proofIcons = [Zap, Cloud, ShieldCheck]
+const proofCards = computed(() => copy.value.proofCards.map((card, index) => ({
+  ...card,
+  icon: proofIcons[index] || ShieldCheck,
+})))
+
+const enabledPaymentProviders = computed(() =>
+  paymentProviders.value.filter((provider) => provider.enabled),
+)
+
+const selectedPaymentProviderOption = computed(() =>
+  paymentProviders.value.find((provider) => provider.key === selectedPaymentProvider.value) || null,
+)
+
+const paymentActionDisabled = computed(() =>
+  paymentProvidersLoading.value || !selectedPaymentProvider.value || enabledPaymentProviders.value.length === 0,
+)
+
+const providerBadge = (provider: PaymentProviderOption) => {
+  if (QR_PAYMENT_PROVIDERS.has(provider.key)) {
+    return copy.value.paymentQrBadge
+  }
+
+  return copy.value.paymentRedirectBadge
+}
+
+const providerSettlementLabel = (provider: PaymentProviderOption) =>
+  provider.supports_subscription ? copy.value.paymentSubscriptionBadge : copy.value.paymentOneTimeBadge
+
+const selectPaymentProvider = (provider: PaymentProviderOption) => {
+  if (!provider.enabled) {
+    return
+  }
+
+  selectedPaymentProvider.value = provider.key
+  qrCheckoutResult.value = null
+  paymentCodeCopyState.value = 'idle'
+}
+
+const loadPaymentProviders = async () => {
+  paymentProvidersLoading.value = true
+  paymentProvidersError.value = null
+
+  try {
+    const { paymentAPI } = await import('@/services/api')
+    const response = await paymentAPI.listProviders()
+    paymentProviders.value = response.providers
+    const enabled = response.providers.filter((provider) => provider.enabled)
+    const currentStillEnabled = enabled.some((provider) => provider.key === selectedPaymentProvider.value)
+    if (!currentStillEnabled) {
+      selectedPaymentProvider.value = enabled[0]?.key || null
+    }
+  } catch (error) {
+    const formatted = formatUserFacingError(error, {
+      area: 'GENERAL',
+      fallbackTitle: copy.value.paymentProvidersFailedTitle,
+      fallbackMessage: copy.value.paymentProvidersFailedMessage,
+    })
+    paymentProvidersError.value = {
+      ...formatted,
+      title: copy.value.paymentProvidersFailedTitle,
+      message: copy.value.paymentProvidersFailedMessage,
+    }
+    paymentProviders.value = []
+    selectedPaymentProvider.value = null
+  } finally {
+    paymentProvidersLoading.value = false
+  }
+}
 
 const handleCTA = async (plan: Plan) => {
+  checkoutError.value = null
+  paymentCodeCopyState.value = 'idle'
+
   if (plan.current) {
     router.push('/auth/profile')
     return
@@ -238,27 +292,87 @@ const handleCTA = async (plan: Plan) => {
   }
 
   try {
+    checkoutLoadingPlan.value = plan.id
+    qrCheckoutResult.value = null
+
+    if (!selectedPaymentProvider.value) {
+      await loadPaymentProviders()
+    }
+
+    if (!selectedPaymentProvider.value) {
+      checkoutError.value = {
+        title: copy.value.paymentProvidersFailedTitle,
+        message: copy.value.paymentNoProviders,
+        diagnosticCode: 'PF-GENERAL-PAYMENT-PROVIDER',
+        supportHint: copy.value.paymentProvidersFailedHint,
+      }
+      checkoutLoadingPlan.value = null
+      return
+    }
+
     const { paymentAPI } = await import('@/services/api')
     const response = await paymentAPI.createCheckoutSession({
       plan: 'monthly',
       success_url: `${window.location.origin}/payment/success`,
       cancel_url: `${window.location.origin}/payment/cancel`,
+      provider: selectedPaymentProvider.value,
     })
+
+    if (response.qr_code_url) {
+      qrCheckoutResult.value = {
+        provider: response.provider,
+        displayName: selectedPaymentProviderOption.value?.display_name || response.provider,
+        qrCodeUrl: response.qr_code_url,
+        checkoutUrl: response.checkout_url,
+        merchantOrderId: response.merchant_order_id,
+        expiresAt: response.expires_at,
+      }
+      checkoutLoadingPlan.value = null
+      return
+    }
+
     window.location.href = response.checkout_url
   } catch (error) {
-    console.error('Failed to create checkout session:', error)
-    window.alert(copy.value.paymentFailed)
+    checkoutError.value = formatUserFacingError(error, {
+      area: 'GENERAL',
+      fallbackTitle: copy.value.paymentFailedTitle,
+      fallbackMessage: copy.value.paymentFailed,
+    })
+    checkoutLoadingPlan.value = null
   }
 }
+
+const openQrCheckout = () => {
+  if (qrCheckoutResult.value?.checkoutUrl) {
+    window.location.href = qrCheckoutResult.value.checkoutUrl
+  }
+}
+
+const copyPaymentCode = async () => {
+  if (!qrCheckoutResult.value?.qrCodeUrl) {
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(qrCheckoutResult.value.qrCodeUrl)
+    paymentCodeCopyState.value = 'copied'
+  } catch {
+    paymentCodeCopyState.value = 'failed'
+  }
+}
+
+onMounted(() => {
+  void loadPaymentProviders()
+})
 </script>
 
 <template>
-  <div class="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_0%_0%,rgba(14,165,233,0.16),transparent_30%),radial-gradient(circle_at_100%_0%,rgba(245,158,11,0.18),transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef7ff_45%,#fff7ed_100%)] px-4 pb-20 pt-16 dark:bg-[radial-gradient(circle_at_0%_0%,rgba(14,165,233,0.12),transparent_30%),radial-gradient(circle_at_100%_0%,rgba(245,158,11,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] sm:px-6 lg:px-8">
+  <div class="min-h-screen bg-slate-50 px-4 pb-20 pt-16 dark:bg-slate-950 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl">
       <section class="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch">
-        <div class="rounded-[40px] border border-white/70 bg-white/88 p-8 shadow-2xl shadow-sky-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/78 dark:shadow-none sm:p-10">
-          <div class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200">
-            <Sparkles class="h-4 w-4" />
+        <div class="rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:shadow-none sm:p-10">
+          <div class="inline-flex items-center gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200">
+            <Receipt class="h-4 w-4" />
             {{ copy.eyebrow }}
           </div>
           <h1 class="mt-6 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
@@ -272,9 +386,9 @@ const handleCTA = async (plan: Plan) => {
             <article
               v-for="card in proofCards"
               :key="card.title"
-              class="rounded-[26px] border border-slate-200/80 bg-slate-50/82 p-4 dark:border-slate-800 dark:bg-slate-950/45"
+              class="rounded-md border border-slate-200/80 bg-slate-50/82 p-4 dark:border-slate-800 dark:bg-slate-950/45"
             >
-              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-sky-700 shadow-sm dark:bg-slate-900 dark:text-sky-300">
+              <div class="flex h-10 w-10 items-center justify-center rounded-md bg-white text-sky-700 shadow-sm dark:bg-slate-900 dark:text-sky-300">
                 <component :is="card.icon" class="h-5 w-5" />
               </div>
               <h2 class="mt-4 text-sm font-semibold text-slate-950 dark:text-white">
@@ -287,8 +401,8 @@ const handleCTA = async (plan: Plan) => {
           </div>
         </div>
 
-        <aside class="rounded-[40px] bg-[linear-gradient(135deg,#0f172a_0%,#164e63_46%,#92400e_100%)] p-8 text-white shadow-2xl shadow-slate-900/20 sm:p-10">
-          <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-white/12 text-amber-100">
+        <aside class="rounded-lg bg-slate-950 p-8 text-white shadow-sm dark:bg-slate-900 sm:p-10">
+          <div class="flex h-14 w-14 items-center justify-center rounded-lg bg-white/12 text-amber-100">
             <Crown class="h-6 w-6" />
           </div>
           <h2 class="mt-6 text-3xl font-semibold">
@@ -297,7 +411,7 @@ const handleCTA = async (plan: Plan) => {
           <p class="mt-4 text-sm leading-7 text-white/78">
             {{ copy.promiseBody }}
           </p>
-          <div class="mt-6 rounded-[28px] border border-white/12 bg-white/10 p-5 backdrop-blur">
+          <div class="mt-6 rounded-md border border-white/12 bg-white/10 p-5">
             <div class="flex items-center gap-2">
               <ProBadge tone="dark" />
               <span class="text-sm font-semibold">{{ copy.proBestFor }}</span>
@@ -314,21 +428,21 @@ const handleCTA = async (plan: Plan) => {
           v-for="plan in plans"
           :key="plan.id"
           :class="[
-            'relative overflow-hidden rounded-[36px] border bg-white/88 p-7 shadow-2xl backdrop-blur dark:bg-slate-900/76',
+            'relative overflow-hidden rounded-lg border bg-white p-7 shadow-sm dark:bg-slate-900',
             plan.highlighted
-              ? 'border-amber-200 shadow-amber-100/70 dark:border-amber-300/20 dark:shadow-none xl:-translate-y-3'
-              : 'border-white/70 shadow-slate-100/60 dark:border-white/10 dark:shadow-none',
+              ? 'border-amber-200 dark:border-amber-300/20 dark:shadow-none xl:-translate-y-3'
+              : 'border-slate-200 dark:border-white/10 dark:shadow-none',
           ]"
         >
           <div
             v-if="plan.highlighted"
-            class="absolute right-5 top-5 rounded-full bg-[linear-gradient(135deg,#f59e0b_0%,#f97316_100%)] px-3 py-1 text-xs font-semibold text-white shadow-lg"
+            class="absolute right-5 top-5 rounded-md bg-amber-500 px-3 py-1 text-xs font-semibold text-white shadow-sm"
           >
             {{ copy.popular }}
           </div>
 
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
-            <Sparkles v-if="plan.id === 'free'" class="h-5 w-5" />
+          <div class="flex h-12 w-12 items-center justify-center rounded-md bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+            <ShieldCheck v-if="plan.id === 'free'" class="h-5 w-5" />
             <Crown v-else-if="plan.id === 'pro'" class="h-5 w-5" />
             <Building2 v-else class="h-5 w-5" />
           </div>
@@ -346,7 +460,7 @@ const handleCTA = async (plan: Plan) => {
             {{ plan.description }}
           </p>
 
-          <div class="mt-6 rounded-[28px] bg-slate-50/90 p-5 dark:bg-slate-950/50">
+          <div class="mt-6 rounded-md bg-slate-50/90 p-5 dark:bg-slate-950/50">
             <div class="flex items-end gap-2">
               <span class="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">
                 {{ plan.price }}
@@ -359,20 +473,182 @@ const handleCTA = async (plan: Plan) => {
 
           <div
             v-if="plan.current"
-            class="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+            class="mt-5 rounded-md bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
           >
             {{ copy.currentPlan }}
+          </div>
+
+          <div
+            v-if="plan.id === 'pro' && !plan.current"
+            class="mt-5 rounded-md border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/45"
+          >
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <CreditCard class="h-4 w-4 text-amber-600 dark:text-amber-300" />
+                  <h3 class="text-sm font-semibold text-slate-950 dark:text-white">
+                    {{ copy.paymentMethodTitle }}
+                  </h3>
+                </div>
+                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  {{ copy.paymentMethodSubtitle }}
+                </p>
+              </div>
+              <button
+                type="button"
+                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                :aria-label="copy.paymentProvidersRetry"
+                :disabled="paymentProvidersLoading"
+                @click="loadPaymentProviders"
+              >
+                <RefreshCw :class="['h-4 w-4', paymentProvidersLoading ? 'animate-spin' : '']" />
+              </button>
+            </div>
+
+            <DiagnosticAlert
+              v-if="paymentProvidersError"
+              class="mt-4"
+              :title="paymentProvidersError.title"
+              :message="paymentProvidersError.message"
+              :diagnostic-code="paymentProvidersError.diagnosticCode"
+              :support-hint="copy.paymentProvidersFailedHint"
+              tone="warning"
+            />
+
+            <div
+              v-else-if="paymentProvidersLoading"
+              class="mt-4 rounded-md border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+            >
+              {{ copy.paymentProvidersLoading }}
+            </div>
+
+            <div
+              v-else-if="enabledPaymentProviders.length === 0"
+              class="mt-4 rounded-md border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+            >
+              {{ copy.paymentNoProviders }}
+            </div>
+
+            <div
+              v-else
+              role="radiogroup"
+              :aria-label="copy.paymentMethodTitle"
+              class="mt-4 grid gap-2"
+            >
+              <button
+                v-for="provider in paymentProviders"
+                :key="provider.key"
+                type="button"
+                role="radio"
+                :aria-checked="selectedPaymentProvider === provider.key"
+                :disabled="!provider.enabled"
+                :class="[
+                  'flex min-h-[64px] w-full items-center justify-between gap-3 rounded-md border px-3 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500',
+                  selectedPaymentProvider === provider.key
+                    ? 'border-amber-300 bg-amber-50 text-slate-950 dark:border-amber-300/50 dark:bg-amber-400/10 dark:text-white'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-800',
+                  !provider.enabled ? 'cursor-not-allowed opacity-50' : '',
+                ]"
+                @click="selectPaymentProvider(provider)"
+              >
+                <span class="flex min-w-0 items-center gap-3">
+                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+                    <QrCode v-if="QR_PAYMENT_PROVIDERS.has(provider.key)" class="h-4 w-4" />
+                    <CreditCard v-else class="h-4 w-4" />
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block truncate text-sm font-semibold">
+                      {{ provider.display_name }}
+                    </span>
+                    <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                      {{ provider.enabled ? providerSettlementLabel(provider) : copy.paymentProviderUnavailable }}
+                    </span>
+                  </span>
+                </span>
+                <span class="shrink-0 rounded-md border border-current/15 px-2.5 py-1 text-xs font-semibold">
+                  {{ providerBadge(provider) }}
+                </span>
+              </button>
+            </div>
           </div>
 
           <Button
             :variant="plan.variant"
             size="lg"
             full-width
-            class="mt-5 rounded-2xl"
+            class="mt-5 rounded-md"
+            :loading="checkoutLoadingPlan === plan.id"
+            :disabled="plan.id === 'pro' && !plan.current && userStore.isAuthenticated && paymentActionDisabled"
             @click="handleCTA(plan)"
           >
             {{ plan.cta }}
           </Button>
+
+          <DiagnosticAlert
+            v-if="plan.id === 'pro' && checkoutError"
+            class="mt-4"
+            :title="checkoutError.title"
+            :message="checkoutError.message"
+            :diagnostic-code="checkoutError.diagnosticCode"
+            :support-hint="copy.paymentFailedHint"
+            tone="warning"
+          />
+
+          <div
+            v-if="plan.id === 'pro' && qrCheckoutResult"
+            class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"
+          >
+            <div class="flex items-start gap-3">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-emerald-700 shadow-sm dark:bg-slate-950 dark:text-emerald-300">
+                <QrCode class="h-5 w-5" />
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold">
+                  {{ copy.paymentQrTitle }}
+                </p>
+                <p class="mt-1 text-sm leading-6 opacity-85">
+                  {{ copy.paymentQrMessage }}
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-4 rounded-md border border-emerald-200/80 bg-white p-3 dark:border-emerald-400/20 dark:bg-slate-950/70">
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
+                {{ copy.paymentQrCodeLabel }} · {{ qrCheckoutResult.displayName }}
+              </p>
+              <p class="mt-2 break-all font-mono text-xs leading-5 text-slate-700 dark:text-slate-200">
+                {{ qrCheckoutResult.qrCodeUrl }}
+              </p>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-2">
+              <Button
+                v-if="qrCheckoutResult.checkoutUrl"
+                variant="outline"
+                size="sm"
+                class="rounded-md border-emerald-700 text-emerald-800 hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200"
+                @click="openQrCheckout"
+              >
+                {{ copy.paymentQrOpen }}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="rounded-md border border-emerald-700/20 bg-white/70 text-emerald-800 hover:bg-white dark:bg-slate-950/40 dark:text-emerald-200"
+                @click="copyPaymentCode"
+              >
+                <Copy class="mr-2 h-4 w-4" />
+                {{ paymentCodeCopyState === 'copied' ? copy.paymentQrCopied : copy.paymentQrCopy }}
+              </Button>
+            </div>
+
+            <p
+              v-if="paymentCodeCopyState === 'failed'"
+              class="mt-3 text-xs font-semibold text-amber-700 dark:text-amber-200"
+            >
+              {{ copy.paymentQrCopyFailed }}
+            </p>
+          </div>
 
           <div class="mt-7">
             <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -392,7 +668,7 @@ const handleCTA = async (plan: Plan) => {
             </ul>
           </div>
 
-          <div class="mt-6 rounded-[26px] border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+          <div class="mt-6 rounded-md border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/40">
             <h3 class="text-sm font-semibold text-slate-950 dark:text-white">
               {{ copy.notesLabel }}: {{ plan.bestFor }}
             </h3>
@@ -410,8 +686,8 @@ const handleCTA = async (plan: Plan) => {
       </section>
 
       <section class="mt-12 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <article class="rounded-[36px] border border-white/70 bg-white/86 p-8 shadow-2xl shadow-slate-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/72 dark:shadow-none sm:p-10">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
+        <article class="rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:shadow-none sm:p-10">
+          <div class="flex h-12 w-12 items-center justify-center rounded-md bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
             <Cloud class="h-5 w-5" />
           </div>
           <h2 class="mt-5 text-2xl font-semibold text-slate-950 dark:text-white">
@@ -422,7 +698,7 @@ const handleCTA = async (plan: Plan) => {
           </p>
         </article>
 
-        <article class="rounded-[36px] border border-white/70 bg-white/86 p-8 shadow-2xl shadow-slate-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/72 dark:shadow-none sm:p-10">
+        <article class="rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:shadow-none sm:p-10">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
@@ -432,7 +708,7 @@ const handleCTA = async (plan: Plan) => {
                 {{ copy.faqSubtitle }}
               </h2>
             </div>
-            <div class="flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2 text-sm text-slate-600 dark:bg-slate-950/50 dark:text-slate-300">
+            <div class="flex items-center gap-2 rounded-md bg-slate-50 px-4 py-2 text-sm text-slate-600 dark:bg-slate-950/50 dark:text-slate-300">
               <LockKeyhole class="h-4 w-4" />
               {{ copy.authHint }}
             </div>
@@ -442,7 +718,7 @@ const handleCTA = async (plan: Plan) => {
             <div
               v-for="[question, answer] in copy.faq"
               :key="question"
-              class="rounded-[26px] border border-slate-200/80 bg-slate-50/78 p-5 dark:border-slate-800 dark:bg-slate-950/45"
+              class="rounded-md border border-slate-200/80 bg-slate-50/78 p-5 dark:border-slate-800 dark:bg-slate-950/45"
             >
               <h3 class="font-semibold text-slate-950 dark:text-white">
                 {{ question }}
@@ -455,10 +731,10 @@ const handleCTA = async (plan: Plan) => {
         </article>
       </section>
 
-      <section class="mt-12 rounded-[40px] bg-[linear-gradient(135deg,#0369a1_0%,#0f766e_52%,#f59e0b_100%)] p-8 text-white shadow-2xl shadow-sky-900/20 sm:p-10">
+      <section class="mt-12 rounded-lg bg-slate-950 p-8 text-white shadow-sm dark:bg-slate-900 sm:p-10">
         <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <div class="inline-flex items-center gap-2 rounded-full bg-white/12 px-4 py-2 text-sm font-semibold">
+            <div class="inline-flex items-center gap-2 rounded-md bg-white/12 px-4 py-2 text-sm font-semibold">
               <Receipt class="h-4 w-4" />
               {{ copy.eyebrow }}
             </div>
@@ -470,12 +746,12 @@ const handleCTA = async (plan: Plan) => {
             </p>
           </div>
           <div class="flex flex-wrap gap-3 lg:justify-end">
-            <Button variant="outline" size="lg" class="rounded-full border-white text-white hover:bg-white hover:text-slate-950" @click="router.push('/')">
+            <Button variant="outline" size="lg" class="rounded-md border-white text-white hover:bg-white hover:text-slate-950" @click="router.push('/')">
               {{ copy.freeCta }}
             </Button>
-            <Button variant="ghost" size="lg" class="rounded-full border border-white/20 bg-white/10 text-white hover:bg-white/18" @click="router.push('/features')">
+            <Button variant="ghost" size="lg" class="rounded-md border border-white/20 bg-white/10 text-white hover:bg-white/18" @click="router.push('/features')">
               <FileText class="mr-2 h-4 w-4" />
-              {{ isChinese ? '查看功能' : 'View features' }}
+              {{ copy.viewFeatures }}
             </Button>
           </div>
         </div>

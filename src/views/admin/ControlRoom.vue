@@ -4,19 +4,15 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle2,
-  CircleDot,
-  ClipboardCopy,
   ClipboardList,
+  CreditCard,
   EyeOff,
   FileText,
   Flag,
   Flame,
   GaugeCircle,
   Loader2,
-  LockKeyhole,
-  Save,
   Settings2,
-  ShieldCheck,
   SlidersHorizontal,
   Trash2,
   UserCog,
@@ -31,15 +27,40 @@ import {
   type AdminJob,
   type AdminMaintenance,
   type AdminOperations,
+  type AdminPaymentSummary,
   type AdminOverview,
   type AdminUser,
   type ContentBlock,
   type FeatureFlag,
   type SiteSetting,
 } from '@/services/api'
+import AdminPanel from '@/components/admin/AdminPanel.vue'
+import ConfirmationDialog from '@/components/common/ConfirmationDialog.vue'
+import AuditLogsTab from '@/components/admin/AuditLogsTab.vue'
+import ContentBlocksTab from '@/components/admin/ContentBlocksTab.vue'
+import ErrorsTab from '@/components/admin/ErrorsTab.vue'
+import FeatureFlagsTab from '@/components/admin/FeatureFlagsTab.vue'
+import FeedbackTab from '@/components/admin/FeedbackTab.vue'
+import JobsTab from '@/components/admin/JobsTab.vue'
+import MaintenanceTab from '@/components/admin/MaintenanceTab.vue'
+import OverviewTab from '@/components/admin/OverviewTab.vue'
+import PaymentsTab from '@/components/admin/PaymentsTab.vue'
+import SiteSettingsTab from '@/components/admin/SiteSettingsTab.vue'
+import UsersTab from '@/components/admin/UsersTab.vue'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 
-type TabId = 'overview' | 'flags' | 'settings' | 'content' | 'users' | 'jobs' | 'feedback' | 'errors' | 'maintenance' | 'audit'
+type TabId =
+  | 'overview'
+  | 'flags'
+  | 'settings'
+  | 'content'
+  | 'users'
+  | 'jobs'
+  | 'payments'
+  | 'feedback'
+  | 'errors'
+  | 'maintenance'
+  | 'audit'
 
 const siteConfigStore = useSiteConfigStore()
 const loading = ref(true)
@@ -61,13 +82,29 @@ const apiErrors = ref<AdminApiError[]>([])
 const diagnostics = ref<AdminDiagnostics | null>(null)
 const healthReport = ref<AdminHealthReport | null>(null)
 const maintenance = ref<AdminMaintenance | null>(null)
+const paymentSummary = ref<AdminPaymentSummary | null>(null)
 const userSearch = ref('')
 const jobStatusFilter = ref('')
 const jobSearch = ref('')
+const paymentProviderFilter = ref('')
+const paymentStatusFilter = ref('')
 const feedbackStatusFilter = ref('')
 const highlightedFeedbackId = ref<number | null>(null)
 const copiedFeedbackId = ref<number | null>(null)
 const healthReportCopied = ref(false)
+const diagnosticSummaryCopied = ref(false)
+const reconciliationCopied = ref(false)
+const evidenceCopied = ref(false)
+
+type AdminConfirmation = {
+  title: string
+  summary: string
+  details: string[]
+  confirmLabel: string
+  savingKey: string
+  tone: 'danger' | 'warning'
+  run: () => Promise<void>
+}
 
 const tabs = [
   { id: 'overview' as const, label: '运营总览', icon: GaugeCircle },
@@ -76,6 +113,7 @@ const tabs = [
   { id: 'content' as const, label: '内容块', icon: FileText },
   { id: 'users' as const, label: '用户管理', icon: UserCog },
   { id: 'jobs' as const, label: '任务观察', icon: GaugeCircle },
+  { id: 'payments' as const, label: '支付对账', icon: CreditCard },
   { id: 'feedback' as const, label: '问题反馈', icon: ClipboardList },
   { id: 'errors' as const, label: '错误观察', icon: Flame },
   { id: 'maintenance' as const, label: '维护清理', icon: Trash2 },
@@ -83,29 +121,35 @@ const tabs = [
 ]
 
 const enabledFlagCount = computed(() => flags.value.filter((flag) => flag.enabled).length)
-const lockedFlagCount = computed(() => flags.value.filter((flag) => flag.requires_login || flag.requires_pro).length)
+const lockedFlagCount = computed(
+  () => flags.value.filter((flag) => flag.requires_login || flag.requires_pro).length
+)
 const selectedContent = ref<ContentBlock | null>(null)
+const pendingConfirmation = ref<AdminConfirmation | null>(null)
 const filteredJobs = computed(() => {
   const keyword = jobSearch.value.trim().toLowerCase()
   if (!keyword) return jobs.value
-  return jobs.value.filter((job) => [
-    job.job_id,
-    job.job_type,
-    job.status,
-    job.user_email || '',
-    job.input_file_name,
-    job.error_message || '',
-  ].some((value) => value.toLowerCase().includes(keyword)))
+  return jobs.value.filter((job) =>
+    [
+      job.job_id,
+      job.job_type,
+      job.status,
+      job.user_email || '',
+      job.input_file_name,
+      job.error_message || '',
+    ].some((value) => value.toLowerCase().includes(keyword))
+  )
 })
 
 const refreshAdminMeta = async () => {
-  const [overviewData, operationsData, healthReportData, maintenanceData, auditData] = await Promise.all([
-    adminAPI.getOverview(),
-    adminAPI.getOperations(),
-    adminAPI.getHealthReport(),
-    adminAPI.getMaintenance(),
-    adminAPI.listAuditLogs(),
-  ])
+  const [overviewData, operationsData, healthReportData, maintenanceData, auditData] =
+    await Promise.all([
+      adminAPI.getOverview(),
+      adminAPI.getOperations(),
+      adminAPI.getHealthReport(),
+      adminAPI.getMaintenance(),
+      adminAPI.listAuditLogs(),
+    ])
   overview.value = overviewData
   operations.value = operationsData
   healthReport.value = healthReportData
@@ -113,10 +157,11 @@ const refreshAdminMeta = async () => {
   auditLogs.value = auditData
 }
 
-const formatDate = (value: string) => new Intl.DateTimeFormat('zh-CN', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-}).format(new Date(value))
+const formatDate = (value: string) =>
+  new Intl.DateTimeFormat('zh-CN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
 
 const setMessage = (message: string) => {
   success.value = message
@@ -230,6 +275,82 @@ const copyHealthReport = async () => {
   }
 }
 
+const copyDiagnosticSummary = async () => {
+  if (!diagnostics.value?.diagnostic_summary) {
+    error.value = '诊断摘要还没有加载完成，请先刷新。'
+    return
+  }
+
+  try {
+    await navigator.clipboard?.writeText(diagnostics.value.diagnostic_summary)
+    diagnosticSummaryCopied.value = true
+    setMessage('已复制诊断排障包')
+    window.setTimeout(() => {
+      diagnosticSummaryCopied.value = false
+    }, 1800)
+  } catch {
+    error.value = '复制诊断排障包失败，请手动选中摘要内容复制。'
+  }
+}
+
+const copyReconciliationSummary = async () => {
+  if (!paymentSummary.value?.reconciliation_summary) {
+    error.value = '支付对账摘要还没有加载完成，请先刷新。'
+    return
+  }
+
+  try {
+    await navigator.clipboard?.writeText(paymentSummary.value.reconciliation_summary)
+    reconciliationCopied.value = true
+    setMessage('已复制支付对账包')
+    window.setTimeout(() => {
+      reconciliationCopied.value = false
+    }, 1800)
+  } catch {
+    error.value = '复制支付对账包失败，请手动选中摘要内容复制。'
+  }
+}
+
+const copyPaymentEvidencePacket = async () => {
+  if (!paymentSummary.value?.integration_evidence_packet) {
+    error.value = '支付联调证据包还没有加载完成，请先刷新。'
+    return
+  }
+
+  try {
+    await navigator.clipboard?.writeText(paymentSummary.value.integration_evidence_packet)
+    evidenceCopied.value = true
+    setMessage('已复制支付联调证据包')
+    window.setTimeout(() => {
+      evidenceCopied.value = false
+    }, 1800)
+  } catch {
+    error.value = '复制支付联调证据包失败，请手动选中摘要内容复制。'
+  }
+}
+
+const openAdminConfirmation = (confirmation: AdminConfirmation) => {
+  error.value = ''
+  pendingConfirmation.value = confirmation
+}
+
+const closeAdminConfirmation = () => {
+  if (pendingConfirmation.value && savingKey.value === pendingConfirmation.value.savingKey) return
+  pendingConfirmation.value = null
+}
+
+const confirmAdminAction = async () => {
+  const confirmation = pendingConfirmation.value
+  if (!confirmation) return
+
+  try {
+    await confirmation.run()
+    pendingConfirmation.value = null
+  } catch {
+    // Action handlers own their user-facing error copy.
+  }
+}
+
 const loadHealthReport = async () => {
   savingKey.value = 'health-report:refresh'
   error.value = ''
@@ -243,19 +364,26 @@ const loadHealthReport = async () => {
   }
 }
 
-const serviceTone = (status?: string) => {
-  if (status === 'healthy') return 'border-emerald-300/20 bg-emerald-300/10 text-emerald-100'
-  if (status === 'unhealthy') return 'border-rose-300/20 bg-rose-500/10 text-rose-100'
-  if (status === 'degraded') return 'border-amber-300/20 bg-amber-300/10 text-amber-100'
-  return 'border-slate-300/20 bg-white/10 text-slate-200'
-}
-
 const loadAdminData = async () => {
   loading.value = true
   error.value = ''
 
   try {
-    const [overviewData, operationsData, settingsData, flagsData, contentData, usersData, jobsData, feedbackData, diagnosticsData, healthReportData, maintenanceData, auditData] = await Promise.all([
+    const [
+      overviewData,
+      operationsData,
+      settingsData,
+      flagsData,
+      contentData,
+      usersData,
+      jobsData,
+      feedbackData,
+      paymentData,
+      diagnosticsData,
+      healthReportData,
+      maintenanceData,
+      auditData,
+    ] = await Promise.all([
       adminAPI.getOverview(),
       adminAPI.getOperations(),
       adminAPI.listSettings(),
@@ -264,6 +392,7 @@ const loadAdminData = async () => {
       adminAPI.listUsers(),
       adminAPI.listJobs(),
       adminAPI.listFeedback(),
+      adminAPI.getPaymentSummary(),
       adminAPI.getDiagnostics(),
       adminAPI.getHealthReport(),
       adminAPI.getMaintenance(),
@@ -278,6 +407,7 @@ const loadAdminData = async () => {
     users.value = usersData
     jobs.value = jobsData
     feedbackReports.value = feedbackData
+    paymentSummary.value = paymentData
     diagnostics.value = diagnosticsData
     healthReport.value = healthReportData
     maintenance.value = maintenanceData
@@ -285,9 +415,10 @@ const loadAdminData = async () => {
     auditLogs.value = auditData
     selectedContent.value = contentData[0] ?? null
   } catch (err: any) {
-    error.value = err?.response?.status === 403
-      ? '当前账号没有后台权限。'
-      : '后台数据加载失败，请稍后重试或检查服务端日志。'
+    error.value =
+      err?.response?.status === 403
+        ? '当前账号没有后台权限。'
+        : '后台数据加载失败，请稍后重试或检查服务端日志。'
   } finally {
     loading.value = false
   }
@@ -431,22 +562,34 @@ const toggleUserBan = async (user: AdminUser) => {
 }
 
 const deleteUser = async (user: AdminUser) => {
-  const confirmed = window.confirm(`确认删除 ${user.email}？此操作会移除该账号及其关联数据，不能直接撤销。`)
-  if (!confirmed) return
+  openAdminConfirmation({
+    title: '确认删除用户',
+    summary: `将删除 ${user.email} 及其关联数据。`,
+    details: [
+      '此操作不能直接撤销。',
+      '当前管理员账号不能删除自己，后端仍会再次校验权限。',
+      '执行结果会写入审计日志。',
+    ],
+    confirmLabel: '确认删除用户',
+    savingKey: `delete:${user.id}`,
+    tone: 'danger',
+    run: async () => {
+      savingKey.value = `delete:${user.id}`
+      error.value = ''
 
-  savingKey.value = `delete:${user.id}`
-  error.value = ''
-
-  try {
-    await adminAPI.deleteUser(user.id)
-    users.value = users.value.filter((item) => item.id !== user.id)
-    await refreshAdminMeta()
-    setMessage(`已删除用户：${user.email}`)
-  } catch (err: any) {
-    error.value = err?.response?.data?.detail || '删除用户失败，请确认不是当前管理员账号。'
-  } finally {
-    savingKey.value = null
-  }
+      try {
+        await adminAPI.deleteUser(user.id)
+        users.value = users.value.filter((item) => item.id !== user.id)
+        await refreshAdminMeta()
+        setMessage(`已删除用户：${user.email}`)
+      } catch (err: any) {
+        error.value = err?.response?.data?.detail || '删除用户失败，请确认不是当前管理员账号。'
+        throw err
+      } finally {
+        savingKey.value = null
+      }
+    },
+  })
 }
 
 const loadJobs = async () => {
@@ -460,6 +603,22 @@ const loadJobs = async () => {
     operations.value = await adminAPI.getOperations()
   } catch {
     error.value = '任务列表加载失败，请稍后重试。'
+  } finally {
+    savingKey.value = null
+  }
+}
+
+const loadPayments = async () => {
+  savingKey.value = 'payments:refresh'
+  error.value = ''
+
+  try {
+    paymentSummary.value = await adminAPI.getPaymentSummary({
+      provider: paymentProviderFilter.value || undefined,
+      status_filter: paymentStatusFilter.value || undefined,
+    })
+  } catch {
+    error.value = '支付对账数据加载失败，请稍后重试。'
   } finally {
     savingKey.value = null
   }
@@ -515,7 +674,14 @@ const cleanupLiveAcceptanceFeedback = async () => {
 
   try {
     const result = await adminAPI.cleanupLiveAcceptanceFeedback()
-    const [feedbackData, overviewData, diagnosticsData, healthReportData, maintenanceData, auditData] = await Promise.all([
+    const [
+      feedbackData,
+      overviewData,
+      diagnosticsData,
+      healthReportData,
+      maintenanceData,
+      auditData,
+    ] = await Promise.all([
       adminAPI.listFeedback({
         status_filter: feedbackStatusFilter.value || undefined,
       }),
@@ -532,7 +698,9 @@ const cleanupLiveAcceptanceFeedback = async () => {
     healthReport.value = healthReportData
     maintenance.value = maintenanceData
     auditLogs.value = auditData
-    setMessage(`已关闭 ${result.closed_count} 条验收反馈，剩余待处理 ${result.remaining_open_count} 条`)
+    setMessage(
+      `已关闭 ${result.closed_count} 条验收反馈，剩余待处理 ${result.remaining_open_count} 条`
+    )
   } catch {
     error.value = '验收反馈清理失败，请稍后重试。'
   } finally {
@@ -558,57 +726,85 @@ const refreshMaintenance = async () => {
 
 const cleanupTestUsers = async () => {
   const count = maintenance.value?.test_users_count ?? 0
-  const confirmed = window.confirm(`确认删除 ${count} 个测试账号？\n\n这才会真正删除数据；“重新统计”不会删除任何内容。\n\n只会删除 smoke-、ocr-、office- 和 @example.com 测试账号，不会删除管理员或真实用户。`)
-  if (!confirmed) return
+  openAdminConfirmation({
+    title: '确认删除测试账号',
+    summary: `将删除 ${count} 个测试账号。`,
+    details: [
+      '这才会真正删除数据；“重新统计数量”不会删除任何内容。',
+      '仅匹配 smoke-、ocr-、office- 和 @example.com 测试账号。',
+      '不会删除管理员或真实用户，后端会按同一规则再次校验。',
+    ],
+    confirmLabel: '确认删除测试账号',
+    savingKey: 'maintenance:cleanup-users',
+    tone: 'danger',
+    run: async () => {
+      savingKey.value = 'maintenance:cleanup-users'
+      error.value = ''
 
-  savingKey.value = 'maintenance:cleanup-users'
-  error.value = ''
-
-  try {
-    const result = await adminAPI.cleanupTestUsers()
-    const [usersData, jobsData, feedbackData, diagnosticsData] = await Promise.all([
-      adminAPI.listUsers({
-        search: userSearch.value.trim() || undefined,
-      }),
-      adminAPI.listJobs({
-        status_filter: jobStatusFilter.value || undefined,
-      }),
-      adminAPI.listFeedback({
-        status_filter: feedbackStatusFilter.value || undefined,
-      }),
-      adminAPI.getDiagnostics(),
-    ])
-    users.value = usersData
-    jobs.value = jobsData
-    feedbackReports.value = feedbackData
-    diagnostics.value = diagnosticsData
-    apiErrors.value = diagnosticsData.recent_errors
-    await refreshAdminMeta()
-    setMessage(`已删除 ${result.deleted_count} 个测试账号，剩余 ${result.remaining_test_users_count} 个`)
-  } catch (err: any) {
-    error.value = err?.response?.data?.detail || '测试账号清理失败，请稍后重试。'
-  } finally {
-    savingKey.value = null
-  }
+      try {
+        const result = await adminAPI.cleanupTestUsers()
+        const [usersData, jobsData, feedbackData, diagnosticsData] = await Promise.all([
+          adminAPI.listUsers({
+            search: userSearch.value.trim() || undefined,
+          }),
+          adminAPI.listJobs({
+            status_filter: jobStatusFilter.value || undefined,
+          }),
+          adminAPI.listFeedback({
+            status_filter: feedbackStatusFilter.value || undefined,
+          }),
+          adminAPI.getDiagnostics(),
+        ])
+        users.value = usersData
+        jobs.value = jobsData
+        feedbackReports.value = feedbackData
+        diagnostics.value = diagnosticsData
+        apiErrors.value = diagnosticsData.recent_errors
+        await refreshAdminMeta()
+        setMessage(
+          `已删除 ${result.deleted_count} 个测试账号，剩余 ${result.remaining_test_users_count} 个`
+        )
+      } catch (err: any) {
+        error.value = err?.response?.data?.detail || '测试账号清理失败，请稍后重试。'
+        throw err
+      } finally {
+        savingKey.value = null
+      }
+    },
+  })
 }
 
 const cleanupExpiredFiles = async () => {
   const count = maintenance.value?.file_retention?.removable_count ?? 0
-  const confirmed = window.confirm(`确认清理 ${count} 个过期临时文件目录？\n\n只会删除上传目录中 PDF-Flow 生成的过期临时上传、转换结果和下载包，不会删除用户账号、反馈、审计日志或数据库记录。`)
-  if (!confirmed) return
+  openAdminConfirmation({
+    title: '确认清理过期临时文件',
+    summary: `将清理 ${count} 个过期临时文件目录。`,
+    details: [
+      `扫描目录：${maintenance.value?.file_retention?.upload_dir || '未读取到上传目录'}`,
+      '只会删除 PDF-Flow 生成的过期临时上传、转换结果和下载包。',
+      '不会删除用户账号、反馈、审计日志或数据库记录。',
+    ],
+    confirmLabel: '确认清理临时文件',
+    savingKey: 'maintenance:cleanup-files',
+    tone: 'warning',
+    run: async () => {
+      savingKey.value = 'maintenance:cleanup-files'
+      error.value = ''
 
-  savingKey.value = 'maintenance:cleanup-files'
-  error.value = ''
-
-  try {
-    const result = await adminAPI.cleanupExpiredFiles()
-    await refreshAdminMeta()
-    setMessage(`已清理 ${result.removed_count} 个过期临时目录，释放 ${formatBytes(result.removed_bytes)}`)
-  } catch (err: any) {
-    error.value = err?.response?.data?.detail || '临时文件清理失败，请稍后重试。'
-  } finally {
-    savingKey.value = null
-  }
+      try {
+        const result = await adminAPI.cleanupExpiredFiles()
+        await refreshAdminMeta()
+        setMessage(
+          `已清理 ${result.removed_count} 个过期临时目录，释放 ${formatBytes(result.removed_bytes)}`
+        )
+      } catch (err: any) {
+        error.value = err?.response?.data?.detail || '临时文件清理失败，请稍后重试。'
+        throw err
+      } finally {
+        savingKey.value = null
+      }
+    },
+  })
 }
 
 const openFeedbackFromDiagnostics = async (feedbackId: number) => {
@@ -647,1055 +843,276 @@ const formatBytes = (value: number) => {
   return `${(value / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`
 }
 
+const formatMoney = (amountCents: number, currency: string) =>
+  new Intl.NumberFormat('zh-CN', {
+    style: 'currency',
+    currency: currency || 'USD',
+  }).format((amountCents || 0) / 100)
+
 onMounted(loadAdminData)
 </script>
 
 <template>
-  <div class="min-h-screen overflow-hidden bg-[#09111f] text-white">
-    <div class="pointer-events-none fixed inset-0">
-      <div class="absolute left-[-10%] top-[-12%] h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl" />
-      <div class="absolute right-[-8%] top-24 h-[28rem] w-[28rem] rounded-full bg-emerald-400/10 blur-3xl" />
-      <div class="absolute bottom-[-20%] left-[35%] h-[26rem] w-[26rem] rounded-full bg-blue-500/10 blur-3xl" />
-    </div>
-
-    <main class="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <section class="rounded-[34px] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-8">
+  <div class="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <AdminPanel as="section" padding="lg" class="shadow-sm">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div class="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-cyan-100">
+            <div
+              class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200"
+            >
               <EyeOff class="h-4 w-4" />
               Hidden Operations
             </div>
             <h1 class="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
               PDF-Flow Control Room
             </h1>
-            <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              这是隐藏后台的第一阶段。这里不会出现在普通用户导航里，但真正的保护来自后端 ADMIN 权限、接口鉴权和审计日志。
+            <p
+              class="mt-4 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base"
+            >
+              这是隐藏后台的第一阶段。这里不会出现在普通用户导航里，但真正的保护来自后端 ADMIN
+              权限、接口鉴权和审计日志。
             </p>
           </div>
 
           <div class="grid grid-cols-2 gap-3 text-center sm:grid-cols-6">
-            <div class="rounded-3xl border border-white/10 bg-white/[0.07] p-4">
+            <AdminPanel as="div" padding="sm">
               <p class="text-2xl font-semibold">{{ enabledFlagCount }}</p>
-              <p class="mt-1 text-xs text-slate-400">已开启</p>
-            </div>
-            <div class="rounded-3xl border border-white/10 bg-white/[0.07] p-4">
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">已开启</p>
+            </AdminPanel>
+            <AdminPanel as="div" padding="sm">
               <p class="text-2xl font-semibold">{{ lockedFlagCount }}</p>
-              <p class="mt-1 text-xs text-slate-400">受限功能</p>
-            </div>
-            <div class="rounded-3xl border border-white/10 bg-white/[0.07] p-4">
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">受限功能</p>
+            </AdminPanel>
+            <AdminPanel as="div" padding="sm">
               <p class="text-2xl font-semibold">{{ overview?.content_blocks_count ?? 0 }}</p>
-              <p class="mt-1 text-xs text-slate-400">内容块</p>
-            </div>
-            <div class="rounded-3xl border border-white/10 bg-white/[0.07] p-4">
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">内容块</p>
+            </AdminPanel>
+            <AdminPanel as="div" padding="sm">
               <p class="text-2xl font-semibold">{{ overview?.active_users_count ?? 0 }}</p>
-              <p class="mt-1 text-xs text-slate-400">活跃用户</p>
-            </div>
-            <div class="rounded-3xl border border-white/10 bg-white/[0.07] p-4">
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">活跃用户</p>
+            </AdminPanel>
+            <AdminPanel as="div" padding="sm">
               <p class="text-2xl font-semibold">{{ overview?.failed_jobs_count ?? 0 }}</p>
-              <p class="mt-1 text-xs text-slate-400">失败任务</p>
-            </div>
-            <div class="rounded-3xl border border-white/10 bg-white/[0.07] p-4">
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">失败任务</p>
+            </AdminPanel>
+            <AdminPanel as="div" padding="sm">
               <p class="text-2xl font-semibold">{{ overview?.open_feedback_count ?? 0 }}</p>
-              <p class="mt-1 text-xs text-slate-400">待处理反馈</p>
-            </div>
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">待处理反馈</p>
+            </AdminPanel>
           </div>
         </div>
-      </section>
+      </AdminPanel>
 
-      <div v-if="error" class="mt-6 rounded-3xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+      <AdminPanel
+        v-if="error"
+        as="div"
+        tone="danger"
+        padding="sm"
+        class="mt-6 text-sm text-rose-700 dark:text-rose-200"
+      >
         <div class="flex items-start gap-3">
           <AlertTriangle class="mt-0.5 h-5 w-5 shrink-0" />
           <span>{{ error }}</span>
         </div>
-      </div>
+      </AdminPanel>
 
-      <div v-if="success" class="mt-6 rounded-3xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+      <AdminPanel
+        v-if="success"
+        as="div"
+        tone="success"
+        padding="sm"
+        class="mt-6 text-sm text-emerald-700 dark:text-emerald-200"
+      >
         <div class="flex items-start gap-3">
           <CheckCircle2 class="mt-0.5 h-5 w-5 shrink-0" />
           <span>{{ success }}</span>
         </div>
-      </div>
+      </AdminPanel>
 
-      <div v-if="loading" class="mt-10 flex items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.05] p-16">
-        <Loader2 class="h-8 w-8 animate-spin text-cyan-200" />
+      <div
+        v-if="loading"
+        class="mt-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white p-16 dark:border-slate-800 dark:bg-slate-900"
+      >
+        <Loader2 class="h-8 w-8 animate-spin text-sky-600 dark:text-sky-300" />
       </div>
 
       <section v-else class="mt-8 grid gap-6 lg:grid-cols-[260px_1fr]">
-        <aside class="rounded-[30px] border border-white/10 bg-white/[0.06] p-3 backdrop-blur-xl">
+        <AdminPanel as="aside" padding="sm">
           <button
             v-for="tab in tabs"
             :key="tab.id"
             type="button"
-            class="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm transition"
-            :class="activeTab === tab.id ? 'bg-cyan-300 text-slate-950 shadow-lg shadow-cyan-950/20' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white'"
+            class="flex w-full items-center gap-3 rounded-md px-4 py-3 text-left text-sm transition"
+            :class="
+              activeTab === tab.id
+                ? 'bg-slate-950 text-white shadow-sm dark:bg-sky-400 dark:text-slate-950'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+            "
             @click="activeTab = tab.id"
           >
             <component :is="tab.icon" class="h-4 w-4" />
             <span class="font-semibold">{{ tab.label }}</span>
           </button>
-        </aside>
+        </AdminPanel>
 
         <div class="min-w-0">
-          <div v-if="activeTab === 'overview'" class="space-y-5">
-            <section class="grid gap-4 xl:grid-cols-4">
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <p class="text-sm text-slate-400">全部用户</p>
-                <p class="mt-3 text-3xl font-semibold">{{ operations?.total_users ?? overview?.users_count ?? 0 }}</p>
-                <p class="mt-2 text-xs text-slate-500">测试账号 {{ operations?.test_users ?? 0 }} 个</p>
-              </article>
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <p class="text-sm text-slate-400">可登录用户</p>
-                <p class="mt-3 text-3xl font-semibold">{{ operations?.active_users ?? overview?.active_users_count ?? 0 }}</p>
-                <p class="mt-2 text-xs text-slate-500">封禁 {{ operations?.banned_users ?? 0 }} 个</p>
-              </article>
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <p class="text-sm text-slate-400">近期可见任务</p>
-                <p class="mt-3 text-3xl font-semibold">{{ operations?.visible_jobs ?? jobs.length }}</p>
-                <p class="mt-2 text-xs text-slate-500">处理中 {{ operations?.running_jobs ?? 0 }} 个</p>
-              </article>
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <p class="text-sm text-slate-400">失败任务</p>
-                <p class="mt-3 text-3xl font-semibold text-rose-100">{{ operations?.failed_jobs ?? overview?.failed_jobs_count ?? 0 }}</p>
-                <p class="mt-2 text-xs text-slate-500">优先排查最近错误</p>
-              </article>
-            </section>
+          <OverviewTab
+            v-if="activeTab === 'overview'"
+            :overview="overview"
+            :operations="operations"
+            :jobs="jobs"
+            :health-report="healthReport"
+            :health-report-summary="buildHealthReportSummary()"
+            :health-report-copied="healthReportCopied"
+            :saving-key="savingKey"
+            :format-date="formatDate"
+            @refresh-all="loadAdminData"
+            @refresh-health-report="loadHealthReport"
+            @copy-health-report="copyHealthReport"
+          />
 
-            <section class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <div class="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <p class="text-lg font-semibold">服务状态</p>
-                    <p class="mt-1 text-sm text-slate-400">数据库、Redis 和任务队列线索。</p>
-                  </div>
-                  <button
-                    type="button"
-                    class="rounded-2xl bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
-                    @click="loadAdminData"
-                  >
-                    刷新
-                  </button>
-                </div>
-                <div class="space-y-3">
-                  <div
-                    v-for="(service, name) in operations?.services"
-                    :key="name"
-                    class="rounded-2xl border p-4"
-                    :class="serviceTone(service.status)"
-                  >
-                    <div class="flex items-center justify-between gap-3">
-                      <div class="flex items-center gap-2">
-                        <CircleDot class="h-4 w-4" />
-                        <span class="font-semibold">{{ name }}</span>
-                      </div>
-                      <span class="text-xs uppercase tracking-[0.18em]">{{ service.status }}</span>
-                    </div>
-                    <p class="mt-2 text-sm opacity-80">{{ service.detail }}</p>
-                  </div>
-                </div>
-              </article>
+          <FeatureFlagsTab
+            v-else-if="activeTab === 'flags'"
+            :flags="flags"
+            :saving-key="savingKey"
+            @save="saveFlag"
+          />
 
-              <article class="rounded-[28px] border border-cyan-300/20 bg-cyan-300/10 p-5 backdrop-blur-xl">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p class="text-lg font-semibold">上线健康报告</p>
-                    <p class="mt-1 text-sm leading-6 text-cyan-100/75">
-                      一键复制当前线上状态，方便截图或发给管理员排查。
-                    </p>
-                  </div>
-                  <div class="flex gap-2">
-                    <button
-                      type="button"
-                      class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
-                      :disabled="savingKey === 'health-report:refresh'"
-                      @click="loadHealthReport"
-                    >
-                      <Loader2 v-if="savingKey === 'health-report:refresh'" class="h-4 w-4 animate-spin" />
-                      刷新
-                    </button>
-                    <button
-                      type="button"
-                      class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-50"
-                      @click="copyHealthReport"
-                    >
-                      <ClipboardCopy class="h-4 w-4" />
-                      {{ healthReportCopied ? '已复制' : '复制报告' }}
-                    </button>
-                  </div>
-                </div>
+          <SiteSettingsTab
+            v-else-if="activeTab === 'settings'"
+            :settings="settings"
+            :saving-key="savingKey"
+            @save="saveSetting"
+          />
 
-                <div class="mt-5 grid gap-3 sm:grid-cols-3">
-                  <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <p class="text-xs text-cyan-100/70">后端版本</p>
-                    <p class="mt-2 break-all font-semibold text-white">{{ healthReport?.app_version || '未加载' }}</p>
-                  </div>
-                  <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <p class="text-xs text-cyan-100/70">迁移版本</p>
-                    <p class="mt-2 break-all font-semibold text-white">{{ healthReport?.migration_version || '未读取到' }}</p>
-                  </div>
-                  <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <p class="text-xs text-cyan-100/70">环境</p>
-                    <p class="mt-2 font-semibold text-white">{{ healthReport?.environment || 'unknown' }}</p>
-                  </div>
-                </div>
+          <ContentBlocksTab
+            v-else-if="activeTab === 'content'"
+            :blocks="contentBlocks"
+            :selected-content="selectedContent"
+            :saving-key="savingKey"
+            @select="selectedContent = $event"
+            @save="saveContentBlock"
+          />
 
-                <pre class="mt-4 max-h-72 overflow-y-auto whitespace-pre-wrap rounded-3xl border border-white/10 bg-slate-950/60 p-4 text-xs leading-6 text-cyan-50/85">{{ buildHealthReportSummary() || '健康报告加载中...' }}</pre>
-              </article>
-            </section>
+          <UsersTab
+            v-else-if="activeTab === 'users'"
+            :users="users"
+            :user-search="userSearch"
+            :saving-key="savingKey"
+            :format-date="formatDate"
+            @update:user-search="userSearch = $event"
+            @search="searchUsers"
+            @save="saveUser"
+            @toggle-ban="toggleUserBan"
+            @delete="deleteUser"
+          />
 
-            <section class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <div class="mb-4 flex items-center justify-between">
-                  <div>
-                    <p class="text-lg font-semibold">最近失败任务</p>
-                    <p class="mt-1 text-sm text-slate-400">这里有内容时，优先看错误摘要和 job_id。</p>
-                  </div>
-                </div>
-                <div class="space-y-3">
-                  <div
-                    v-for="job in operations?.recent_failed_jobs"
-                    :key="job.job_id"
-                    class="rounded-2xl border border-rose-300/20 bg-rose-500/10 p-4"
-                  >
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="rounded-full bg-rose-300/15 px-3 py-1 text-xs font-semibold text-rose-100">{{ job.job_type }}</span>
-                      <span class="text-xs text-rose-100/70">{{ formatDate(job.created_at) }}</span>
-                    </div>
-                    <p class="mt-2 break-all font-semibold text-white">{{ job.job_id }}</p>
-                    <p class="mt-2 text-sm text-rose-100">{{ job.error_message || '暂无错误摘要' }}</p>
-                  </div>
-                  <div v-if="!operations?.recent_failed_jobs?.length" class="rounded-2xl border border-white/10 bg-black/20 p-6 text-center text-sm text-slate-400">
-                    最近没有失败任务，状态不错。
-                  </div>
-                </div>
-              </article>
-            </section>
+          <JobsTab
+            v-else-if="activeTab === 'jobs'"
+            :filtered-jobs="filteredJobs"
+            :job-search="jobSearch"
+            :job-status-filter="jobStatusFilter"
+            :saving-key="savingKey"
+            :format-date="formatDate"
+            @update:job-search="jobSearch = $event"
+            @update:job-status-filter="jobStatusFilter = $event"
+            @refresh="loadJobs"
+          />
 
-            <section class="grid gap-5 xl:grid-cols-2">
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <p class="text-lg font-semibold">最近注册用户</p>
-                <div class="mt-4 space-y-3">
-                  <div
-                    v-for="user in operations?.recent_users"
-                    :key="user.id"
-                    class="flex items-center justify-between gap-3 rounded-2xl bg-black/20 p-3"
-                  >
-                    <div>
-                      <p class="font-semibold text-white">{{ user.email }}</p>
-                      <p class="mt-1 text-xs text-slate-500">{{ user.role }} · {{ user.is_test_account ? '测试账号' : '真实用户' }}</p>
-                    </div>
-                    <span
-                      class="rounded-full px-3 py-1 text-xs font-semibold"
-                      :class="user.is_active ? 'bg-emerald-400/15 text-emerald-100' : 'bg-rose-400/15 text-rose-100'"
-                    >
-                      {{ user.is_active ? '正常' : '已封禁' }}
-                    </span>
-                  </div>
-                </div>
-              </article>
+          <PaymentsTab
+            v-else-if="activeTab === 'payments'"
+            :payment-summary="paymentSummary"
+            :payment-provider-filter="paymentProviderFilter"
+            :payment-status-filter="paymentStatusFilter"
+            :reconciliation-copied="reconciliationCopied"
+            :evidence-copied="evidenceCopied"
+            :saving-key="savingKey"
+            :format-date="formatDate"
+            :format-money="formatMoney"
+            @update:payment-provider-filter="
+              paymentProviderFilter = $event;
+              loadPayments()
+            "
+            @update:payment-status-filter="
+              paymentStatusFilter = $event;
+              loadPayments()
+            "
+            @refresh="loadPayments"
+            @copy-reconciliation="copyReconciliationSummary"
+            @copy-evidence="copyPaymentEvidencePacket"
+          />
 
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <p class="text-lg font-semibold">最近任务</p>
-                <div class="mt-4 space-y-3">
-                  <div
-                    v-for="job in operations?.recent_jobs"
-                    :key="job.job_id"
-                    class="rounded-2xl bg-black/20 p-3"
-                  >
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                      <span class="font-semibold text-white">{{ job.job_type }}</span>
-                      <span
-                        class="rounded-full px-3 py-1 text-xs font-semibold"
-                        :class="job.status === 'failed' ? 'bg-rose-400/15 text-rose-100' : job.status === 'completed' ? 'bg-emerald-400/15 text-emerald-100' : 'bg-amber-300/15 text-amber-100'"
-                      >
-                        {{ job.status }}
-                      </span>
-                    </div>
-                    <p class="mt-2 break-all text-xs text-slate-500">{{ job.job_id }}</p>
-                  </div>
-                  <div v-if="!operations?.recent_jobs?.length" class="rounded-2xl border border-white/10 bg-black/20 p-6 text-center text-sm text-slate-400">
-                    暂无近期任务。
-                  </div>
-                </div>
-              </article>
-            </section>
-          </div>
+          <FeedbackTab
+            v-else-if="activeTab === 'feedback'"
+            :feedback-reports="feedbackReports"
+            :feedback-status-filter="feedbackStatusFilter"
+            :highlighted-feedback-id="highlightedFeedbackId"
+            :copied-feedback-id="copiedFeedbackId"
+            :saving-key="savingKey"
+            :format-date="formatDate"
+            :parse-diagnostics="parseDiagnostics"
+            @update:feedback-status-filter="feedbackStatusFilter = $event"
+            @refresh="loadFeedback"
+            @cleanup-live="cleanupLiveAcceptanceFeedback"
+            @copy-summary="copyFeedbackSummary"
+            @save="saveFeedback"
+          />
 
-          <div v-else-if="activeTab === 'flags'" class="grid gap-4 xl:grid-cols-2">
-            <article
-              v-for="flag in flags"
-              :key="flag.key"
-              class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl"
-            >
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <p class="text-lg font-semibold">{{ flag.label }}</p>
-                  <p class="mt-1 text-xs uppercase tracking-[0.2em] text-cyan-200/70">{{ flag.key }}</p>
-                  <p class="mt-3 text-sm leading-6 text-slate-300">{{ flag.description }}</p>
-                </div>
-                <label class="relative inline-flex cursor-pointer items-center">
-                  <input v-model="flag.enabled" type="checkbox" class="peer sr-only" />
-                  <span class="h-7 w-12 rounded-full bg-slate-700 transition peer-checked:bg-emerald-400" />
-                  <span class="absolute left-1 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5" />
-                </label>
-              </div>
+          <ErrorsTab
+            v-else-if="activeTab === 'errors'"
+            :api-errors="apiErrors"
+            :diagnostics="diagnostics"
+            :operations="operations"
+            :overview="overview"
+            :diagnostic-summary-copied="diagnosticSummaryCopied"
+            :saving-key="savingKey"
+            :format-date="formatDate"
+            @refresh="loadDiagnostics"
+            @copy-diagnostic-summary="copyDiagnosticSummary"
+            @open-feedback="openFeedbackFromDiagnostics"
+          />
 
-              <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                <label class="flex items-center gap-2 rounded-2xl bg-black/20 px-3 py-2 text-sm text-slate-200">
-                  <input v-model="flag.requires_login" type="checkbox" class="rounded border-white/20 bg-slate-900 text-cyan-300" />
-                  需要登录
-                </label>
-                <label class="flex items-center gap-2 rounded-2xl bg-black/20 px-3 py-2 text-sm text-slate-200">
-                  <input v-model="flag.requires_pro" type="checkbox" class="rounded border-white/20 bg-slate-900 text-cyan-300" />
-                  需要 Pro
-                </label>
-              </div>
+          <MaintenanceTab
+            v-else-if="activeTab === 'maintenance'"
+            :maintenance="maintenance"
+            :operations="operations"
+            :diagnostics="diagnostics"
+            :saving-key="savingKey"
+            @refresh="refreshMaintenance"
+            @cleanup-live="cleanupLiveAcceptanceFeedback"
+            @cleanup-test-users="cleanupTestUsers"
+            @cleanup-expired-files="cleanupExpiredFiles"
+          />
 
-              <textarea
-                v-model="flag.maintenance_message"
-                rows="2"
-                placeholder="维护提示，留空则使用默认提示"
-                class="mt-4 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
-              />
-
-              <button
-                type="button"
-                class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-                :disabled="savingKey === `flag:${flag.key}`"
-                @click="saveFlag(flag)"
-              >
-                <Loader2 v-if="savingKey === `flag:${flag.key}`" class="h-4 w-4 animate-spin" />
-                <Save v-else class="h-4 w-4" />
-                保存开关
-              </button>
-            </article>
-          </div>
-
-          <div v-else-if="activeTab === 'settings'" class="grid gap-4">
-            <article
-              v-for="setting in settings"
-              :key="setting.key"
-              class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl"
-            >
-              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <p class="text-lg font-semibold">{{ setting.label }}</p>
-                  <p class="mt-1 text-xs uppercase tracking-[0.2em] text-cyan-200/70">{{ setting.group }} / {{ setting.key }}</p>
-                  <p class="mt-3 text-sm leading-6 text-slate-300">{{ setting.description }}</p>
-                </div>
-                <label class="flex items-center gap-2 text-sm text-slate-300">
-                  <input v-model="setting.is_public" type="checkbox" class="rounded border-white/20 bg-slate-900 text-cyan-300" />
-                  可公开读取
-                </label>
-              </div>
-
-              <textarea
-                v-if="setting.value_type === 'textarea'"
-                v-model="setting.value"
-                rows="4"
-                class="mt-4 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/60"
-              />
-              <input
-                v-else
-                v-model="setting.value"
-                type="text"
-                class="mt-4 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/60"
-              />
-
-              <button
-                type="button"
-                class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-                :disabled="savingKey === `setting:${setting.key}`"
-                @click="saveSetting(setting)"
-              >
-                <Loader2 v-if="savingKey === `setting:${setting.key}`" class="h-4 w-4 animate-spin" />
-                <Save v-else class="h-4 w-4" />
-                保存配置
-              </button>
-            </article>
-          </div>
-
-          <div v-else-if="activeTab === 'content'" class="grid gap-5 xl:grid-cols-[280px_1fr]">
-            <aside class="rounded-[28px] border border-white/10 bg-white/[0.07] p-3">
-              <button
-                v-for="block in contentBlocks"
-                :key="`${block.key}:${block.locale}`"
-                type="button"
-                class="mb-2 w-full rounded-2xl px-4 py-3 text-left text-sm transition"
-                :class="selectedContent?.id === block.id ? 'bg-emerald-300 text-slate-950' : 'text-slate-300 hover:bg-white/[0.08]'"
-                @click="selectedContent = block"
-              >
-                <span class="block font-semibold">{{ block.title }}</span>
-                <span class="mt-1 block text-xs opacity-70">{{ block.key }} / {{ block.locale }}</span>
-              </button>
-            </aside>
-
-            <article v-if="selectedContent" class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5">
-              <div class="grid gap-4 sm:grid-cols-2">
-                <label class="text-sm text-slate-300">
-                  标题
-                  <input
-                    v-model="selectedContent.title"
-                    type="text"
-                    class="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-emerald-300/60"
-                  />
-                </label>
-                <label class="text-sm text-slate-300">
-                  语言
-                  <input
-                    v-model="selectedContent.locale"
-                    type="text"
-                    class="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-emerald-300/60"
-                  />
-                </label>
-              </div>
-              <label class="mt-4 block text-sm text-slate-300">
-                描述
-                <input
-                  v-model="selectedContent.description"
-                  type="text"
-                  class="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-emerald-300/60"
-                />
-              </label>
-              <label class="mt-4 block text-sm text-slate-300">
-                正文内容
-                <textarea
-                  v-model="selectedContent.content"
-                  rows="12"
-                  class="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-7 text-white outline-none focus:border-emerald-300/60"
-                />
-              </label>
-              <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <label class="flex items-center gap-2 text-sm text-slate-300">
-                  <input v-model="selectedContent.is_public" type="checkbox" class="rounded border-white/20 bg-slate-900 text-emerald-300" />
-                  可公开读取
-                </label>
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-2 rounded-2xl bg-emerald-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === `content:${selectedContent.key}:${selectedContent.locale}`"
-                  @click="saveContentBlock(selectedContent)"
-                >
-                  <Loader2 v-if="savingKey === `content:${selectedContent.key}:${selectedContent.locale}`" class="h-4 w-4 animate-spin" />
-                  <Save v-else class="h-4 w-4" />
-                  保存内容
-                </button>
-              </div>
-            </article>
-          </div>
-
-          <div v-else-if="activeTab === 'users'" class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p class="text-xl font-semibold">用户管理</p>
-                <p class="mt-2 text-sm leading-6 text-slate-400">
-                  Smoke 测试会自动创建 `smoke-*`、`ocr-*`、`office-*` 账号，这些会标记为测试账号。封禁会阻止登录，删除会移除账号数据；当前管理员不能封禁、降级或删除自己。
-                </p>
-              </div>
-              <div class="flex flex-col gap-2 sm:flex-row">
-                <input
-                  v-model="userSearch"
-                  type="search"
-                  placeholder="搜索邮箱或姓名"
-                  class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
-                  @keyup.enter="searchUsers"
-                />
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === 'users:search'"
-                  @click="searchUsers"
-                >
-                  <Loader2 v-if="savingKey === 'users:search'" class="h-4 w-4 animate-spin" />
-                  搜索
-                </button>
-              </div>
-            </div>
-
-            <div class="mt-5 overflow-hidden rounded-3xl border border-white/10">
-              <div class="hidden grid-cols-[1.5fr_0.8fr_0.9fr_1.2fr] gap-3 bg-white/[0.08] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 lg:grid">
-                <span>用户</span>
-                <span>角色</span>
-                <span>状态</span>
-                <span>操作</span>
-              </div>
-              <div
-                v-for="user in users"
-                :key="user.id"
-                class="grid gap-4 border-t border-white/10 px-4 py-4 lg:grid-cols-[1.5fr_0.8fr_0.9fr_1.2fr] lg:items-center"
-              >
-                <div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <p class="font-semibold text-white">{{ user.email }}</p>
-                    <span
-                      v-if="user.is_test_account"
-                      class="rounded-full border border-amber-300/20 bg-amber-300/10 px-2.5 py-1 text-[11px] font-semibold text-amber-100"
-                    >
-                      测试账号
-                    </span>
-                  </div>
-                  <p class="mt-1 text-sm text-slate-400">{{ user.full_name || '未填写姓名' }}</p>
-                  <p class="mt-1 text-xs text-slate-500">
-                    注册：{{ formatDate(user.created_at) }} · 邮箱状态：{{ user.is_verified ? '已验证' : '未验证' }}
-                  </p>
-                </div>
-                <select
-                  v-model="user.role"
-                  class="rounded-2xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300/60"
-                >
-                  <option value="free">Free</option>
-                  <option value="pro">Pro</option>
-                  <option value="enterprise">Enterprise</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <div>
-                  <span
-                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                    :class="user.is_active ? 'bg-emerald-400/15 text-emerald-100' : 'bg-rose-400/15 text-rose-100'"
-                  >
-                    {{ user.is_active ? '正常' : '已封禁' }}
-                  </span>
-                  <p class="mt-2 text-xs leading-5 text-slate-500">
-                    {{ user.last_login_at ? `最后登录：${formatDate(user.last_login_at)}` : '尚无登录记录' }}
-                  </p>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    :disabled="savingKey === `user:${user.id}`"
-                    @click="saveUser(user)"
-                  >
-                    <Loader2 v-if="savingKey === `user:${user.id}`" class="h-4 w-4 animate-spin" />
-                    <Save v-else class="h-4 w-4" />
-                    保存角色
-                  </button>
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-                    :class="user.is_active ? 'border-amber-300/20 bg-amber-300/10 text-amber-100 hover:bg-amber-300/20' : 'border-emerald-300/20 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/20'"
-                    :disabled="savingKey === `ban:${user.id}`"
-                    @click="toggleUserBan(user)"
-                  >
-                    <Loader2 v-if="savingKey === `ban:${user.id}`" class="h-4 w-4 animate-spin" />
-                    {{ user.is_active ? '封禁' : '解封' }}
-                  </button>
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-                    :disabled="savingKey === `delete:${user.id}`"
-                    @click="deleteUser(user)"
-                  >
-                    <Loader2 v-if="savingKey === `delete:${user.id}`" class="h-4 w-4 animate-spin" />
-                    <Trash2 v-else class="h-4 w-4" />
-                    删除
-                  </button>
-                </div>
-              </div>
-              <div v-if="users.length === 0" class="border-t border-white/10 px-4 py-10 text-center text-sm text-slate-400">
-                没有找到匹配用户。
-              </div>
-            </div>
-          </div>
-
-          <div v-else-if="activeTab === 'jobs'" class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p class="text-xl font-semibold">任务观察</p>
-                <p class="mt-2 text-sm leading-6 text-slate-400">
-                  快速查看最近云端处理任务，优先定位失败、卡住或异常耗时的用户操作。这里会合并显示最近 1 小时 Redis 队列状态和数据库任务记录。
-                </p>
-              </div>
-              <div class="flex flex-col gap-2 sm:flex-row">
-                <input
-                  v-model="jobSearch"
-                  type="search"
-                  placeholder="搜索 job_id / 用户 / 类型 / 错误"
-                  class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
-                />
-                <select
-                  v-model="jobStatusFilter"
-                  class="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/60"
-                >
-                  <option value="">全部状态</option>
-                  <option value="pending">Pending</option>
-                  <option value="processing">Processing</option>
-                  <option value="completed">Completed</option>
-                  <option value="failed">Failed</option>
-                </select>
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === 'jobs:refresh'"
-                  @click="loadJobs"
-                >
-                  <Loader2 v-if="savingKey === 'jobs:refresh'" class="h-4 w-4 animate-spin" />
-                  刷新
-                </button>
-              </div>
-            </div>
-
-            <div class="mt-5 space-y-3">
-              <article
-                v-for="job in filteredJobs"
-                :key="job.job_id"
-                class="rounded-3xl border border-white/10 bg-black/20 p-4"
-              >
-                <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div>
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">{{ job.job_type }}</span>
-                      <span
-                        class="rounded-full px-3 py-1 text-xs font-semibold"
-                        :class="job.status === 'failed' ? 'bg-rose-400/15 text-rose-100' : job.status === 'completed' ? 'bg-emerald-400/15 text-emerald-100' : 'bg-amber-300/15 text-amber-100'"
-                      >
-                        {{ job.status }}
-                      </span>
-                    </div>
-                    <p class="mt-3 font-semibold text-white">{{ job.input_file_name }}</p>
-                    <p class="mt-1 break-all text-sm text-slate-400">{{ job.job_id }}</p>
-                    <p class="mt-2 text-sm text-slate-400">
-                      用户：{{ job.user_email || (job.user_id ? `#${job.user_id}` : '未记录') }} · 大小：{{ formatBytes(job.input_file_size) }} · 创建：{{ formatDate(job.created_at) }}
-                    </p>
-                    <p v-if="job.error_message" class="mt-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
-                      {{ job.error_message }}
-                    </p>
-                  </div>
-                  <div class="min-w-[180px]">
-                    <div class="flex items-center justify-between text-xs text-slate-400">
-                      <span>进度</span>
-                      <span>{{ job.progress }}%</span>
-                    </div>
-                    <div class="mt-2 h-2 rounded-full bg-white/10">
-                      <div class="h-2 rounded-full bg-cyan-300" :style="{ width: `${job.progress}%` }" />
-                    </div>
-                  </div>
-                </div>
-              </article>
-              <div v-if="filteredJobs.length === 0" class="rounded-3xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-slate-400">
-                当前没有匹配任务。运行一次业务、OCR 或 Office smoke test 后，再点刷新；如果已刷新仍为空，说明最近 1 小时 Redis 状态和数据库任务里都没有匹配记录。
-              </div>
-            </div>
-          </div>
-
-          <div v-else-if="activeTab === 'feedback'" class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p class="text-xl font-semibold">问题反馈</p>
-                <p class="mt-2 text-sm leading-6 text-slate-400">
-                  收集真实用户在页面右下角提交的问题，包含页面地址、诊断码、浏览器信息和用户描述，方便上线测试时快速复现。
-                </p>
-              </div>
-              <div class="flex flex-col gap-2 sm:flex-row">
-                <select
-                  v-model="feedbackStatusFilter"
-                  class="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/60"
-                >
-                  <option value="">全部状态</option>
-                  <option value="new">New</option>
-                  <option value="reviewing">Reviewing</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                </select>
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === 'feedback:refresh'"
-                  @click="loadFeedback"
-                >
-                  <Loader2 v-if="savingKey === 'feedback:refresh'" class="h-4 w-4 animate-spin" />
-                  刷新
-                </button>
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/20 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === 'feedback:cleanup-live'"
-                  @click="cleanupLiveAcceptanceFeedback"
-                >
-                  <Loader2 v-if="savingKey === 'feedback:cleanup-live'" class="h-4 w-4 animate-spin" />
-                  关闭验收反馈
-                </button>
-              </div>
-            </div>
-
-            <div class="mt-5 space-y-4">
-              <article
-                v-for="report in feedbackReports"
-                :key="report.id"
-                :id="`feedback-${report.id}`"
-                class="rounded-3xl border border-white/10 bg-black/20 p-4"
-                :class="highlightedFeedbackId === report.id ? 'ring-2 ring-cyan-300/80 shadow-2xl shadow-cyan-500/20' : ''"
-              >
-                <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">#{{ report.id }}</span>
-                      <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-200">{{ report.category }}</span>
-                      <span
-                        class="rounded-full px-3 py-1 text-xs font-semibold"
-                        :class="report.severity === 'critical' ? 'bg-rose-400/15 text-rose-100' : report.severity === 'high' ? 'bg-amber-300/15 text-amber-100' : 'bg-emerald-400/15 text-emerald-100'"
-                      >
-                        {{ report.severity }}
-                      </span>
-                    </div>
-                    <p class="mt-3 break-words text-lg font-semibold text-white">{{ report.title }}</p>
-                    <div class="mt-2 max-h-72 overflow-y-auto rounded-2xl border border-white/5 bg-slate-950/35 p-3">
-                      <p class="whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">{{ report.message }}</p>
-                    </div>
-                    <div class="mt-3 space-y-1 text-xs leading-5 text-slate-500">
-                      <p>提交：{{ formatDate(report.created_at) }} · 联系：{{ report.email || '未提供' }}</p>
-                      <p v-if="report.page_url" class="break-all">页面：{{ report.page_url }}</p>
-                      <p v-if="report.diagnostic_code">诊断码：{{ report.diagnostic_code }}</p>
-                      <p v-if="report.user_agent" class="break-all">浏览器：{{ report.user_agent }}</p>
-                      <div v-if="report.diagnostics" class="max-h-36 overflow-y-auto rounded-2xl border border-white/5 bg-black/20 p-3">
-                        <pre class="whitespace-pre-wrap break-words font-mono text-[11px] leading-5 text-slate-400">{{ parseDiagnostics(report.diagnostics) }}</pre>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="w-full space-y-3 xl:w-72">
-                    <select
-                      v-model="report.status"
-                      class="w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300/60"
-                    >
-                      <option value="new">New</option>
-                      <option value="reviewing">Reviewing</option>
-                      <option value="resolved">Resolved</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                    <textarea
-                      v-model="report.admin_note"
-                      rows="4"
-                      placeholder="内部备注，例如：已复现 / 等截图 / 已修复待上线"
-                      class="w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-2 text-sm leading-6 text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
-                    />
-                    <button
-                      type="button"
-                      class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-                      @click="copyFeedbackSummary(report)"
-                    >
-                      <ClipboardCopy class="h-4 w-4" />
-                      {{ copiedFeedbackId === report.id ? '已复制摘要' : '复制诊断摘要' }}
-                    </button>
-                    <button
-                      type="button"
-                      class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      :disabled="savingKey === `feedback:${report.id}`"
-                      @click="saveFeedback(report)"
-                    >
-                      <Loader2 v-if="savingKey === `feedback:${report.id}`" class="h-4 w-4 animate-spin" />
-                      <Save v-else class="h-4 w-4" />
-                      保存反馈状态
-                    </button>
-                  </div>
-                </div>
-              </article>
-              <div v-if="feedbackReports.length === 0" class="rounded-3xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-slate-400">
-                当前没有匹配的问题反馈。用户可通过页面右下角“反馈问题”提交。
-              </div>
-            </div>
-          </div>
-
-          <div v-else-if="activeTab === 'errors'" class="space-y-5">
-            <section class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-              <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p class="text-xl font-semibold">错误观察</p>
-                  <p class="mt-2 text-sm leading-6 text-slate-400">
-                    把最近 API 500 错误、失败任务和用户反馈放在一起看。这里不会记录请求体或文件内容，只保留排查所需的摘要信息。
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === 'errors:refresh'"
-                  @click="loadDiagnostics"
-                >
-                  <Loader2 v-if="savingKey === 'errors:refresh'" class="h-4 w-4 animate-spin" />
-                  刷新诊断
-                </button>
-              </div>
-
-              <div class="mt-5 grid gap-4 md:grid-cols-3">
-                <div class="rounded-3xl border border-rose-300/20 bg-rose-500/10 p-4">
-                  <p class="text-sm text-rose-100/70">API 错误</p>
-                  <p class="mt-2 text-3xl font-semibold text-rose-50">{{ diagnostics?.api_error_count ?? 0 }}</p>
-                </div>
-                <div class="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-4">
-                  <p class="text-sm text-amber-100/70">失败任务</p>
-                  <p class="mt-2 text-3xl font-semibold text-amber-50">{{ diagnostics?.failed_jobs_count ?? operations?.failed_jobs ?? 0 }}</p>
-                </div>
-                <div class="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4">
-                  <p class="text-sm text-cyan-100/70">待处理反馈</p>
-                  <p class="mt-2 text-3xl font-semibold text-cyan-50">{{ diagnostics?.open_feedback_count ?? overview?.open_feedback_count ?? 0 }}</p>
-                </div>
-              </div>
-            </section>
-
-            <section class="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <div class="mb-4 flex items-center gap-3">
-                  <Flame class="h-5 w-5 text-rose-200" />
-                  <div>
-                    <p class="font-semibold">最近 API 错误</p>
-                    <p class="text-sm text-slate-400">优先看路径、状态码、错误类型和时间。</p>
-                  </div>
-                </div>
-                <div class="space-y-3">
-                  <div
-                    v-for="item in apiErrors"
-                    :key="item.id"
-                    class="rounded-3xl border border-rose-300/20 bg-black/20 p-4"
-                  >
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="rounded-full bg-rose-400/15 px-3 py-1 text-xs font-semibold text-rose-100">{{ item.status_code }}</span>
-                      <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-200">{{ item.method }}</span>
-                      <span class="text-xs text-slate-500">{{ formatDate(item.created_at) }}</span>
-                    </div>
-                    <p class="mt-3 break-all font-semibold text-white">{{ item.path }}</p>
-                    <p v-if="item.error_type || item.error_message" class="mt-2 whitespace-pre-wrap text-sm leading-6 text-rose-100">
-                      {{ item.error_type || 'Error' }}：{{ item.error_message || item.traceback_summary || '无错误摘要' }}
-                    </p>
-                    <p class="mt-2 break-all text-xs text-slate-500">
-                      Request ID: {{ item.request_id || '未记录' }} · IP: {{ item.ip_address || '未知' }}
-                    </p>
-                  </div>
-                  <div v-if="apiErrors.length === 0" class="rounded-3xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-slate-400">
-                    目前没有记录到 API 500 级错误。
-                  </div>
-                </div>
-              </article>
-
-              <div class="space-y-5">
-                <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                  <p class="font-semibold">最近失败任务</p>
-                  <div class="mt-4 space-y-3">
-                    <div
-                      v-for="job in diagnostics?.recent_failed_jobs || []"
-                      :key="job.job_id"
-                      class="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4"
-                    >
-                      <p class="font-semibold text-white">{{ job.job_type }}</p>
-                      <p class="mt-1 break-all text-xs text-slate-400">{{ job.job_id }}</p>
-                      <p class="mt-2 text-sm text-amber-100">{{ job.error_message || '暂无错误摘要' }}</p>
-                    </div>
-                    <div v-if="!diagnostics?.recent_failed_jobs?.length" class="rounded-2xl border border-white/10 bg-black/20 p-6 text-center text-sm text-slate-400">
-                      最近没有失败任务。
-                    </div>
-                  </div>
-                </article>
-
-                <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                  <p class="font-semibold">待处理反馈</p>
-                  <div class="mt-4 space-y-3">
-                    <button
-                      v-for="item in diagnostics?.recent_feedback || []"
-                      :key="item.id"
-                      type="button"
-                      class="w-full rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-left transition hover:-translate-y-0.5 hover:border-cyan-200/60 hover:bg-cyan-300/15 focus:outline-none focus:ring-2 focus:ring-cyan-300/70"
-                      @click="openFeedbackFromDiagnostics(item.id)"
-                    >
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-full bg-cyan-300/15 px-2.5 py-1 text-xs font-semibold text-cyan-100">#{{ item.id }}</span>
-                        <span class="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200">{{ item.status }}</span>
-                        <span class="ml-auto text-xs font-semibold text-cyan-100">打开详情</span>
-                      </div>
-                      <p class="mt-2 break-words font-semibold text-white">{{ item.title }}</p>
-                      <p v-if="item.page_url" class="mt-1 break-all text-xs text-slate-400">{{ item.page_url }}</p>
-                    </button>
-                    <div v-if="!diagnostics?.recent_feedback?.length" class="rounded-2xl border border-white/10 bg-black/20 p-6 text-center text-sm text-slate-400">
-                      没有待处理反馈。
-                    </div>
-                  </div>
-                </article>
-              </div>
-            </section>
-          </div>
-
-          <div v-else-if="activeTab === 'maintenance'" class="space-y-5">
-            <section class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-              <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p class="text-xl font-semibold">维护清理</p>
-                  <p class="mt-2 text-sm leading-6 text-slate-400">
-                    上方按钮只负责重新统计，不会删除任何内容。真正清理请点击下方的“关闭验收反馈”或“删除测试账号”，所有批量动作都会写入审计日志。
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === 'maintenance:refresh'"
-                  @click="refreshMaintenance"
-                >
-                  <Loader2 v-if="savingKey === 'maintenance:refresh'" class="h-4 w-4 animate-spin" />
-                  重新统计数量
-                </button>
-              </div>
-
-              <div class="mt-5 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-6 text-cyan-50">
-                <div class="flex items-start gap-3">
-                  <CircleDot class="mt-1 h-4 w-4 shrink-0" />
-                  <p>
-                    如果你刚才只点了“重新统计数量”，页面只会更新数字，不会删除数据。要清理测试数据，请继续点对应卡片里的执行按钮。
-                  </p>
-                </div>
-              </div>
-
-              <div class="mt-5 grid gap-4 md:grid-cols-4">
-                <div class="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-4">
-                  <p class="text-sm text-amber-100/70">测试账号</p>
-                  <p class="mt-2 text-3xl font-semibold text-amber-50">{{ maintenance?.test_users_count ?? operations?.test_users ?? 0 }}</p>
-                  <p class="mt-2 text-xs text-amber-100/60">smoke / ocr / office / @example.com</p>
-                </div>
-                <div class="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4">
-                  <p class="text-sm text-cyan-100/70">验收反馈</p>
-                  <p class="mt-2 text-3xl font-semibold text-cyan-50">{{ maintenance?.live_acceptance_feedback_count ?? 0 }}</p>
-                  <p class="mt-2 text-xs text-cyan-100/60">标题以 live acceptance 开头</p>
-                </div>
-                <div class="rounded-3xl border border-rose-300/20 bg-rose-500/10 p-4">
-                  <p class="text-sm text-rose-100/70">需要关注</p>
-                  <p class="mt-2 text-3xl font-semibold text-rose-50">{{ maintenance?.failed_jobs_count ?? diagnostics?.failed_jobs_count ?? 0 }}</p>
-                  <p class="mt-2 text-xs text-rose-100/60">失败任务暂不自动删除，保留排查线索</p>
-                </div>
-                <div class="rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-4">
-                  <p class="text-sm text-emerald-100/70">过期临时文件</p>
-                  <p class="mt-2 text-3xl font-semibold text-emerald-50">{{ maintenance?.file_retention?.removable_count ?? 0 }}</p>
-                  <p class="mt-2 text-xs text-emerald-100/60">上传、结果和下载包按保留策略清理</p>
-                </div>
-              </div>
-            </section>
-
-            <section class="grid gap-5 xl:grid-cols-3">
-              <article class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <p class="text-lg font-semibold">关闭验收反馈</p>
-                    <p class="mt-2 text-sm leading-6 text-slate-400">
-                      将上线验收脚本生成的 `live acceptance...` 反馈标记为 closed，不删除真实用户留言。
-                    </p>
-                  </div>
-                  <ClipboardList class="h-5 w-5 text-cyan-200" />
-                </div>
-                <div class="mt-5 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4">
-                  <p class="text-sm text-cyan-100/70">当前可关闭</p>
-                  <p class="mt-2 text-3xl font-semibold text-cyan-50">{{ maintenance?.live_acceptance_feedback_count ?? 0 }}</p>
-                  <p class="mt-2 text-xs text-cyan-100/60">
-                    {{ (maintenance?.live_acceptance_feedback_count ?? 0) === 0 ? '没有可关闭的验收反馈' : '点击下方按钮后才会写入更改' }}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === 'feedback:cleanup-live' || (maintenance?.live_acceptance_feedback_count ?? 0) === 0"
-                  @click="cleanupLiveAcceptanceFeedback"
-                >
-                  <Loader2 v-if="savingKey === 'feedback:cleanup-live'" class="h-4 w-4 animate-spin" />
-                  执行：关闭验收反馈
-                </button>
-              </article>
-
-              <article class="rounded-[28px] border border-rose-300/20 bg-rose-500/10 p-5 backdrop-blur-xl">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <p class="text-lg font-semibold">删除测试账号</p>
-                    <p class="mt-2 text-sm leading-6 text-rose-100/75">
-                      删除 smoke-、ocr-、office- 和 @example.com 测试账号；管理员和真实邮箱账号不会被批量删除。
-                    </p>
-                  </div>
-                  <Trash2 class="h-5 w-5 text-rose-100" />
-                </div>
-                <div class="mt-5 rounded-3xl border border-rose-300/20 bg-black/20 p-4">
-                  <p class="text-sm text-rose-100/70">当前可删除</p>
-                  <p class="mt-2 text-3xl font-semibold text-rose-50">{{ maintenance?.test_users_count ?? operations?.test_users ?? 0 }}</p>
-                  <p class="mt-2 text-xs text-rose-100/60">
-                    {{ (maintenance?.test_users_count ?? operations?.test_users ?? 0) === 0 ? '没有可删除的测试账号' : '点击下方按钮并确认后才会删除' }}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-200 px-4 py-3 text-sm font-semibold text-rose-950 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === 'maintenance:cleanup-users' || (maintenance?.test_users_count ?? operations?.test_users ?? 0) === 0"
-                  @click="cleanupTestUsers"
-                >
-                  <Loader2 v-if="savingKey === 'maintenance:cleanup-users'" class="h-4 w-4 animate-spin" />
-                  执行：删除测试账号
-                </button>
-              </article>
-
-              <article class="rounded-[28px] border border-emerald-300/20 bg-emerald-500/10 p-5 backdrop-blur-xl">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <p class="text-lg font-semibold">清理云端临时文件</p>
-                    <p class="mt-2 text-sm leading-6 text-emerald-100/75">
-                      删除超过保留时间的上传文件、转换结果和下载包。只扫描配置的上传目录，并使用固定前缀白名单保护其他文件。
-                    </p>
-                  </div>
-                  <Trash2 class="h-5 w-5 text-emerald-100" />
-                </div>
-                <div class="mt-5 rounded-3xl border border-emerald-300/20 bg-black/20 p-4">
-                  <p class="text-sm text-emerald-100/70">当前可清理</p>
-                  <p class="mt-2 text-3xl font-semibold text-emerald-50">{{ maintenance?.file_retention?.removable_count ?? 0 }}</p>
-                  <p class="mt-2 break-all text-xs text-emerald-100/60">
-                    {{ maintenance?.file_retention?.upload_dir || '未读取到上传目录' }}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="savingKey === 'maintenance:cleanup-files' || (maintenance?.file_retention?.removable_count ?? 0) === 0"
-                  @click="cleanupExpiredFiles"
-                >
-                  <Loader2 v-if="savingKey === 'maintenance:cleanup-files'" class="h-4 w-4 animate-spin" />
-                  执行：清理过期临时文件
-                </button>
-              </article>
-            </section>
-
-            <section class="rounded-[28px] border border-white/10 bg-black/20 p-5 text-sm leading-7 text-slate-300">
-              <p class="font-semibold text-white">暂不自动清理的内容</p>
-              <p class="mt-2">
-                API 错误、失败任务、审计日志和真实用户反馈会保留，用于后续排查。云端文件内容会按保留策略自动/手动清理，数据库中的任务摘要只保留必要的排查线索。
-              </p>
-            </section>
-          </div>
-
-          <div v-else class="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-            <div class="mb-5 flex items-center gap-3">
-              <ShieldCheck class="h-5 w-5 text-cyan-200" />
-              <div>
-                <p class="font-semibold">最近管理员操作</p>
-                <p class="text-sm text-slate-400">只展示最近 50 条，完整留存由后端审计表负责。</p>
-              </div>
-            </div>
-
-            <div class="space-y-3">
-              <div
-                v-for="log in auditLogs"
-                :key="log.id"
-                class="flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p class="font-medium">{{ log.action }} {{ log.target_type }}</p>
-                  <p class="mt-1 text-sm text-slate-400">{{ log.target_key }}</p>
-                </div>
-                <div class="flex items-center gap-3 text-sm text-slate-400">
-                  <LockKeyhole class="h-4 w-4" />
-                  <span>{{ formatDate(log.created_at) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AuditLogsTab v-else :audit-logs="auditLogs" :format-date="formatDate" />
         </div>
       </section>
 
-      <section class="mt-8 rounded-[28px] border border-amber-300/20 bg-amber-300/10 p-5 text-sm leading-7 text-amber-50">
+      <section
+        class="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-7 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+      >
         <div class="flex items-start gap-3">
           <SlidersHorizontal class="mt-1 h-5 w-5 shrink-0" />
           <p>
-            当前阶段已经能通过后台维护配置、功能开关和内容块。下一阶段需要把公开页面和工具页统一接入这些后端开关，让“关闭功能 / 维护提示 / 登录要求 / Pro 要求”真正影响用户界面和 API 行为。
+            当前阶段已经能通过后台维护配置、功能开关和内容块。下一阶段需要把公开页面和工具页统一接入这些后端开关，让“关闭功能
+            / 维护提示 / 登录要求 / Pro 要求”真正影响用户界面和 API 行为。
           </p>
         </div>
       </section>
+
+      <ConfirmationDialog
+        :model-value="!!pendingConfirmation"
+        :title="pendingConfirmation?.title || ''"
+        :summary="pendingConfirmation?.summary || ''"
+        :details="pendingConfirmation?.details || []"
+        :confirm-label="pendingConfirmation?.confirmLabel || ''"
+        cancel-label="取消"
+        :tone="pendingConfirmation?.tone || 'danger'"
+        :loading="!!pendingConfirmation && savingKey === pendingConfirmation.savingKey"
+        @update:model-value="(value) => { if (!value) closeAdminConfirmation() }"
+        @confirm="confirmAdminAction"
+      />
     </main>
   </div>
 </template>

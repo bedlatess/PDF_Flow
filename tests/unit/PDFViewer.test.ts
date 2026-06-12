@@ -1,109 +1,114 @@
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import PDFViewer from '@/components/pdf/PDFViewer.vue'
 
+const pdfMocks = vi.hoisted(() => {
+  const renderMock = vi.fn(() => ({ promise: Promise.resolve() }))
+  const getPageMock = vi.fn(() => Promise.resolve({
+    getViewport: () => ({ height: 800, width: 600 }),
+    render: renderMock,
+  }))
+  const getDocumentMock = vi.fn(() => ({
+    promise: Promise.resolve({
+      numPages: 3,
+      getPage: getPageMock,
+    }),
+  }))
+
+  return {
+    getDocumentMock,
+    getPageMock,
+    renderMock,
+  }
+})
+
+vi.mock('pdfjs-dist', () => ({
+  GlobalWorkerOptions: {
+    workerSrc: '',
+  },
+  getDocument: pdfMocks.getDocumentMock,
+}))
+
+vi.mock('@/utils/pdf/configurePdfJs', () => ({
+  configurePdfJsWorker: vi.fn(),
+}))
+
 describe('PDFViewer Component', () => {
-  const mockPdfUrl = 'blob:http://localhost/test.pdf'
+  const createMockFile = () => ({
+    arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+    name: 'test.pdf',
+    type: 'application/pdf',
+  }) as unknown as File
 
-  it('renders PDF viewer', () => {
-    const wrapper = mount(PDFViewer, {
-      props: {
-        pdfUrl: mockPdfUrl,
-      },
-    })
-
-    expect(wrapper.exists()).toBe(true)
+  beforeEach(() => {
+    pdfMocks.getDocumentMock.mockClear()
+    pdfMocks.getPageMock.mockClear()
+    pdfMocks.renderMock.mockClear()
   })
 
-  it('displays canvas for PDF rendering', () => {
+  it('renders the PDF viewer shell and loads the provided file', async () => {
     const wrapper = mount(PDFViewer, {
       props: {
-        pdfUrl: mockPdfUrl,
+        file: createMockFile(),
       },
     })
 
-    // Should have canvas element
-    const canvas = wrapper.find('canvas')
-    expect(canvas.exists() || wrapper.find('div').exists()).toBe(true)
+    await flushPromises()
+
+    expect(wrapper.find('.pdf-viewer').exists()).toBe(true)
+    expect(pdfMocks.getDocumentMock).toHaveBeenCalled()
   })
 
-  it('has navigation controls', () => {
+  it('displays navigation controls and page count', async () => {
     const wrapper = mount(PDFViewer, {
       props: {
-        pdfUrl: mockPdfUrl,
+        file: createMockFile(),
       },
     })
 
-    // Should have prev/next buttons
-    const buttons = wrapper.findAll('button')
-    expect(buttons.length).toBeGreaterThan(0)
+    await flushPromises()
+
+    expect(wrapper.get('input[type="number"]').attributes('value')).toBe('1')
+    expect(wrapper.text()).toContain('/ 3')
+    expect(wrapper.findAll('button').length).toBeGreaterThan(0)
   })
 
-  it('shows current page number', () => {
+  it('renders zoom controls', async () => {
     const wrapper = mount(PDFViewer, {
       props: {
-        pdfUrl: mockPdfUrl,
+        file: createMockFile(),
       },
     })
 
-    // Should display page info
-    expect(wrapper.text()).toMatch(/\d+|页|page/i)
+    await flushPromises()
+
+    expect(wrapper.get('select').text()).toContain('100%')
+    expect(wrapper.text()).toContain('+/- to zoom')
   })
 
-  it('has zoom controls', () => {
+  it('emits close from the close button', async () => {
     const wrapper = mount(PDFViewer, {
       props: {
-        pdfUrl: mockPdfUrl,
+        file: createMockFile(),
       },
     })
 
-    // Should have zoom buttons or text
-    const text = wrapper.text()
-    expect(text).toMatch(/缩放|zoom|\+|-|%/i)
+    await flushPromises()
+    await wrapper.get('button[aria-label="Close PDF viewer"]').trigger('click')
+
+    expect(wrapper.emitted('close')).toBeTruthy()
   })
 
-  it('can close viewer', async () => {
+  it('supports Escape keyboard close', async () => {
     const wrapper = mount(PDFViewer, {
       props: {
-        pdfUrl: mockPdfUrl,
+        file: createMockFile(),
       },
     })
 
-    // Find close button
-    const closeButton = wrapper.findAll('button').find(b =>
-      b.html().includes('M6 18L18 6M6 6l12 12') || // X icon
-      b.text().includes('关闭') ||
-      b.text().includes('Close')
-    )
+    await flushPromises()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
 
-    if (closeButton) {
-      await closeButton.trigger('click')
-      expect(wrapper.emitted('close')).toBeTruthy()
-    } else {
-      // Component exists even if close button not found
-      expect(wrapper.exists()).toBe(true)
-    }
-  })
-
-  it('displays loading state', () => {
-    const wrapper = mount(PDFViewer, {
-      props: {
-        pdfUrl: mockPdfUrl,
-      },
-    })
-
-    // Should render without loading prop
-    expect(wrapper.exists()).toBe(true)
-  })
-
-  it('supports keyboard navigation', () => {
-    const wrapper = mount(PDFViewer, {
-      props: {
-        pdfUrl: mockPdfUrl,
-      },
-    })
-
-    // Component should handle keyboard events
-    expect(wrapper.exists()).toBe(true)
+    expect(wrapper.emitted('close')).toBeTruthy()
   })
 })

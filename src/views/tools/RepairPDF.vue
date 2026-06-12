@@ -17,7 +17,7 @@ import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
 import { advancedAPI } from '@/services/api'
 import { useUserStore } from '@/stores/user'
@@ -25,10 +25,12 @@ import { formatUserFacingError, type FormattedUserError } from '@/utils/error-me
 import { redirectForFeatureAccess } from '@/utils/feature-access'
 import { historyManager } from '@/utils/history-manager'
 
-const { locale } = useI18n()
+const { tm } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+
+type ToolPageCopy = Record<string, any>
 
 const selectedFile = ref<File | null>(null)
 const isProcessing = ref(false)
@@ -38,113 +40,7 @@ const resultUrl = ref('')
 const resultSize = ref(0)
 const errorState = ref<FormattedUserError | null>(null)
 
-const isZh = computed(() => locale.value.toLowerCase().startsWith('zh'))
-const isEs = computed(() => locale.value.toLowerCase().startsWith('es'))
-
-const copy = computed(() => {
-  if (isZh.value) {
-    return {
-      title: '修复 PDF',
-      subtitle: '重新整理仍可读取的 PDF 结构，生成一份更稳定、更适合继续处理的干净副本。',
-      badge: '登录可用',
-      notice: '修复 PDF 会把文件上传到服务器重新读取并导出副本。它适合轻微结构异常、打开不稳定或导出后异常的文件；如果 PDF 已严重损坏到无法读取页面，系统会提示重新获取原文件。',
-      accessLabel: '需要登录',
-      accessTitle: '登录后修复可读取的 PDF 文件',
-      accessDescription: '修复需要云端重新解析 PDF 页面并导出新副本。临时文件会按云端文件生命周期策略自动清理。',
-      goToSignIn: '登录后使用',
-      accessSteps: ['登录账号', '上传需要修复的 PDF', '下载重新整理后的副本'],
-      uploadLabel: '待修复文件',
-      uploadTitleIdle: '选择需要修复的 PDF',
-      uploadTitleSelected: '文件已准备好',
-      uploadDescriptionIdle: '适合能上传但打开不稳定、页面结构异常、其他工具无法继续处理的 PDF。',
-      uploadDescriptionSelected: '系统会尝试读取可用页面并重新导出副本，不会覆盖你的原文件。',
-      dropTitle: '拖放 PDF 到这里',
-      dropSubtitle: '或点击选择文件',
-      noFile: '请先上传一份需要修复的 PDF 文件。',
-      repair: '开始修复 PDF',
-      uploading: '正在上传文件...',
-      processing: '正在重新整理 PDF 结构...',
-      ready: '修复副本已生成',
-      successTitle: '修复完成',
-      successMessage: '新的 PDF 副本已准备好。建议下载后打开检查页面是否完整。',
-      download: '下载修复后的 PDF',
-      workspaceTitle: '适合先修复，再继续处理',
-      workspaceDescription: '当 PDF 在拆分、压缩、转图片或阅读器中表现异常时，可以先生成一份干净副本，再继续使用其他工具。',
-      step1: '适合轻微结构问题：交叉引用表异常、阅读器兼容性差、导出后无法继续处理。',
-      step2: '如果文件已加密，请先使用解锁 PDF；如果页面无法读取，修复工具也无法恢复内容。',
-      step3: '修复结果是新文件。请下载后检查页数、内容和排版是否符合预期。',
-      resultSize: '输出大小',
-    }
-  }
-
-  if (isEs.value) {
-    return {
-      title: 'Reparar PDF',
-      subtitle: 'Reconstruye PDFs que aun son legibles para crear una copia mas estable.',
-      badge: 'Requiere inicio de sesion',
-      notice: 'La reparacion sube el PDF al servidor para leerlo y exportar una copia nueva. Ayuda con problemas leves de estructura; si las paginas ya no son legibles, necesitara el archivo original.',
-      accessLabel: 'Inicio de sesion requerido',
-      accessTitle: 'Inicia sesion para reparar PDFs legibles',
-      accessDescription: 'La reparacion necesita analizar el PDF en la nube y exportar una copia nueva. Los temporales se limpian segun la politica de ciclo de vida.',
-      goToSignIn: 'Iniciar sesion',
-      accessSteps: ['Inicia sesion', 'Sube el PDF', 'Descarga la copia reconstruida'],
-      uploadLabel: 'Archivo para reparar',
-      uploadTitleIdle: 'Elige el PDF para reparar',
-      uploadTitleSelected: 'Archivo listo',
-      uploadDescriptionIdle: 'Util para PDFs que se abren de forma inestable o fallan en otros procesos.',
-      uploadDescriptionSelected: 'Se intentara leer las paginas disponibles y exportar una copia nueva.',
-      dropTitle: 'Arrastra tu PDF aqui',
-      dropSubtitle: 'o haz clic para elegir un archivo',
-      noFile: 'Sube primero un PDF para reparar.',
-      repair: 'Reparar PDF',
-      uploading: 'Subiendo archivo...',
-      processing: 'Reconstruyendo estructura...',
-      ready: 'Copia reparada lista',
-      successTitle: 'Reparacion completa',
-      successMessage: 'Descarga la copia nueva y revisa que las paginas esten completas.',
-      download: 'Descargar PDF reparado',
-      workspaceTitle: 'Repara antes de continuar',
-      workspaceDescription: 'Si un PDF falla al dividir, comprimir o convertir, prueba crear una copia limpia primero.',
-      step1: 'Ayuda con problemas leves de estructura y compatibilidad.',
-      step2: 'Si el archivo esta cifrado, desbloquealo primero. Si las paginas no son legibles, no se puede recuperar contenido.',
-      step3: 'El resultado es un archivo nuevo; revisa paginas, contenido y formato.',
-      resultSize: 'Tamano de salida',
-    }
-  }
-
-  return {
-    title: 'Repair PDF',
-    subtitle: 'Rebuild readable PDFs into cleaner copies that are easier to open and process.',
-    badge: 'Sign-in required',
-    notice: 'Repair uploads the PDF to the server so it can be read and exported again. It can help with light structure issues, unstable opening, or files that fail in other tools. If the pages are no longer readable, you may need the original file.',
-    accessLabel: 'Sign-in required',
-    accessTitle: 'Sign in to repair readable PDF files',
-    accessDescription: 'Repair needs cloud processing to parse PDF pages and export a fresh copy. Temporary files are cleaned by the cloud file lifecycle policy.',
-    goToSignIn: 'Sign in to use',
-    accessSteps: ['Sign in', 'Upload the PDF', 'Download the rebuilt copy'],
-    uploadLabel: 'File to repair',
-    uploadTitleIdle: 'Choose the PDF to repair',
-    uploadTitleSelected: 'File is ready',
-    uploadDescriptionIdle: 'Useful for PDFs that open unstably, have structure issues, or fail in other processing tools.',
-    uploadDescriptionSelected: 'The server will try to read available pages and export a new copy without overwriting the original.',
-    dropTitle: 'Drop your PDF here',
-    dropSubtitle: 'or click to choose a file',
-    noFile: 'Please upload a PDF file to repair first.',
-    repair: 'Repair PDF',
-    uploading: 'Uploading file...',
-    processing: 'Rebuilding PDF structure...',
-    ready: 'Repaired copy is ready',
-    successTitle: 'Repair complete',
-    successMessage: 'Download the new copy and check that all pages are complete.',
-    download: 'Download repaired PDF',
-    workspaceTitle: 'Repair first, then continue',
-    workspaceDescription: 'If a PDF fails while splitting, compressing, converting, or opening in a reader, try creating a clean copy first.',
-    step1: 'Helps with light structure issues, cross-reference problems, and reader compatibility issues.',
-    step2: 'If the file is encrypted, unlock it first. If pages cannot be read, this tool cannot recover the content.',
-    step3: 'The result is a new file. Review page count, content, and layout after downloading.',
-    resultSize: 'Output size',
-  }
-})
+const copy = computed<ToolPageCopy>(() => tm('tools.repair.page') as ToolPageCopy)
 
 const canSubmit = computed(() => !!selectedFile.value && !isProcessing.value)
 
@@ -219,7 +115,7 @@ const repairPDF = async () => {
   } catch (error) {
     errorState.value = formatUserFacingError(error, {
       area: 'REPAIR',
-      fallbackMessage: 'The PDF could not be repaired. Please retry with a readable standard PDF file.',
+      fallbackMessage: copy.value.errorFailed,
     })
   } finally {
     isProcessing.value = false
@@ -250,19 +146,17 @@ onUnmounted(revokeResultUrl)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-cyan-50 dark:from-slate-950 dark:via-slate-950 dark:to-cyan-950/30">
-    <ToolHeader
+  <ToolPageShell
       :title="copy.title"
       :subtitle="copy.subtitle"
       :badge="copy.badge"
       accent="blue"
-    >
+    width="md"
+  >
+
       <template #badgeIcon>
         <Wrench class="h-4 w-4" />
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <ToolNoticeBar variant="blue">
         <template #icon>
           <ShieldAlert class="h-5 w-5" />
@@ -300,7 +194,7 @@ onUnmounted(revokeResultUrl)
         class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
       >
         <div class="space-y-6">
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700 dark:text-cyan-300">
                 {{ copy.uploadLabel }}
@@ -340,7 +234,7 @@ onUnmounted(revokeResultUrl)
             </div>
           </Card>
 
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-5">
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
@@ -354,7 +248,7 @@ onUnmounted(revokeResultUrl)
                 <div
                   v-for="(step, index) in [copy.step1, copy.step2, copy.step3]"
                   :key="step"
-                  class="flex items-start gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 dark:border-cyan-900/40 dark:bg-cyan-950/20"
+                  class="flex items-start gap-3 rounded-md border border-cyan-100 bg-cyan-50/70 p-4 dark:border-cyan-900/40 dark:bg-cyan-950/20"
                 >
                   <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-600 text-sm font-bold text-white">
                     {{ index + 1 }}
@@ -369,7 +263,7 @@ onUnmounted(revokeResultUrl)
         </div>
 
         <div class="space-y-6">
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-5">
               <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -391,7 +285,7 @@ onUnmounted(revokeResultUrl)
                 </Button>
               </div>
 
-              <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+              <div class="rounded-md border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40">
                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                   {{ copy.resultSize }}
                 </p>
@@ -436,7 +330,7 @@ onUnmounted(revokeResultUrl)
 
           <Card
             v-if="resultUrl"
-            class="rounded-[28px] border border-emerald-200 bg-emerald-50/90 shadow-xl shadow-emerald-100/70 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
+            class="rounded-lg border border-emerald-200 bg-emerald-50/90 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
           >
             <div class="flex items-start gap-4">
               <CheckCircle2 class="mt-0.5 h-6 w-6 shrink-0 text-emerald-500" />
@@ -452,6 +346,5 @@ onUnmounted(revokeResultUrl)
           </Card>
         </div>
       </div>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export type ErrorArea = 'AUTH' | 'OCR' | 'FORM' | 'ANNOTATE' | 'AI' | 'OFFICE' | 'PROTECT' | 'UNLOCK' | 'REPAIR' | 'UPLOAD' | 'GENERAL'
+export type ErrorArea = 'AUTH' | 'OCR' | 'FORM' | 'ANNOTATE' | 'AI' | 'OFFICE' | 'PROTECT' | 'UNLOCK' | 'REPAIR' | 'UPLOAD' | 'ENTERPRISE' | 'GENERAL'
 
 export interface FormattedErrorOptions {
   area?: ErrorArea
@@ -72,6 +72,10 @@ const AREA_DEFAULTS: Record<ErrorArea, { title: string; message: string }> = {
   UPLOAD: {
     title: 'Upload failed',
     message: 'The file could not be uploaded successfully. Please retry once the connection is stable.',
+  },
+  ENTERPRISE: {
+    title: 'Enterprise workspace is unavailable',
+    message: 'We could not load the requested enterprise data. Please retry in a moment.',
   },
   GENERAL: {
     title: 'Something went wrong',
@@ -187,7 +191,7 @@ function resolveReason(area: ErrorArea, status?: number, detail = '') {
     }
   }
 
-  if (status === 403 || lower.includes('pro') || lower.includes('subscription')) {
+  if (status === 403 || /\bpro\b/.test(lower) || lower.includes('subscription')) {
     return {
       code: `${area}-${status || 403}-ACCESS`,
       title: 'Access is limited for this account',

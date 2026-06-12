@@ -455,6 +455,170 @@ def test_admin_health_report_requires_admin(client):
     assert response.status_code == 403
 
 
+def test_admin_payment_operations_requires_admin(client):
+    _register(client, email="free-payments@example.com")
+    token = _login(client, email="free-payments@example.com").json()["access_token"]
+
+    response = client.get(
+        "/api/v1/admin/payments",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_admin_payment_operations_returns_provider_health_and_reconciliation(client, monkeypatch):
+    from datetime import datetime, timedelta
+    from app.core.config import settings
+    from app.core.database import get_db
+    from app.models.user import PaymentEvent, PaymentOrder, User
+
+    monkeypatch.setattr(settings, "PAYMENT_ENABLED_PROVIDERS_RAW", "stripe,epusdt,wechat")
+    monkeypatch.setattr(settings, "PAYMENT_GATEWAY_CONFIGS_RAW", "{}")
+    monkeypatch.setattr(settings, "BACKEND_PUBLIC_URL", "https://api.pdf-flow.test")
+    monkeypatch.setattr(settings, "FRONTEND_URL", "https://app.pdf-flow.test")
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_admin")
+    monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_test_admin")
+    monkeypatch.setattr(settings, "STRIPE_PRICE_ID_MONTHLY", "price_monthly_admin")
+    monkeypatch.setattr(settings, "STRIPE_PRICE_ID_YEARLY", "price_yearly_admin")
+    monkeypatch.setattr(settings, "WECHAT_PAY_APP_ID", "wx_admin")
+    monkeypatch.setattr(settings, "WECHAT_PAY_MCH_ID", "mch_admin")
+    monkeypatch.setattr(settings, "WECHAT_PAY_SERIAL_NO", "serial_admin")
+    monkeypatch.setattr(settings, "WECHAT_PAY_PRIVATE_KEY", "private_key_admin")
+    monkeypatch.setattr(settings, "WECHAT_PAY_API_V3_KEY", "api_v3_admin")
+    monkeypatch.setattr(settings, "WECHAT_PAY_PLATFORM_CERT", "platform_cert_admin")
+
+    _register(client)
+    _promote_to_admin(client)
+    _register(client, email="paying-customer@example.com")
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    db = next(client.app.dependency_overrides[get_db]())
+    try:
+        payer = db.query(User).filter(User.email == "paying-customer@example.com").first()
+        db.add_all([
+            PaymentOrder(
+                user_id=payer.id,
+                provider="stripe",
+                merchant_order_id="pf_admin_paid",
+                provider_order_id="cs_paid",
+                plan="monthly",
+                amount_cents=990,
+                currency="USD",
+                status="paid",
+                checkout_url="https://checkout.stripe.local/session",
+                paid_at=datetime.utcnow(),
+            ),
+            PaymentOrder(
+                user_id=payer.id,
+                provider="epusdt",
+                merchant_order_id="pf_admin_pending",
+                provider_order_id="usdt_pending",
+                plan="yearly",
+                amount_cents=7900,
+                currency="USD",
+                status="pending",
+                qr_code_url="tron:private-payment-address",
+                expires_at=datetime.utcnow() - timedelta(minutes=5),
+            ),
+            PaymentOrder(
+                user_id=payer.id,
+                provider="wechat",
+                merchant_order_id="pf_admin_mismatch",
+                provider_order_id="wx_mismatch",
+                plan="monthly",
+                amount_cents=990,
+                currency="CNY",
+                status="amount_mismatch",
+            ),
+        ])
+        db.commit()
+        paid_order = db.query(PaymentOrder).filter(
+            PaymentOrder.merchant_order_id == "pf_admin_paid"
+        ).first()
+        db.add(PaymentEvent(
+            order_id=paid_order.id,
+            provider="stripe",
+            provider_event_id="evt_admin_paid",
+            merchant_order_id="pf_admin_paid",
+            provider_order_id="cs_paid",
+            event_type="paid",
+            processing_status="applied",
+            amount_cents=990,
+            currency="USD",
+            raw_summary='{"type":"checkout.session.completed"}',
+        ))
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/v1/admin/payments", headers=headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_orders"] == 3
+    assert body["paid_orders"] == 1
+    assert body["pending_orders"] == 1
+    assert body["amount_mismatch_orders"] == 1
+    assert body["expired_pending_orders"] == 1
+    assert body["paid_amount_cents"] == 990
+    assert body["currency_breakdown"]["USD"] == 990
+
+    stripe = next(provider for provider in body["providers"] if provider["key"] == "stripe")
+    epusdt = next(provider for provider in body["providers"] if provider["key"] == "epusdt")
+    assert stripe["enabled"] is True
+    assert stripe["paid_orders"] == 1
+    assert stripe["acceptance_status"] == "accepted"
+    assert stripe["acceptance_label"] == "Smoke passed"
+    assert stripe["acceptance_blockers"] == []
+    assert stripe["latest_paid_event_at"] is not None
+    assert stripe["webhook_url"] == "https://api.pdf-flow.test/api/v1/payment/webhooks/stripe"
+    assert stripe["success_return_url"] == "https://app.pdf-flow.test/payment/success"
+    assert "STRIPE_WEBHOOK_SECRET" in stripe["required_config_keys"]
+    assert "checkout.session.completed webhook" in " ".join(stripe["sandbox_runbook"])
+    assert "PaymentEvent processing_status=applied" in " ".join(stripe["expected_event_flow"])
+    assert epusdt["enabled"] is True
+    assert epusdt["configured"] is False
+    assert epusdt["acceptance_status"] == "missing_config"
+    assert "PAYMENT_GATEWAY_CONFIGS.epusdt.secret" in epusdt["acceptance_blockers"]
+    assert epusdt["open_orders"] == 1
+    assert epusdt["webhook_url"] == "https://api.pdf-flow.test/api/v1/payment/webhooks/epusdt"
+    assert "PAYMENT_GATEWAY_CONFIGS.epusdt.secret" in epusdt["missing_config_keys"]
+    assert "EPUSDT" in epusdt["merchant_console_hint"]
+    assert "USDT test order" in " ".join(epusdt["sandbox_runbook"])
+    assert "gateway trade id" in epusdt["evidence_fields"]
+
+    wechat = next(provider for provider in body["providers"] if provider["key"] == "wechat")
+    assert wechat["acceptance_status"] == "needs_review"
+    assert "manual review" in " ".join(wechat["acceptance_blockers"])
+    assert "API v3" in " ".join(wechat["go_live_checklist"])
+    assert "platform certificate" in " ".join(wechat["troubleshooting_steps"])
+
+    order = next(item for item in body["recent_orders"] if item["merchant_order_id"] == "pf_admin_paid")
+    assert order["user_email"] == "paying-customer@example.com"
+    assert order["checkout_url_present"] is True
+    assert "checkout.stripe.local" not in body["reconciliation_summary"]
+    assert "tron:private-payment-address" not in body["reconciliation_summary"]
+    assert "Privacy note" in body["reconciliation_summary"]
+    assert "PDF-Flow payment integration evidence packet" in body["integration_evidence_packet"]
+    assert "acceptance_status=accepted" in body["integration_evidence_packet"]
+    assert "acceptance_status=missing_config" in body["integration_evidence_packet"]
+    assert "provider_dashboard_event_url=" in body["integration_evidence_packet"]
+    assert "evt_admin_paid" in body["integration_evidence_packet"]
+    assert "checkout.stripe.local" not in body["integration_evidence_packet"]
+    assert "tron:private-payment-address" not in body["integration_evidence_packet"]
+    assert "raw provider payloads" in body["integration_evidence_packet"]
+
+    filtered = client.get(
+        "/api/v1/admin/payments",
+        headers=headers,
+        params={"provider": "epusdt", "status_filter": "pending"},
+    )
+    assert filtered.status_code == 200
+    assert [item["provider"] for item in filtered.json()["recent_orders"]] == ["epusdt"]
+
+
 def test_guest_can_submit_feedback_and_admin_can_triage(client):
     long_url = f"https://pdf.pawn.eu.org/tools/pdf-to-image?debug={'x' * 1500}"
     response = client.post("/api/v1/feedback", json={
@@ -602,7 +766,7 @@ def test_admin_can_observe_api_errors_and_diagnostics(client):
     route_path = "/api/v1/test-observable-error"
 
     if not any(getattr(route, "path", None) == route_path for route in app.router.routes):
-        @app.get(route_path)
+        @app.post(route_path)
         async def _test_observable_error():
             raise RuntimeError("observable test failure")
 
@@ -612,16 +776,29 @@ def test_admin_can_observe_api_errors_and_diagnostics(client):
     headers = {"Authorization": f"Bearer {token}"}
 
     with TestClient(app, raise_server_exceptions=False) as safe_client:
-        failed = safe_client.get(route_path)
+        failed = safe_client.post(
+            f"{route_path}?debug=visible-query",
+            json={"secret_document_text": "do-not-copy-this-body"},
+            headers={"x-request-id": "req_admin_diagnostics_test"},
+        )
         assert failed.status_code == 500
 
     errors = client.get("/api/v1/admin/errors", headers=headers)
     assert errors.status_code == 200
     assert errors.json()[0]["path"] == route_path
+    assert errors.json()[0]["method"] == "POST"
+    assert errors.json()[0]["request_id"] == "req_admin_diagnostics_test"
     assert errors.json()[0]["status_code"] == 500
+    assert "do-not-copy-this-body" not in str(errors.json()[0])
 
     diagnostics = client.get("/api/v1/admin/diagnostics", headers=headers)
     assert diagnostics.status_code == 200
     body = diagnostics.json()
     assert body["api_error_count"] >= 1
     assert body["recent_errors"][0]["path"] == route_path
+    assert "diagnostic_summary" in body
+    assert "PDF-Flow diagnostic packet" in body["diagnostic_summary"]
+    assert "req_admin_diagnostics_test" in body["diagnostic_summary"]
+    assert "POST /api/v1/test-observable-error" in body["diagnostic_summary"]
+    assert "do-not-copy-this-body" not in body["diagnostic_summary"]
+    assert "request bodies and document contents are not included" in body["diagnostic_summary"]

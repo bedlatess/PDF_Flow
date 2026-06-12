@@ -89,6 +89,52 @@ class TestDownloadPath:
         assert exc.value.status_code == 422
 
 
+class TestJobCancellation:
+    def test_cancel_pending_job_marks_redis_state_cancelled(self):
+        _put_job("job_cancel", {
+            "job_id": "job_cancel",
+            "status": "pending",
+            "progress": 10,
+            "created_at": time.time(),
+            "updated_at": time.time(),
+        })
+
+        result = file_processing_service.cancel_job("job_cancel")
+
+        assert result["status"] == "cancelled"
+        assert result["error"] == "Job cancelled by user"
+        assert file_processing_service.get_job_status("job_cancel")["status"] == "cancelled"
+
+    def test_cancel_completed_job_returns_409(self):
+        _put_job("job_done", {
+            "job_id": "job_done",
+            "status": "completed",
+            "result": {"text": "done"},
+            "created_at": time.time(),
+            "updated_at": time.time(),
+        })
+
+        with pytest.raises(HTTPException) as exc:
+            file_processing_service.cancel_job("job_done")
+
+        assert exc.value.status_code == 409
+
+    def test_cancel_job_endpoint_updates_status(self, client):
+        _put_job("job_api_cancel", {
+            "job_id": "job_api_cancel",
+            "status": "pending",
+            "created_at": time.time(),
+            "updated_at": time.time(),
+        })
+
+        cancelled = client.delete("/api/v1/files/jobs/job_api_cancel")
+
+        assert cancelled.status_code == 204
+        status_response = client.get("/api/v1/files/jobs/job_api_cancel")
+        assert status_response.status_code == 200
+        assert status_response.json()["status"] == "cancelled"
+
+
 class TestFileValidator:
     """魔术数字 / 大小限制逻辑（MAX_FILE_SIZE 分级）"""
 

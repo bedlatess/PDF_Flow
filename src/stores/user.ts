@@ -5,7 +5,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authAPI, userAPI, type User, type UserStats, type LoginData, type RegisterData } from '@/services/api'
-import { toUserStoreErrorMessage } from '@/utils/error-messages'
+import { formatUserFacingError, toUserStoreErrorMessage, type FormattedUserError } from '@/utils/error-messages'
 
 export const useUserStore = defineStore('user', () => {
   // State
@@ -14,6 +14,8 @@ export const useUserStore = defineStore('user', () => {
   const isAuthenticated = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const statsLoading = ref(false)
+  const statsError = ref<FormattedUserError | null>(null)
 
   // Computed
   const isFreeTier = computed(() => user.value?.role === 'free')
@@ -44,7 +46,6 @@ export const useUserStore = defineStore('user', () => {
 
     try {
       const newUser = await authAPI.register(data)
-      console.log('User registered:', newUser)
       return newUser
     } catch (err: any) {
       error.value = toUserStoreErrorMessage(err, {
@@ -81,7 +82,6 @@ export const useUserStore = defineStore('user', () => {
       // 4. 获取使用统计
       await fetchStats()
 
-      console.log('User logged in:', currentUser)
       return currentUser
     } catch (err: any) {
       error.value = toUserStoreErrorMessage(err, {
@@ -104,11 +104,13 @@ export const useUserStore = defineStore('user', () => {
     try {
       await authAPI.logout()
     } catch (err) {
-      console.error('Logout error:', err)
+      void err
     } finally {
       // 清除本地状态
       user.value = null
       stats.value = null
+      statsError.value = null
+      statsLoading.value = false
       isAuthenticated.value = false
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
@@ -124,6 +126,10 @@ export const useUserStore = defineStore('user', () => {
 
     if (!token) {
       isAuthenticated.value = false
+      user.value = null
+      stats.value = null
+      statsError.value = null
+      statsLoading.value = false
       return false
     }
 
@@ -136,7 +142,11 @@ export const useUserStore = defineStore('user', () => {
       await fetchStats()
       return true
     } catch (err) {
-      console.error('Auth check failed:', err)
+      void err
+      user.value = null
+      stats.value = null
+      statsError.value = null
+      statsLoading.value = false
       isAuthenticated.value = false
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
@@ -152,11 +162,21 @@ export const useUserStore = defineStore('user', () => {
   const fetchStats = async () => {
     if (!isAuthenticated.value) return
 
+    statsLoading.value = true
+    statsError.value = null
+
     try {
       const userStats = await userAPI.getStats()
       stats.value = userStats
     } catch (err) {
-      console.error('Failed to fetch stats:', err)
+      stats.value = null
+      statsError.value = formatUserFacingError(err, {
+        area: 'AUTH',
+        fallbackTitle: 'Usage could not be loaded',
+        fallbackMessage: 'We could not load account usage right now. Please retry in a moment.',
+      })
+    } finally {
+      statsLoading.value = false
     }
   }
 
@@ -212,6 +232,8 @@ export const useUserStore = defineStore('user', () => {
     isAuthenticated,
     loading,
     error,
+    statsLoading,
+    statsError,
 
     // Computed
     isFreeTier,

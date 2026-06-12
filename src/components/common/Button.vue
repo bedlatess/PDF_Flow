@@ -25,7 +25,7 @@ const emit = defineEmits<{
 
 const buttonClasses = computed(() => {
   const classes = [
-    'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200',
+    'inline-flex items-center justify-center rounded-md font-medium transition-colors duration-200',
     'focus:outline-none focus:ring-2 focus:ring-offset-2',
     'disabled:opacity-50 disabled:cursor-not-allowed',
   ]
@@ -36,7 +36,7 @@ const buttonClasses = computed(() => {
       classes.push(
         'bg-primary text-white hover:bg-primary-600',
         'focus:ring-primary-500',
-        'shadow-sm hover:shadow-md'
+        'shadow-sm'
       )
       break
     case 'secondary':
@@ -63,7 +63,7 @@ const buttonClasses = computed(() => {
       classes.push(
         'bg-error text-white hover:bg-error-dark',
         'focus:ring-error',
-        'shadow-sm hover:shadow-md'
+        'shadow-sm'
       )
       break
   }

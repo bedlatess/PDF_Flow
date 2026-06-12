@@ -24,10 +24,14 @@ dist-ssr
 *.sw?
 __pycache__/
 *.py[cod]
+.superpowers/
 .tmp/
+.tmp-*.log
 playwright-report/
 test-results/
 test_pdfflow.db
+*.db-shm
+*.db-wal
 
 # Test coverage
 coverage

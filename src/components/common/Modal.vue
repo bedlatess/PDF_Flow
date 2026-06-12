@@ -78,6 +78,9 @@ const handleContentClick = (event: MouseEvent) => {
         >
           <div
             v-if="modelValue"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="title || undefined"
             :class="[
               'relative w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl',
               sizeClasses,

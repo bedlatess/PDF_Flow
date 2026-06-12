@@ -21,12 +21,14 @@ import { useCloudProcessing } from '@/composables/useCloudProcessing'
 import { fileAPI } from '@/services/api'
 import CloudToggle from '@/components/common/CloudToggle.vue'
 import { historyManager } from '@/utils/history-manager'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import { useUserStore } from '@/stores/user'
 import { shouldPreferCloudProcessing } from '@/utils/cloud-recommendation'
 
-const { t, locale } = useI18n()
+const { t, tm } = useI18n()
 const userStore = useUserStore()
+
+type ToolPageCopy = Record<string, any>
 
 const selectedFile = ref<File | null>(null)
 const selectedQuality = ref<CompressionQuality>('medium')
@@ -44,95 +46,7 @@ const errorMessage = ref('')
 const { destroyWorker } = usePDFWorker()
 const { cloudProgress, cloudPhase, processInCloud } = useCloudProcessing()
 
-const copy = computed(() => locale.value.startsWith('zh')
-  ? {
-      badge: '本地优先',
-      setupLabel: '压缩设置',
-      setupTitle: '选择压缩强度',
-      setupDesc: '压缩效果取决于 PDF 是否已经被优化。这里的强度会影响处理方式，但最终节省空间以实际结果为准。',
-      resultLabel: '参考预估',
-      resultTitle: '输出前快速确认',
-      estimateHint: '预估用于帮助选择强度，不代表最终一定节省。实际大小会在处理完成后显示。',
-      actualLabel: '实际结果',
-      noSavingsTitle: '文件已接近最优',
-      noSavingsDesc: '这份 PDF 没有进一步缩小，PDF-Flow 已保留原文件，避免生成更大的“压缩文件”。',
-      optimizedDesc: '已按当前设置生成更小的 PDF。',
-      originalSize: '原始大小',
-      estimatedCompression: '参考压缩',
-      estimatedSize: '参考大小',
-      outputSize: '输出大小',
-      savedSize: '节省空间',
-      ratio: '实际比例',
-      action: '压缩 PDF',
-      successTitle: '压缩完成',
-      compressMore: '继续压缩其他文件',
-      errorFailed: '压缩失败，请稍后重试。',
-      errorCloudFailed: '云端压缩失败，请稍后再试。',
-      statusPreparing: '正在准备压缩...',
-      statusProcessing: '正在压缩 PDF...',
-      statusDone: '压缩完成',
-      qualityOptions: [
-        {
-          value: 'high' as CompressionQuality,
-          label: '高清优先',
-          description: '轻度优化，优先保留更好的阅读清晰度。',
-        },
-        {
-          value: 'medium' as CompressionQuality,
-          label: '平衡压缩',
-          description: '适合多数分享、归档和在线传输场景。',
-        },
-        {
-          value: 'low' as CompressionQuality,
-          label: '体积优先',
-          description: '尽可能减小体积，更适合上传和快速分发。',
-        },
-      ],
-    }
-  : {
-      badge: 'Local-first',
-      setupLabel: 'Compression setup',
-      setupTitle: 'Choose a compression level',
-      setupDesc: 'Compression depends on how the PDF was built. The level changes the optimization pass, but actual savings are shown after processing.',
-      resultLabel: 'Reference estimate',
-      resultTitle: 'Review before exporting',
-      estimateHint: 'The estimate helps choose a level, but the real size depends on the file. Actual results appear after processing.',
-      actualLabel: 'Actual result',
-      noSavingsTitle: 'Already near optimal',
-      noSavingsDesc: 'This PDF did not shrink further, so PDF-Flow kept the original file instead of creating a larger “compressed” copy.',
-      optimizedDesc: 'A smaller PDF was generated with the selected setting.',
-      originalSize: 'Original size',
-      estimatedCompression: 'Reference compression',
-      estimatedSize: 'Reference size',
-      outputSize: 'Output size',
-      savedSize: 'Space saved',
-      ratio: 'Actual ratio',
-      action: 'Compress PDF',
-      successTitle: 'Compression complete',
-      compressMore: 'Compress more files',
-      errorFailed: 'Compression failed. Please try again later.',
-      errorCloudFailed: 'Cloud compression failed. Please try again later.',
-      statusPreparing: 'Preparing compression...',
-      statusProcessing: 'Compressing PDF...',
-      statusDone: 'Compression complete',
-      qualityOptions: [
-        {
-          value: 'high' as CompressionQuality,
-          label: 'High quality',
-          description: 'Light optimization with a stronger focus on visual clarity.',
-        },
-        {
-          value: 'medium' as CompressionQuality,
-          label: 'Balanced',
-          description: 'A steady middle ground for most sharing, archive, and upload workflows.',
-        },
-        {
-          value: 'low' as CompressionQuality,
-          label: 'Size first',
-          description: 'Prioritizes a smaller file size for uploads and fast distribution.',
-        },
-      ],
-    })
+const copy = computed<ToolPageCopy>(() => tm('tools.compress.page') as ToolPageCopy)
 
 const formatMB = (value: number) => `${(Math.max(value, 0) / (1024 * 1024)).toFixed(2)} MB`
 
@@ -330,19 +244,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-950 dark:to-emerald-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="t('tools.compress.title')"
       :subtitle="t('tools.compress.desc')"
       :badge="copy.badge"
       accent="emerald"
-    >
+    width="md"
+  >
+
       <template #badgeIcon>
         <FileText class="h-4 w-4" />
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <div
         v-if="errorMessage"
         class="mb-4 rounded-lg bg-error-light p-4 text-error-dark dark:bg-error/20 dark:text-error"
@@ -369,7 +281,7 @@ onUnmounted(() => {
             @preview="handlePreview"
           />
 
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-emerald-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-5">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-500">
@@ -390,7 +302,7 @@ onUnmounted(() => {
                   v-for="option in copy.qualityOptions"
                   :key="option.value"
                   :class="[
-                    'w-full rounded-[24px] border-2 p-4 text-left transition-all',
+                    'w-full rounded-md border-2 p-4 text-left transition-all',
                     selectedQuality === option.value
                       ? 'border-primary bg-primary/10 shadow-sm'
                       : 'border-slate-200 bg-slate-50/70 hover:border-primary/40 dark:border-slate-700 dark:bg-slate-950/40',
@@ -409,7 +321,7 @@ onUnmounted(() => {
           </Card>
         </div>
 
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-emerald-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+        <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-5">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-500">
@@ -446,7 +358,7 @@ onUnmounted(() => {
 
             <div
               v-if="resultStats"
-              class="rounded-[24px] border p-5 dark:border-slate-800"
+              class="rounded-md border p-5 dark:border-slate-800"
               :class="resultStats.optimized ? 'border-emerald-200 bg-emerald-50/80 dark:bg-emerald-500/10' : 'border-amber-200 bg-amber-50/80 dark:bg-amber-500/10'"
             >
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -465,7 +377,7 @@ onUnmounted(() => {
 
             <div
               v-if="resultStats || estimatedStats"
-              class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40"
+              class="rounded-md border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40"
             >
               <div class="grid grid-cols-2 gap-4 text-sm">
                 <div>
@@ -549,7 +461,7 @@ onUnmounted(() => {
         <div class="text-center">
           <div
             v-if="resultStats"
-            class="mb-6 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 text-left dark:border-slate-800 dark:bg-slate-950/40"
+            class="mb-6 rounded-md border border-slate-200 bg-slate-50/80 p-5 text-left dark:border-slate-800 dark:bg-slate-950/40"
           >
             <p class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">
               {{ resultStats.optimized ? copy.optimizedDesc : copy.noSavingsDesc }}
@@ -608,6 +520,5 @@ onUnmounted(() => {
           </div>
         </div>
       </Modal>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

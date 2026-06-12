@@ -24,35 +24,30 @@ const accentClasses = computed(() => {
     label: string
     button: string
     step: string
-    shell: string
     marker: string
   }> = {
     blue: {
       label: 'text-blue-600 dark:text-blue-300',
       button: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
       step: 'border-blue-100 bg-blue-50/70 text-blue-950 dark:border-blue-900/70 dark:bg-blue-950/30 dark:text-blue-100',
-      shell: 'shadow-blue-100/60 dark:shadow-none',
       marker: 'bg-blue-600 text-white',
     },
     purple: {
       label: 'text-purple-600 dark:text-purple-300',
       button: 'bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500',
       step: 'border-purple-100 bg-purple-50/70 text-purple-950 dark:border-purple-900/70 dark:bg-purple-950/30 dark:text-purple-100',
-      shell: 'shadow-purple-100/60 dark:shadow-none',
       marker: 'bg-purple-600 text-white',
     },
     amber: {
       label: 'text-amber-600 dark:text-amber-300',
       button: 'bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-500',
       step: 'border-amber-100 bg-amber-50/70 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100',
-      shell: 'shadow-amber-100/60 dark:shadow-none',
       marker: 'bg-amber-600 text-white',
     },
     pink: {
       label: 'text-fuchsia-600 dark:text-fuchsia-300',
       button: 'bg-fuchsia-600 text-white hover:bg-fuchsia-700 focus:ring-fuchsia-500',
       step: 'border-fuchsia-100 bg-fuchsia-50/70 text-fuchsia-950 dark:border-fuchsia-900/70 dark:bg-fuchsia-950/30 dark:text-fuchsia-100',
-      shell: 'shadow-fuchsia-100/60 dark:shadow-none',
       marker: 'bg-fuchsia-600 text-white',
     },
   }
@@ -63,10 +58,8 @@ const accentClasses = computed(() => {
 
 <template>
   <section
-    :class="[
-      'overflow-hidden rounded-2xl border border-white/70 bg-white/95 shadow-xl backdrop-blur dark:border-slate-800 dark:bg-slate-900/90',
-      accentClasses.shell,
-    ]"
+    data-testid="tool-access-panel"
+    class="overflow-hidden rounded-md border border-white/70 bg-white/95 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/90"
   >
     <div class="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
       <div class="flex flex-col justify-center p-6 sm:p-8">

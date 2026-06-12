@@ -16,13 +16,20 @@ type PDFPageProxyLike = {
   cleanup?: () => void
   objs?: {
     get: (id: string, callback?: (data: unknown) => void) => unknown
+    has?: (id: string) => boolean
   }
 }
 
 interface PDFImageData {
   width: number
   height: number
-  data: Uint8Array | Uint8ClampedArray
+  data: ArrayBufferView
+}
+
+interface PDFBitmapImageData {
+  width: number
+  height: number
+  bitmap: ImageBitmap
 }
 
 export async function extractImagesFromPDF(file: File): Promise<ExtractedPDFImage[]> {
@@ -61,40 +68,75 @@ async function extractImagesFromPage(
   page: PDFPageProxyLike
 ): Promise<Omit<ExtractedPDFImage, 'pageNumber' | 'imageNumber'>[]> {
   const operatorList = await page.getOperatorList()
-  const imageOps = new Set([
-    pdfjsLib.OPS.paintImageXObject,
-    pdfjsLib.OPS.paintInlineImageXObject,
-  ])
   const images: Omit<ExtractedPDFImage, 'pageNumber' | 'imageNumber'>[] = []
 
   for (let index = 0; index < operatorList.fnArray.length; index += 1) {
-    if (!imageOps.has(operatorList.fnArray[index])) {
+    const operation = operatorList.fnArray[index]
+    if (!isImageOperation(operation)) {
       continue
     }
 
     const args = operatorList.argsArray[index]
-    const source = await resolveImageSource(page, operatorList.fnArray[index], args)
-    const image = await imageSourceToPng(source)
-    if (image) {
-      images.push(image)
+    const sources = await resolveImageSources(page, operation, args)
+
+    for (const source of sources) {
+      const image = await imageSourceToPng(source)
+      if (image) {
+        images.push(image)
+      }
     }
   }
 
   return images
 }
 
-async function resolveImageSource(
+function isImageOperation(operation: number): boolean {
+  return [
+    pdfjsLib.OPS.paintImageMaskXObject,
+    pdfjsLib.OPS.paintImageMaskXObjectGroup,
+    pdfjsLib.OPS.paintImageXObject,
+    pdfjsLib.OPS.paintInlineImageXObject,
+    pdfjsLib.OPS.paintImageXObjectRepeat,
+    pdfjsLib.OPS.paintImageMaskXObjectRepeat,
+  ].includes(operation)
+}
+
+async function resolveImageSources(
   page: PDFPageProxyLike,
   operation: number,
   args: unknown[]
-): Promise<unknown> {
-  if (operation === pdfjsLib.OPS.paintInlineImageXObject) {
-    return args[0]
+): Promise<unknown[]> {
+  if (
+    operation === pdfjsLib.OPS.paintInlineImageXObject
+    || operation === pdfjsLib.OPS.paintImageMaskXObject
+  ) {
+    return [args[0]]
+  }
+
+  if (operation === pdfjsLib.OPS.paintImageMaskXObjectGroup) {
+    return Array.isArray(args[0]) ? args[0] : []
   }
 
   const objectId = args[0]
   if (typeof objectId !== 'string' || !page.objs) {
+    return []
+  }
+
+  const source = await resolveXObjectImage(page, objectId)
+  return source ? [source] : []
+}
+
+async function resolveXObjectImage(page: PDFPageProxyLike, objectId: string): Promise<unknown> {
+  if (!page.objs) {
     return null
+  }
+
+  if (page.objs.has?.(objectId)) {
+    try {
+      return page.objs.get(objectId)
+    } catch {
+      return null
+    }
   }
 
   try {
@@ -107,10 +149,20 @@ async function resolveImageSource(
   }
 
   return new Promise((resolve) => {
+    let settled = false
+    let timeoutId = 0
+    const finish = (value: unknown) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timeoutId)
+      resolve(value)
+    }
+    timeoutId = window.setTimeout(() => finish(null), 3000)
+
     try {
-      page.objs?.get(objectId, resolve)
+      page.objs?.get(objectId, finish)
     } catch {
-      resolve(null)
+      finish(null)
     }
   })
 }
@@ -126,14 +178,16 @@ async function imageSourceToPng(
     return canvasToResult(source)
   }
 
-  if (source instanceof HTMLImageElement || source instanceof ImageBitmap) {
-    const canvas = document.createElement('canvas')
-    canvas.width = source instanceof ImageBitmap ? source.width : source.naturalWidth
-    canvas.height = source instanceof ImageBitmap ? source.height : source.naturalHeight
-    const context = canvas.getContext('2d')
-    if (!context) return null
-    context.drawImage(source, 0, 0)
-    return canvasToResult(canvas)
+  if (isPDFBitmapImageData(source)) {
+    return drawableImageToPng(source.bitmap, source.width, source.height)
+  }
+
+  if (source instanceof HTMLImageElement || isImageBitmap(source)) {
+    return drawableImageToPng(
+      source,
+      isImageBitmap(source) ? source.width : source.naturalWidth,
+      isImageBitmap(source) ? source.height : source.naturalHeight
+    )
   }
 
   if (isPDFImageData(source)) {
@@ -154,6 +208,19 @@ async function imageSourceToPng(
   return null
 }
 
+function isPDFBitmapImageData(source: unknown): source is PDFBitmapImageData {
+  if (!source || typeof source !== 'object') {
+    return false
+  }
+
+  const candidate = source as Partial<PDFBitmapImageData>
+  return (
+    typeof candidate.width === 'number'
+    && typeof candidate.height === 'number'
+    && isImageBitmap(candidate.bitmap)
+  )
+}
+
 function isPDFImageData(source: unknown): source is PDFImageData {
   if (!source || typeof source !== 'object') {
     return false
@@ -163,13 +230,31 @@ function isPDFImageData(source: unknown): source is PDFImageData {
   return (
     typeof candidate.width === 'number'
     && typeof candidate.height === 'number'
-    && candidate.data instanceof Uint8Array
+    && ArrayBuffer.isView(candidate.data)
   )
+}
+
+function isImageBitmap(source: unknown): source is ImageBitmap {
+  return typeof ImageBitmap !== 'undefined' && source instanceof ImageBitmap
+}
+
+async function drawableImageToPng(
+  source: CanvasImageSource,
+  width: number,
+  height: number
+): Promise<Omit<ExtractedPDFImage, 'pageNumber' | 'imageNumber'> | null> {
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext('2d')
+  if (!context) return null
+  context.drawImage(source, 0, 0)
+  return canvasToResult(canvas)
 }
 
 function toImageData(source: PDFImageData): ImageData | null {
   const pixelCount = source.width * source.height
-  const data = source.data
+  const data = new Uint8Array(source.data.buffer, source.data.byteOffset, source.data.byteLength)
 
   if (data.length === pixelCount * 4) {
     return new ImageData(new Uint8ClampedArray(data), source.width, source.height)

@@ -20,7 +20,7 @@ import ProgressBar from '@/components/common/ProgressBar.vue'
 import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
 import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
 import { useUserStore } from '@/stores/user'
@@ -28,7 +28,7 @@ import { formatUserFacingError, type FormattedUserError } from '@/utils/error-me
 import { redirectForFeatureAccess } from '@/utils/feature-access'
 import { memoryManager } from '@/utils/memory-manager'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
@@ -40,8 +40,8 @@ const loading = ref(false)
 const progress = ref(0)
 const errorState = ref<FormattedUserError | null>(null)
 const resultUrl = ref('')
-const isChinese = computed(() => locale.value.toLowerCase().startsWith('zh'))
-const stepText = (value: number) => isChinese.value ? `\u6b65\u9aa4 ${value}` : `Step ${value}`
+const stepText = (value: number) => t('tools.fillForm.stepLabel', { step: value })
+const fieldInputId = (field: any, index: number) => `fill-form-field-${index}-${String(field.name || 'field').replace(/[^a-zA-Z0-9_-]/g, '-')}`
 
 const canUseTool = computed(() => userStore.isAuthenticated && userStore.canUseCloudFeatures)
 
@@ -217,26 +217,24 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-slate-950 dark:via-slate-950 dark:to-amber-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="t('tools.fillForm.title')"
       :subtitle="t('tools.fillForm.description')"
       :badge="t('tools.fillForm.proOnly')"
       pro
       accent="amber"
-    >
+    width="md"
+  >
+
       <template #badgeIcon>
         <Crown class="h-4 w-4" />
       </template>
 
-      <template #extra>
+      <template #headerExtra>
         <p class="mx-auto max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
           {{ t('tools.fillForm.pageExtra') }}
         </p>
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <ToolNoticeBar variant="amber">
         <template #icon>
           <Sparkles class="h-5 w-5" />
@@ -278,7 +276,7 @@ onUnmounted(() => {
           v-if="step === 1 && canUseTool"
           class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]"
         >
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-amber-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
               <div class="space-y-2">
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-500">
@@ -311,7 +309,7 @@ onUnmounted(() => {
             </div>
           </Card>
 
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-amber-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
@@ -322,24 +320,24 @@ onUnmounted(() => {
                 </p>
               </div>
 
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
+              <div class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
                   {{ t('tools.fillForm.flowTitle') }}
                 </p>
                 <div class="mt-4 space-y-3">
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-sm font-semibold text-white">1</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.fillForm.flowStep1') }}
                     </p>
                   </div>
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-sm font-semibold text-white">2</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.fillForm.flowStep2') }}
                     </p>
                   </div>
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-500 text-sm font-semibold text-white">3</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.fillForm.flowStep3') }}
@@ -353,7 +351,7 @@ onUnmounted(() => {
 
         <Card
           v-if="step === 2"
-          class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-amber-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none"
+          class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none"
         >
           <div
             v-if="loading"
@@ -399,11 +397,14 @@ onUnmounted(() => {
               <div
                 v-for="(field, index) in formFields"
                 :key="`${field.name}-${index}`"
-                class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50"
+                class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50"
               >
                 <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <label class="block text-sm font-semibold text-slate-900 dark:text-white">
+                    <label
+                      :for="field.type === 'radio' ? undefined : fieldInputId(field, index)"
+                      class="block text-sm font-semibold text-slate-900 dark:text-white"
+                    >
                       {{ field.name }}
                       <span
                         v-if="field.required"
@@ -429,17 +430,20 @@ onUnmounted(() => {
 
                 <input
                   v-if="field.type === 'text'"
+                  :id="fieldInputId(field, index)"
                   v-model="field.value"
                   type="text"
                   :placeholder="field.default_value || t('tools.fillForm.enterValue')"
-                  class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
+                  class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
                 >
 
                 <label
                   v-else-if="field.type === 'checkbox'"
-                  class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  :for="fieldInputId(field, index)"
+                  class="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                 >
                   <input
+                    :id="fieldInputId(field, index)"
                     v-model="field.value"
                     type="checkbox"
                     class="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
@@ -454,7 +458,7 @@ onUnmounted(() => {
                   <label
                     v-for="(option, optionIndex) in field.options || []"
                     :key="optionIndex"
-                    class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                    class="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                   >
                     <input
                       v-model="field.value"
@@ -468,8 +472,9 @@ onUnmounted(() => {
 
                 <select
                   v-else-if="field.type === 'dropdown'"
+                  :id="fieldInputId(field, index)"
                   v-model="field.value"
-                  class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
+                  class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-500/20"
                 >
                   <option value="">
                     {{ t('tools.fillForm.selectOption') }}
@@ -530,7 +535,7 @@ onUnmounted(() => {
 
         <Card
           v-if="step === 3"
-          class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-amber-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none"
+          class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none"
         >
           <div class="space-y-6 py-6 text-center">
             <div class="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-amber-100 border-t-amber-500 dark:border-amber-950 dark:border-t-amber-400" />
@@ -557,7 +562,7 @@ onUnmounted(() => {
 
         <Card
           v-if="step === 4"
-          class="rounded-[28px] border border-emerald-200 bg-emerald-50/90 shadow-xl shadow-emerald-100/70 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
+          class="rounded-lg border border-emerald-200 bg-emerald-50/90 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
         >
           <div class="space-y-6 py-4 text-center">
             <CheckCircle2 class="mx-auto h-16 w-16 text-emerald-500" />
@@ -596,6 +601,5 @@ onUnmounted(() => {
           </div>
         </Card>
       </div>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

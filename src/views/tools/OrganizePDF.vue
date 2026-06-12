@@ -10,7 +10,7 @@ import Button from '@/components/common/Button.vue'
 import Card from '@/components/common/Card.vue'
 import Modal from '@/components/common/Modal.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import { getPDFPageCount } from '@/utils/pdf/merge'
 import { reorderPDFPages } from '@/utils/pdf/split'
 import { memoryManager } from '@/utils/memory-manager'
@@ -20,7 +20,9 @@ interface PageItem {
   pageNumber: number
 }
 
-const { locale } = useI18n()
+const { tm } = useI18n()
+
+type ToolPageCopy = Record<string, any>
 
 const selectedFile = ref<File | null>(null)
 const pageItems = ref<PageItem[]>([])
@@ -34,77 +36,7 @@ const processingStatus = ref('')
 const resultUrl = ref('')
 const errorMessage = ref('')
 
-const isZh = computed(() => locale.value.toLowerCase().startsWith('zh'))
-
-const copy = computed(() => isZh.value
-  ? {
-      title: '整理 PDF 页面',
-      subtitle: '拖拽调整页面顺序，导出排好版的新 PDF。',
-      badge: '本地工具',
-      workspaceLabel: '页面工作台',
-      workspaceTitle: '拖拽页面，排好顺序',
-      workspaceDesc: '适合提交合同、报告、扫描件前调整页面顺序。所有处理都在浏览器本地完成，原文件不会被覆盖。',
-      outputLabel: '输出确认',
-      outputTitle: '确认顺序后生成新文件',
-      outputTips: [
-        '拖拽缩略图可以直接调整页面位置。',
-        '移动端或不方便拖拽时，可以使用上移、下移按钮。',
-        '导出时会包含全部页面，只改变页面顺序。',
-      ],
-      reverse: '反转顺序',
-      reset: '恢复原顺序',
-      moveUp: '上移',
-      moveDown: '下移',
-      generate: '生成整理后的 PDF',
-      successTitle: '页面顺序已整理',
-      successMessage: '新的 PDF 已经生成，可以立即下载。',
-      download: '下载结果',
-      errorLoad: '无法读取这份 PDF，请重新选择文件后再试。',
-      errorNoChange: '当前页面顺序还没有变化，请先调整顺序后再生成。',
-      errorFailed: '整理页面失败，请重新选择文件后再试。',
-      statusPreparing: '正在准备页面...',
-      statusProcessing: '正在生成新 PDF...',
-      statusDone: '处理完成',
-      pageCount: '页面数量',
-      firstPage: '当前首页',
-      lastPage: '当前末页',
-      dragHint: '拖动卡片或使用按钮调整顺序',
-      page: '第 {page} 页',
-    }
-  : {
-      title: 'Organize PDF Pages',
-      subtitle: 'Drag pages into the right order and export a new PDF.',
-      badge: 'Local tool',
-      workspaceLabel: 'Page workspace',
-      workspaceTitle: 'Drag pages into order',
-      workspaceDesc: 'Useful before submitting contracts, reports, or scanned files. Processing runs locally in your browser and never overwrites the original file.',
-      outputLabel: 'Output check',
-      outputTitle: 'Confirm the order, then create a new file',
-      outputTips: [
-        'Drag thumbnails to move pages directly.',
-        'On mobile or when dragging is inconvenient, use the move up and move down buttons.',
-        'The result keeps every page and only changes the order.',
-      ],
-      reverse: 'Reverse order',
-      reset: 'Reset order',
-      moveUp: 'Move up',
-      moveDown: 'Move down',
-      generate: 'Generate organized PDF',
-      successTitle: 'Pages organized',
-      successMessage: 'Your new PDF is ready to download.',
-      download: 'Download result',
-      errorLoad: 'Could not read this PDF. Please choose the file again and try once more.',
-      errorNoChange: 'The page order has not changed yet. Move at least one page before generating.',
-      errorFailed: 'Failed to organize pages. Please choose the file again and try once more.',
-      statusPreparing: 'Preparing pages...',
-      statusProcessing: 'Creating new PDF...',
-      statusDone: 'Completed',
-      pageCount: 'Pages',
-      firstPage: 'First page',
-      lastPage: 'Last page',
-      dragHint: 'Drag cards or use the move buttons',
-      page: 'Page {page}',
-    })
+const copy = computed<ToolPageCopy>(() => tm('tools.organize.page') as ToolPageCopy)
 
 const totalPages = computed(() => pageItems.value.length)
 const orderedPages = computed(() => pageItems.value.map((item) => item.pageNumber))
@@ -259,22 +191,20 @@ onUnmounted(clearResult)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-cyan-50 dark:from-slate-950 dark:via-slate-950 dark:to-emerald-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="copy.title"
       :subtitle="copy.subtitle"
       :badge="copy.badge"
       accent="emerald"
-    >
+    width="lg"
+  >
+
       <template #badgeIcon>
         <Layers3 class="h-4 w-4" />
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-6xl px-4 pb-16 pt-6">
       <div
         v-if="errorMessage"
-        class="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700 shadow-sm dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-100"
+        class="mb-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700 shadow-sm dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-100"
       >
         {{ errorMessage }}
       </div>
@@ -299,7 +229,7 @@ onUnmounted(clearResult)
               @preview="showPDFViewer = true"
             />
 
-            <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-emerald-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+            <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
               <div class="space-y-5">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">
@@ -337,7 +267,7 @@ onUnmounted(clearResult)
                   </div>
                 </div>
 
-                <div class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="rounded-md border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/40">
                   <ul class="space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                     <li
                       v-for="tip in copy.outputTips"
@@ -369,7 +299,7 @@ onUnmounted(clearResult)
             </Card>
           </div>
 
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-emerald-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="mb-5 flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">
@@ -401,7 +331,7 @@ onUnmounted(clearResult)
               </div>
             </div>
 
-            <p class="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm leading-6 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+            <p class="mb-4 rounded-md border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm leading-6 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">
               {{ copy.dragHint }}
             </p>
 
@@ -410,8 +340,8 @@ onUnmounted(clearResult)
                 v-for="(item, index) in pageItems"
                 :key="item.pageNumber"
                 :class="[
-                  'rounded-[24px] border p-3 transition-all duration-200',
-                  dragOverIndex === index ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-100 dark:border-emerald-300 dark:bg-emerald-500/10' : 'border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-950/40',
+                  'rounded-md border p-3 transition-all duration-200',
+                  dragOverIndex === index ? 'border-emerald-400 bg-emerald-50 shadow-sm shadow-emerald-100 dark:border-emerald-300 dark:bg-emerald-500/10' : 'border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-950/40',
                   draggingIndex === index ? 'scale-95 opacity-60' : 'opacity-100',
                 ]"
                 draggable="true"
@@ -489,6 +419,5 @@ onUnmounted(clearResult)
           </Button>
         </div>
       </Modal>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

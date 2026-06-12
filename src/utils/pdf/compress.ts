@@ -72,7 +72,6 @@ export async function compressPDF(
       optimized: true,
     }
   } catch (error) {
-    console.error('PDF compression error:', error)
     throw new Error(`Failed to compress PDF: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
@@ -88,7 +87,6 @@ export async function compressPDFBatch(
       const result = await compressPDF(file, options)
       results.push(result)
     } catch (error) {
-      console.error(`Failed to compress ${file.name}:`, error)
       results.push({
         compressedBlob: file,
         originalSize: file.size,

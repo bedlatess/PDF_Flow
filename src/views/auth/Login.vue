@@ -1,55 +1,5 @@
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.16),transparent_32%),radial-gradient(circle_at_100%_0%,rgba(45,212,191,0.14),transparent_26%),linear-gradient(145deg,#f8fbff_0%,#eff6ff_48%,#f8fafc_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.14),transparent_26%),radial-gradient(circle_at_100%_0%,rgba(45,212,191,0.1),transparent_20%),linear-gradient(145deg,#020617_0%,#0f172a_52%,#111827_100%)]">
-    <div class="absolute inset-0">
-      <div class="absolute left-[-10rem] top-20 h-72 w-72 rounded-full bg-sky-200/55 blur-3xl dark:bg-sky-500/15" />
-      <div class="absolute right-[-8rem] top-10 h-64 w-64 rounded-full bg-cyan-200/40 blur-3xl dark:bg-cyan-500/10" />
-      <div class="absolute bottom-[-8rem] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-white/70 blur-3xl dark:bg-white/5" />
-    </div>
-
-    <div class="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl items-center gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-      <section class="px-2 py-8 lg:px-4">
-        <div class="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-700 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/55 dark:text-sky-300">
-          PDF-Flow
-        </div>
-
-        <div class="mt-8 max-w-xl">
-          <h1 class="text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            {{ marketingCopy.heroTitle }}
-          </h1>
-          <p class="mt-5 text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
-            {{ marketingCopy.heroDescription }}
-          </p>
-        </div>
-
-        <div class="mt-10 space-y-4">
-          <div class="rounded-[32px] border border-white/80 bg-white/82 p-6 shadow-xl shadow-sky-100/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/58 dark:shadow-none">
-            <p class="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
-              {{ marketingCopy.panelTitle }}
-            </p>
-            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {{ marketingCopy.panelDescription }}
-            </p>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-3">
-            <article
-              v-for="item in marketingCopy.highlights"
-              :key="item.title"
-              class="rounded-[24px] border border-white/80 bg-white/76 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/50"
-            >
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                {{ item.title }}
-              </p>
-              <p class="mt-2 text-xs leading-6 text-slate-600 dark:text-slate-300">
-                {{ item.description }}
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="py-8">
-        <div class="mx-auto w-full max-w-xl rounded-[36px] border border-white/80 bg-white/90 p-6 shadow-2xl shadow-sky-100/70 backdrop-blur dark:border-white/10 dark:bg-slate-900/82 dark:shadow-none sm:p-8">
+  <AuthWorkspaceShell :copy="marketingCopy" accent="sky">
           <div class="flex items-start justify-between gap-4">
             <div>
               <h2 class="mt-3 text-3xl font-semibold text-slate-950 dark:text-white">
@@ -62,7 +12,7 @@
 
             <router-link
               to="/auth/register"
-              class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:text-sky-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-sky-500/40 dark:hover:text-sky-300"
+              class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:text-sky-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-sky-500/40 dark:hover:text-sky-300"
             >
               {{ $t('auth.signUp') }}
             </router-link>
@@ -75,6 +25,7 @@
             :message="errorState.message"
             :diagnostic-code="errorState.diagnosticCode"
             :support-hint="errorState.supportHint"
+            :tone="errorState.tone"
           />
 
           <form @submit.prevent="handleLogin" class="mt-6 space-y-5">
@@ -89,7 +40,7 @@
                 required
                 autocomplete="email"
                 :disabled="loading"
-                class="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-sky-400 dark:focus:ring-sky-500/20"
+                class="w-full rounded-md border border-slate-200 bg-white/80 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-sky-400 dark:focus:ring-sky-500/20"
               />
               <p v-if="errors.email" class="mt-2 text-sm text-rose-600 dark:text-rose-300">
                 {{ errors.email }}
@@ -103,7 +54,7 @@
                 </label>
                 <router-link
                   to="/auth/forgot-password"
-                  class="text-sm font-medium text-sky-600 transition hover:text-sky-500 dark:text-sky-300"
+                  class="inline-flex min-h-8 items-center text-sm font-medium text-sky-600 transition hover:text-sky-500 dark:text-sky-300"
                 >
                   {{ $t('auth.forgotPassword') }}
                 </router-link>
@@ -117,11 +68,12 @@
                   required
                   autocomplete="current-password"
                   :disabled="loading"
-                  class="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-sky-400 dark:focus:ring-sky-500/20"
+                  class="w-full rounded-md border border-slate-200 bg-white/80 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white dark:focus:border-sky-400 dark:focus:ring-sky-500/20"
                 />
                 <button
                   type="button"
                   :disabled="loading"
+                  :aria-label="showPassword ? $t('auth.hidePassword') : $t('auth.showPassword')"
                   class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
                   @click="showPassword = !showPassword"
                 >
@@ -133,13 +85,13 @@
               </p>
             </div>
 
-            <div class="flex items-center justify-between gap-3 rounded-2xl bg-slate-50/90 px-4 py-3 dark:bg-slate-950/50">
-              <label for="remember" class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+            <div class="flex items-center justify-between gap-3 rounded-md bg-slate-50/90 px-4 py-3 dark:bg-slate-950/50">
+              <label for="remember" class="flex min-h-8 items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
                 <input
                   id="remember"
                   v-model="form.remember"
                   type="checkbox"
-                  class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  class="h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                   :disabled="loading"
                 />
                 <span>{{ $t('auth.rememberMe') }}</span>
@@ -150,7 +102,7 @@
             <button
               type="submit"
               :disabled="loading"
-              class="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-500 dark:hover:bg-sky-400"
+              class="inline-flex w-full items-center justify-center rounded-md bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-500 dark:hover:bg-sky-400"
             >
               <Loader2 v-if="loading" class="mr-2 h-4 w-4 animate-spin" />
               {{ loading ? $t('auth.loggingIn') : $t('auth.login') }}
@@ -171,7 +123,7 @@
               <button
                 type="button"
                 :disabled="loading"
-                class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:text-sky-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-sky-500/40 dark:hover:text-sky-300"
+                class="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:text-sky-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-sky-500/40 dark:hover:text-sky-300"
                 @click="handleOAuthLogin('google')"
               >
                 <svg class="mr-2 h-5 w-5" viewBox="0 0 24 24">
@@ -185,7 +137,7 @@
               <button
                 type="button"
                 :disabled="loading"
-                class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-950 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
+                class="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-950 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
                 @click="handleOAuthLogin('github')"
               >
                 <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -198,28 +150,43 @@
 
           <p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
             {{ $t('auth.noAccount') }}
-            <router-link to="/auth/register" class="font-semibold text-sky-600 transition hover:text-sky-500 dark:text-sky-300">
+            <router-link to="/auth/register" class="inline-flex min-h-8 items-center px-1 font-semibold text-sky-600 transition hover:text-sky-500 dark:text-sky-300">
               {{ $t('auth.signUp') }}
             </router-link>
           </p>
-        </div>
-      </section>
-    </div>
-  </div>
+  </AuthWorkspaceShell>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
 import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
+import AuthWorkspaceShell from '@/components/auth/AuthWorkspaceShell.vue'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
+import { getFirstQueryValue, resolveInternalRedirect } from '@/utils/route-state'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
-const { t, locale } = useI18n()
+const { t, tm } = useI18n()
+
+type LoginNotice = FormattedUserError & { tone?: 'danger' | 'warning' | 'info' }
+
+interface AuthMarketingHighlight {
+  title: string
+  description: string
+}
+
+interface AuthMarketingCopy {
+  heroTitle: string
+  heroDescription: string
+  panelTitle: string
+  panelDescription: string
+  highlights: AuthMarketingHighlight[]
+}
 
 const form = reactive({
   email: '',
@@ -234,74 +201,46 @@ const errors = reactive({
 
 const showPassword = ref(false)
 const loading = ref(false)
-const errorState = ref<FormattedUserError | null>(null)
+const errorState = ref<LoginNotice | null>(null)
 
-const marketingCopy = computed(() => {
-  if (locale.value === 'zh') {
-    return {
-      heroTitle: '\u767b\u5f55\u540e\u7ee7\u7eed\u5904\u7406\u4f60\u7684 PDF \u5de5\u4f5c',
-      heroDescription: '\u6253\u5f00\u6700\u8fd1\u4efb\u52a1\uff0c\u7ee7\u7eed OCR\u3001\u8f6c\u6362\u4e0e\u4e0b\u8f7d\uff0c\u4e5f\u80fd\u968f\u65f6\u67e5\u770b\u8d26\u53f7\u8bbe\u7f6e\u3002',
-      panelTitle: '\u767b\u5f55\u540e\u4f60\u53ef\u4ee5',
-      panelDescription: '\u5e38\u7528\u5de5\u5177\u3001\u8fd1\u671f\u7ed3\u679c\u548c\u8d26\u53f7\u72b6\u6001\u4f1a\u5728\u540c\u4e00\u5957\u6d41\u7a0b\u91cc\u8854\u63a5\u8d77\u6765\uff0c\u4e0d\u7528\u91cd\u65b0\u5bfb\u627e\u5165\u53e3\u3002',
-      highlights: [
-        {
-          title: '\u6700\u8fd1\u7ed3\u679c',
-          description: '\u66f4\u5feb\u627e\u56de\u4e0a\u4e00\u6b21\u5904\u7406\u8fc7\u7684\u6587\u6863\u3001\u4e0b\u8f7d\u8bb0\u5f55\u548c\u8f93\u51fa\u7ed3\u679c\u3002',
-        },
-        {
-          title: '\u5e38\u7528\u5de5\u5177',
-          description: '\u7ee7\u7eed OCR\u3001\u8f6c\u6362\u3001\u5408\u5e76\u4e0e\u5176\u4ed6\u5e38\u7528 PDF \u5904\u7406\u64cd\u4f5c\u3002',
-        },
-        {
-          title: '\u8d26\u53f7\u4e0e\u5957\u9910',
-          description: '\u67e5\u770b\u5f53\u524d\u72b6\u6001\u3001\u5957\u9910\u6743\u9650\u548c\u4e0e\u4f60\u76f8\u5173\u7684\u5904\u7406\u914d\u989d\u3002',
-        },
-      ],
-    }
-  }
+const marketingCopy = computed(() => tm('auth.loginMarketing') as AuthMarketingCopy)
 
-  if (locale.value === 'es') {
-    return {
-      heroTitle: 'Vuelve a tu espacio PDF y sigue trabajando',
-      heroDescription: 'Retoma OCR, conversiones, descargas y ajustes desde un mismo lugar.',
-      panelTitle: 'Al iniciar sesion podras',
-      panelDescription: 'Tus herramientas, resultados recientes y estado de cuenta quedan conectados en una experiencia mas clara.',
-      highlights: [
-        {
-          title: 'Resultados recientes',
-          description: 'Vuelve rapido a tus ultimos archivos procesados, descargas y salidas.',
-        },
-        {
-          title: 'Herramientas habituales',
-          description: 'Continua con OCR, conversion, fusion y otras tareas PDF sin rodeos.',
-        },
-        {
-          title: 'Cuenta y plan',
-          description: 'Consulta permisos, estado de cuenta y funciones disponibles en un mismo lugar.',
-        },
-      ],
-    }
-  }
+const queryNotices = computed<Record<string, LoginNotice>>(() => ({
+  registered: {
+    title: t('auth.loginNotices.registeredTitle'),
+    message: t('auth.loginNotices.registeredMessage'),
+    diagnosticCode: '',
+    supportHint: t('auth.loginNotices.registeredHint'),
+    tone: 'info',
+  },
+  oauth_failed: {
+    title: t('auth.loginNotices.oauthFailedTitle'),
+    message: t('auth.loginNotices.oauthFailedMessage'),
+    diagnosticCode: 'PF-AUTH-OAUTH-FAILED',
+    supportHint: t('auth.loginNotices.oauthFailedHint'),
+    tone: 'danger',
+  },
+  oauth_callback_failed: {
+    title: t('auth.loginNotices.oauthCallbackTitle'),
+    message: t('auth.loginNotices.oauthCallbackMessage'),
+    diagnosticCode: 'PF-AUTH-OAUTH-CALLBACK',
+    supportHint: t('auth.loginNotices.oauthFailedHint'),
+    tone: 'danger',
+  },
+}))
 
-  return {
-    heroTitle: 'Sign in and continue your PDF workflow',
-    heroDescription: 'Open recent jobs, continue OCR or conversion work, and check downloads from one calmer workspace.',
-    panelTitle: 'After signing in you can',
-    panelDescription: 'Your tools, recent results, and account status stay connected so it is easier to pick up where you left off.',
-    highlights: [
-      {
-        title: 'Recent results',
-        description: 'Jump back to your latest processed files, downloads, and finished outputs.',
-      },
-      {
-        title: 'Familiar tools',
-        description: 'Continue OCR, conversion, merge, and other common PDF tasks without hunting for the next step.',
-      },
-      {
-        title: 'Account and plan',
-        description: 'Review your account status, plan access, and available processing capacity in one place.',
-      },
-    ],
+onMounted(() => {
+  const registered = getFirstQueryValue(route.query.registered)
+  const queryError = getFirstQueryValue(route.query.error)
+  const noticeKey = registered === 'true' ? 'registered' : queryError
+  const notice = queryNotices.value[noticeKey]
+
+  if (notice) {
+    errorState.value = notice
+    const search = route.query.redirect
+      ? `?redirect=${encodeURIComponent(getFirstQueryValue(route.query.redirect))}`
+      : ''
+    window.history.replaceState({}, document.title, `${route.path}${search}`)
   }
 })
 
@@ -348,8 +287,7 @@ const handleLogin = async () => {
       remember: form.remember,
     })
 
-    const redirect = router.currentRoute.value.query.redirect as string | undefined
-    router.push(redirect || '/')
+    router.push(resolveInternalRedirect(router.currentRoute.value.query.redirect))
   } catch (error) {
     errorState.value = formatUserFacingError(error, {
       area: 'AUTH',
@@ -361,9 +299,11 @@ const handleLogin = async () => {
 }
 
 const handleOAuthLogin = (provider: 'google' | 'github') => {
-  const redirect = router.currentRoute.value.query.redirect as string | undefined
-  if (redirect) {
+  const redirect = resolveInternalRedirect(router.currentRoute.value.query.redirect)
+  if (redirect !== '/') {
     sessionStorage.setItem('oauth_redirect', redirect)
+  } else {
+    sessionStorage.removeItem('oauth_redirect')
   }
 
   const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'

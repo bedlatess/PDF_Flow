@@ -103,7 +103,6 @@ export async function addPageNumbers(
     const pdfBytes = await pdf.save()
     return pdfBytesToBlob(pdfBytes)
   } catch (error) {
-    console.error('Page numbering error:', error)
     throw new Error(`Failed to add page numbers: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }

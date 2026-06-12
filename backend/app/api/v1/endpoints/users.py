@@ -37,6 +37,11 @@ async def get_user_stats(
         UsageLog.created_at >= today_start
     ).scalar() or 0
 
+    storage_used = db.query(func.sum(UsageLog.file_size)).filter(
+        UsageLog.user_id == current_user.id,
+        UsageLog.file_size.isnot(None)
+    ).scalar() or 0
+
     # Calculate quota
     from app.core.config import settings
     role_value = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
@@ -50,7 +55,7 @@ async def get_user_stats(
     return {
         "total_requests": total_requests,
         "requests_today": requests_today,
-        "storage_used": 0,  # TODO: Calculate actual storage
+        "storage_used": int(storage_used),
         "quota_remaining": quota_remaining,
         "quota_limit": quota_limit,
         "role": role_value

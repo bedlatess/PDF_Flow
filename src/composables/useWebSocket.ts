@@ -52,7 +52,6 @@ export function useWebSocket() {
       ws.value = new WebSocket(url)
 
       ws.value.onopen = () => {
-        console.log(`WebSocket connected to job ${taskJobId}`)
         isConnected.value = true
 
         // 启动心跳
@@ -64,24 +63,21 @@ export function useWebSocket() {
           const data = JSON.parse(event.data)
           handleMessage(data)
         } catch (e) {
-          console.error('Failed to parse WebSocket message:', e)
+          void e
         }
       }
 
-      ws.value.onerror = (event) => {
-        console.error('WebSocket error:', event)
+      ws.value.onerror = () => {
         error.value = 'WebSocket connection error'
         isConnected.value = false
       }
 
       ws.value.onclose = (event) => {
-        console.log(`WebSocket closed: code=${event.code}, reason=${event.reason}`)
         isConnected.value = false
         stopHeartbeat()
 
         // 如果不是正常关闭，尝试重连（可选）
         if (event.code !== 1000 && event.code !== 1001) {
-          console.log('Attempting to reconnect in 3s...')
           setTimeout(() => {
             if (status.value !== 'completed' && status.value !== 'failed') {
               connect(taskJobId)
@@ -90,7 +86,7 @@ export function useWebSocket() {
         }
       }
     } catch (e) {
-      console.error('Failed to create WebSocket:', e)
+      void e
       error.value = 'Failed to connect to WebSocket'
     }
   }
@@ -122,7 +118,7 @@ export function useWebSocket() {
         break
 
       default:
-        console.log('Unknown message type:', data.type)
+        break
     }
   }
 
@@ -169,7 +165,6 @@ export function useWebSocket() {
       const message = typeof data === 'string' ? data : JSON.stringify(data)
       ws.value.send(message)
     } else {
-      console.warn('WebSocket is not connected')
     }
   }
 

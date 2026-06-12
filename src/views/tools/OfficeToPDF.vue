@@ -16,7 +16,7 @@ import ProgressBar from '@/components/common/ProgressBar.vue'
 import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
 import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
 import { fileAPI } from '@/services/api'
@@ -24,7 +24,7 @@ import { useUserStore } from '@/stores/user'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 import { redirectForFeatureAccess } from '@/utils/feature-access'
 
-const { t, locale } = useI18n()
+const { t, tm } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
@@ -37,44 +37,9 @@ const status = ref('')
 const errorState = ref<FormattedUserError | null>(null)
 const resultUrl = ref('')
 
-const copy = computed(() => {
-  if (locale.value.toLowerCase().startsWith('zh')) {
-    return {
-      formats: {
-        word: 'Word \u6587\u6863',
-        excel: 'Excel \u8868\u683c',
-        powerpoint: 'PowerPoint \u6f14\u793a',
-      },
-      unsupported: '\u8bf7\u4e0a\u4f20 Word\u3001Excel \u6216 PowerPoint \u6587\u4ef6\u3002',
-      conversionFailed: '\u8f6c\u6362\u6ca1\u6709\u5b8c\u6210\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002',
-      conversionFailedShort: '\u8f6c\u6362\u672a\u5b8c\u6210\u3002',
-    }
-  }
+type ToolPageCopy = Record<string, any>
 
-  if (locale.value === 'es') {
-    return {
-      formats: {
-        word: 'Documento Word',
-        excel: 'Hoja de Excel',
-        powerpoint: 'Presentacion PowerPoint',
-      },
-      unsupported: 'Sube un archivo de Word, Excel o PowerPoint.',
-      conversionFailed: 'La conversion fallo. Intentalo de nuevo en un momento.',
-      conversionFailedShort: 'La conversion fallo.',
-    }
-  }
-
-  return {
-    formats: {
-      word: 'Word document',
-      excel: 'Excel spreadsheet',
-      powerpoint: 'PowerPoint presentation',
-    },
-    unsupported: 'Please upload a Word, Excel, or PowerPoint file.',
-    conversionFailed: 'Conversion failed. Please try again in a moment.',
-    conversionFailedShort: 'Conversion failed.',
-  }
-})
+const copy = computed<ToolPageCopy>(() => tm('tools.officeToPdf') as ToolPageCopy)
 
 const supportedFormats = computed(() => [
   { label: copy.value.formats.word, ext: '.doc, .docx', tone: 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-200' },
@@ -202,18 +167,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-slate-950 dark:via-slate-950 dark:to-blue-950/30">
-    <ToolHeader
+  <ToolPageShell
       :title="t('tools.officeToPdf.title')"
       :subtitle="t('tools.officeToPdf.desc')"
       :badge="t('tools.officeToPdf.badge')"
       accent="blue"
-    >
+    width="md"
+  >
+
       <template #badgeIcon>
         <Sparkles class="h-4 w-4" />
       </template>
 
-      <template #extra>
+      <template #headerExtra>
         <div class="flex flex-wrap items-center justify-center gap-2">
           <span
             v-for="format in supportedFormats"
@@ -224,9 +190,6 @@ onUnmounted(() => {
           </span>
         </div>
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <ToolNoticeBar variant="blue">
         <template #icon>
           <FileText class="h-5 w-5" />
@@ -264,7 +227,7 @@ onUnmounted(() => {
       </ToolAccessPanel>
 
       <div v-if="userStore.isAuthenticated" class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-blue-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+        <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-6">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-blue-500">
@@ -339,7 +302,7 @@ onUnmounted(() => {
         </Card>
 
         <div class="space-y-6">
-          <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-blue-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+          <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
             <div class="space-y-6">
               <div>
                 <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
@@ -350,24 +313,24 @@ onUnmounted(() => {
                 </p>
               </div>
 
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
+              <div class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
                   {{ t('tools.officeToPdf.howItWorks') }}
                 </p>
                 <div class="mt-4 space-y-3">
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-sm font-semibold text-white">1</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.officeToPdf.step1') }}
                     </p>
                   </div>
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500 text-sm font-semibold text-white">2</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.officeToPdf.step2') }}
                     </p>
                   </div>
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500 text-sm font-semibold text-white">3</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.officeToPdf.step3') }}
@@ -380,7 +343,7 @@ onUnmounted(() => {
 
           <Card
             v-if="resultUrl"
-            class="rounded-[28px] border border-emerald-200 bg-emerald-50/90 shadow-xl shadow-emerald-100/70 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
+            class="rounded-lg border border-emerald-200 bg-emerald-50/90 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:shadow-none"
           >
             <div class="flex items-start gap-4">
               <CheckCircle2 class="mt-0.5 h-6 w-6 flex-shrink-0 text-emerald-500" />
@@ -406,6 +369,5 @@ onUnmounted(() => {
           </Card>
         </div>
       </div>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

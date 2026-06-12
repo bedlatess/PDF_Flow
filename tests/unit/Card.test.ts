@@ -41,7 +41,7 @@ describe('Card Component', () => {
       },
     })
 
-    expect(wrapper.classes()).toContain('hover:shadow-lg')
+    expect(wrapper.classes()).toContain('hover:shadow-md')
   })
 
   it('applies padding classes correctly', () => {

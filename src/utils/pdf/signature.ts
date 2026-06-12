@@ -26,7 +26,12 @@ export async function addVisualSignature(
   const signatureBytes = await signatureFile.arrayBuffer()
   const pdf = await PDFDocument.load(pdfBytes)
   const pageCount = pdf.getPageCount()
-  const pageIndex = Math.min(Math.max(placement.pageNumber - 1, 0), pageCount - 1)
+  const pageIndex = placement.pageNumber - 1
+
+  if (pageIndex < 0 || pageIndex >= pageCount) {
+    throw new Error(`Invalid page number: ${placement.pageNumber}`)
+  }
+
   const page = pdf.getPages()[pageIndex]
   const { width: pageWidth, height: pageHeight } = page.getSize()
   const image = await embedSignatureImage(pdf, signatureFile, signatureBytes)

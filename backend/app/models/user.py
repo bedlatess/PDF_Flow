@@ -59,6 +59,7 @@ class User(Base):
     # Relationships
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     usage_logs = relationship("UsageLog", back_populates="user", cascade="all, delete-orphan")
+    payment_orders = relationship("PaymentOrder", back_populates="user", cascade="all, delete-orphan")
 
     # Indexes for performance
     __table_args__ = (
@@ -209,6 +210,85 @@ class Webhook(Base):
     __table_args__ = (
         Index('idx_webhook_user', 'user_id'),
         Index('idx_webhook_active', 'is_active'),
+    )
+
+
+class PaymentProviderAccount(Base):
+    """Provider-specific account reference for a user."""
+    __tablename__ = "payment_provider_accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    provider = Column(String, nullable=False)
+    provider_customer_id = Column(String, nullable=True)
+    metadata_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "provider", name="uq_payment_provider_account_user_provider"),
+        Index("idx_payment_provider_account_user", "user_id"),
+        Index("idx_payment_provider_account_provider", "provider"),
+    )
+
+
+class PaymentOrder(Base):
+    """Trusted payment order state across all payment providers."""
+    __tablename__ = "payment_orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    provider = Column(String, nullable=False)
+    merchant_order_id = Column(String, unique=True, nullable=False)
+    provider_order_id = Column(String, nullable=True)
+    plan = Column(String, nullable=False)
+    amount_cents = Column(Integer, nullable=False)
+    currency = Column(String, default="USD", nullable=False)
+    status = Column(String, default="pending", nullable=False)
+    checkout_url = Column(Text, nullable=True)
+    qr_code_url = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=True)
+    paid_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="payment_orders")
+    events = relationship("PaymentEvent", back_populates="order", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_payment_order_user", "user_id"),
+        Index("idx_payment_order_provider_status", "provider", "status"),
+        Index("idx_payment_order_provider_order", "provider", "provider_order_id"),
+    )
+
+
+class PaymentEvent(Base):
+    """Immutable provider payment event ledger used for idempotency and audits."""
+    __tablename__ = "payment_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("payment_orders.id"), nullable=True)
+    provider = Column(String, nullable=False)
+    provider_event_id = Column(String, nullable=False)
+    merchant_order_id = Column(String, nullable=False)
+    provider_order_id = Column(String, nullable=True)
+    event_type = Column(String, nullable=False)
+    processing_status = Column(String, nullable=False, default="received")
+    amount_cents = Column(Integer, nullable=True)
+    currency = Column(String, nullable=True)
+    raw_summary = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    order = relationship("PaymentOrder", back_populates="events")
+
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_event_id", name="uq_payment_event_provider_event"),
+        Index("idx_payment_event_order", "order_id"),
+        Index("idx_payment_event_provider_status", "provider", "processing_status"),
+        Index("idx_payment_event_merchant_order", "merchant_order_id"),
     )
 
 

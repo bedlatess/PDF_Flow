@@ -20,6 +20,27 @@
       <Skeleton v-for="i in 2" :key="i" class="h-32 w-full" />
     </div>
 
+    <div
+      v-else-if="errorState"
+      class="space-y-3"
+    >
+      <DiagnosticAlert
+        :title="errorState.title"
+        :message="errorState.message"
+        :diagnostic-code="errorState.diagnosticCode"
+        :support-hint="t('enterprise.webhooks.failureHint')"
+        tone="warning"
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        :loading="loading"
+        @click="loadWebhooks"
+      >
+        {{ t('enterprise.webhooks.retry') }}
+      </Button>
+    </div>
+
     <div v-else-if="webhooks.length === 0" class="text-center py-12">
       <Webhook class="w-16 h-16 mx-auto text-slate-400 mb-4" />
       <p class="text-slate-600 dark:text-slate-400 mb-4">
@@ -34,7 +55,7 @@
       <div
         v-for="webhook in webhooks"
         :key="webhook.id"
-        class="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700"
+        class="rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50"
       >
         <div class="flex items-start justify-between mb-3">
           <div class="flex-1">
@@ -58,7 +79,7 @@
               <span
                 v-for="event in webhook.events"
                 :key="event"
-                class="px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs rounded"
+                class="rounded bg-sky-100 px-2 py-1 text-xs text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
               >
                 {{ event }}
               </span>
@@ -80,13 +101,18 @@
               variant="outline"
               size="sm"
               @click="toggleWebhookStatus(webhook)"
+              :disabled="updatingWebhook === webhook.id"
+              :loading="updatingWebhook === webhook.id"
             >
               {{ webhook.is_active ? t('enterprise.webhooks.disable') : t('enterprise.webhooks.enable') }}
             </Button>
             <Button
               variant="outline"
               size="sm"
+              :aria-label="t('enterprise.webhooks.deleteButtonLabel', { url: webhook.url })"
               @click="confirmDelete(webhook)"
+              :disabled="deletingWebhook === webhook.id"
+              :loading="deletingWebhook === webhook.id"
               class="text-red-600 hover:text-red-700"
             >
               <Trash2 class="w-4 h-4" />
@@ -99,6 +125,15 @@
     <!-- Create Webhook Modal -->
     <Modal v-model="showCreateModal" :title="t('enterprise.webhooks.createModal.title')">
         <form @submit.prevent="createWebhook" class="space-y-4">
+          <DiagnosticAlert
+            v-if="actionError"
+            :title="actionError.title"
+            :message="actionError.message"
+            :diagnostic-code="actionError.diagnosticCode"
+            :support-hint="t('enterprise.webhooks.failureHint')"
+            tone="warning"
+          />
+
           <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               {{ t('enterprise.webhooks.createModal.url') }}
@@ -107,7 +142,7 @@
               v-model="newWebhookForm.url"
               type="url"
               required
-              class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:text-white"
+              class="w-full rounded-md border border-slate-300 px-4 py-2 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
               placeholder="https://your-server.com/webhook"
             />
           </div>
@@ -126,7 +161,7 @@
                   type="checkbox"
                   :value="event"
                   v-model="newWebhookForm.events"
-                  class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  class="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                 />
                 <span class="text-sm text-slate-700 dark:text-slate-300">{{ event }}</span>
               </label>
@@ -140,7 +175,7 @@
             <input
               v-model="newWebhookForm.secret"
               type="text"
-              class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:text-white"
+              class="w-full rounded-md border border-slate-300 px-4 py-2 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
               :placeholder="t('enterprise.webhooks.createModal.secretPlaceholder')"
             />
             <p class="text-xs text-slate-500 mt-1">
@@ -152,30 +187,54 @@
             <Button type="button" variant="outline" @click="showCreateModal = false">
               {{ t('common.cancel') }}
             </Button>
-            <Button type="submit" :disabled="creating || newWebhookForm.events.length === 0">
+            <Button type="submit" :disabled="creating || newWebhookForm.events.length === 0" :loading="creating">
               {{ creating ? t('common.creating') : t('common.create') }}
             </Button>
           </div>
         </form>
     </Modal>
+
+    <ConfirmationDialog
+      v-model="showDeleteConfirmation"
+      :title="t('enterprise.webhooks.deleteDialog.title')"
+      :summary="
+        t('enterprise.webhooks.deleteDialog.summary', {
+          url: pendingDeleteWebhook?.url || '',
+        })
+      "
+      :details="deleteDialogDetails"
+      :confirm-label="t('enterprise.webhooks.deleteDialog.confirm')"
+      :cancel-label="t('common.cancel')"
+      :loading="pendingDeleteWebhook ? deletingWebhook === pendingDeleteWebhook.id : false"
+      @confirm="deletePendingWebhook"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Plus, Webhook, Trash2 } from 'lucide-vue-next'
 import { enterpriseAPI } from '@/services/api'
 import Button from '@/components/common/Button.vue'
+import ConfirmationDialog from '@/components/common/ConfirmationDialog.vue'
+import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
 import Modal from '@/components/common/Modal.vue'
 import Skeleton from '@/components/common/Skeleton.vue'
+import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 
 const { t } = useI18n()
 
 const loading = ref(true)
 const creating = ref(false)
+const updatingWebhook = ref<number | null>(null)
+const deletingWebhook = ref<number | null>(null)
 const showCreateModal = ref(false)
 const webhooks = ref<any[]>([])
+const errorState = ref<FormattedUserError | null>(null)
+const actionError = ref<FormattedUserError | null>(null)
+const pendingDeleteWebhook = ref<any | null>(null)
+const showDeleteConfirmation = ref(false)
 
 const availableEvents = [
   'job.completed',
@@ -191,14 +250,24 @@ const newWebhookForm = ref({
   secret: '',
   is_active: true
 })
+const deleteDialogDetails = computed(() => [
+  t('enterprise.webhooks.deleteDialog.detailDelivery'),
+  t('enterprise.webhooks.deleteDialog.detailHistory'),
+  t('enterprise.webhooks.deleteDialog.detailRecovery'),
+])
 
 const loadWebhooks = async () => {
   try {
     loading.value = true
+    errorState.value = null
     const response = await enterpriseAPI.listWebhooks()
     webhooks.value = response.webhooks
   } catch (error) {
-    console.error('Failed to load webhooks:', error)
+    errorState.value = formatUserFacingError(error, {
+      area: 'ENTERPRISE',
+      fallbackTitle: t('enterprise.webhooks.loadFailedTitle'),
+      fallbackMessage: t('enterprise.webhooks.loadFailedMessage'),
+    })
   } finally {
     loading.value = false
   }
@@ -207,6 +276,7 @@ const loadWebhooks = async () => {
 const createWebhook = async () => {
   try {
     creating.value = true
+    actionError.value = null
     await enterpriseAPI.createWebhook(newWebhookForm.value)
 
     // Reset form and close modal
@@ -216,7 +286,11 @@ const createWebhook = async () => {
     // Reload webhooks
     await loadWebhooks()
   } catch (error) {
-    console.error('Failed to create webhook:', error)
+    actionError.value = formatUserFacingError(error, {
+      area: 'ENTERPRISE',
+      fallbackTitle: t('enterprise.webhooks.createFailedTitle'),
+      fallbackMessage: t('enterprise.webhooks.createFailedMessage'),
+    })
   } finally {
     creating.value = false
   }
@@ -224,23 +298,47 @@ const createWebhook = async () => {
 
 const toggleWebhookStatus = async (webhook: any) => {
   try {
+    updatingWebhook.value = webhook.id
+    errorState.value = null
     await enterpriseAPI.updateWebhook(webhook.id, { is_active: !webhook.is_active })
     await loadWebhooks()
   } catch (error) {
-    console.error('Failed to update webhook:', error)
+    errorState.value = formatUserFacingError(error, {
+      area: 'ENTERPRISE',
+      fallbackTitle: t('enterprise.webhooks.updateFailedTitle'),
+      fallbackMessage: t('enterprise.webhooks.updateFailedMessage'),
+    })
+  } finally {
+    updatingWebhook.value = null
   }
 }
 
 const confirmDelete = async (webhook: any) => {
-  if (!confirm(t('enterprise.webhooks.confirmDelete', { url: webhook.url }))) {
-    return
-  }
+  actionError.value = null
+  errorState.value = null
+  pendingDeleteWebhook.value = webhook
+  showDeleteConfirmation.value = true
+}
+
+const deletePendingWebhook = async () => {
+  const webhook = pendingDeleteWebhook.value
+  if (!webhook) return
 
   try {
+    deletingWebhook.value = webhook.id
+    errorState.value = null
     await enterpriseAPI.deleteWebhook(webhook.id)
+    showDeleteConfirmation.value = false
+    pendingDeleteWebhook.value = null
     await loadWebhooks()
   } catch (error) {
-    console.error('Failed to delete webhook:', error)
+    errorState.value = formatUserFacingError(error, {
+      area: 'ENTERPRISE',
+      fallbackTitle: t('enterprise.webhooks.deleteFailedTitle'),
+      fallbackMessage: t('enterprise.webhooks.deleteFailedMessage'),
+    })
+  } finally {
+    deletingWebhook.value = null
   }
 }
 

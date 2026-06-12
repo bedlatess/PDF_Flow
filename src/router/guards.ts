@@ -150,10 +150,12 @@ export async function featureFlagGuard(
   const flag = siteConfigStore.getFeatureFlag(featureKey, String(to.meta.titleKey || featureKey))
   if (!flag.enabled) {
     next({
-      path: '/',
+      path: '/availability/feature-disabled',
       query: {
-        disabledFeature: featureKey,
+        state: 'feature-disabled',
+        feature: featureKey,
         message: flag.maintenance_message || 'feature_unavailable',
+        returnTo: to.fullPath,
       },
     })
     return

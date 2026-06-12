@@ -18,20 +18,24 @@ import ProgressBar from '@/components/common/ProgressBar.vue'
 import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
 import DragDropZone from '@/components/pdf/DragDropZone.vue'
 import FilePreview from '@/components/pdf/FilePreview.vue'
-import ToolHeader from '@/components/tools/ToolHeader.vue'
+import ToolPageShell from '@/components/tools/ToolPageShell.vue'
 import ToolNoticeBar from '@/components/tools/ToolNoticeBar.vue'
 import ToolAccessPanel from '@/components/tools/ToolAccessPanel.vue'
 import { useUserStore } from '@/stores/user'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 import { redirectForFeatureAccess } from '@/utils/feature-access'
 
-const { t, locale } = useI18n()
+const { t, tm } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
 const selectedFile = ref<File | null>(null)
-const selectedLanguage = ref(locale.value.toLowerCase().startsWith('zh') ? 'chi_sim' : 'eng')
+type ToolPageCopy = Record<string, any>
+
+const copy = computed<ToolPageCopy>(() => tm('tools.ocr') as ToolPageCopy)
+
+const selectedLanguage = ref(String(copy.value.defaultLanguage || 'eng'))
 const isProcessing = ref(false)
 const processingProgress = ref(0)
 const processingStatus = ref('')
@@ -53,9 +57,7 @@ const resultPreview = computed(() => {
   return text.length > 900 ? `${text.slice(0, 900)}...` : text
 })
 
-const viewResultLabel = computed(() =>
-  locale.value.toLowerCase().startsWith('zh') ? '查看完整结果' : 'View full result'
-)
+const viewResultLabel = computed(() => t('tools.ocr.viewFullResult'))
 
 const languageOptions = computed(() => [
   { value: 'eng', label: t('tools.ocr.languageOptions.eng'), code: 'EN' },
@@ -101,9 +103,9 @@ const handleFilesSelected = (files: File[]) => {
   ocrResult.value = null
 }
 
-watch(locale, (value) => {
+watch(copy, (value) => {
   if (!selectedFile.value && !extractedText.value) {
-    selectedLanguage.value = value.toLowerCase().startsWith('zh') ? 'chi_sim' : 'eng'
+    selectedLanguage.value = String(value.defaultLanguage || 'eng')
   }
 })
 
@@ -226,26 +228,24 @@ const closeResultModal = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-950 dark:to-purple-950/20">
-    <ToolHeader
+  <ToolPageShell
       :title="t('tools.ocr.title')"
       :subtitle="t('tools.ocr.subtitle')"
       :badge="t('tools.ocr.badge')"
       pro
       accent="purple"
-    >
+    width="md"
+  >
+
       <template #badgeIcon>
         <Sparkles class="h-4 w-4" />
       </template>
 
-      <template #extra>
+      <template #headerExtra>
         <p class="mx-auto max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
           {{ t('tools.ocr.pageExtra') }}
         </p>
       </template>
-    </ToolHeader>
-
-    <section class="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-6">
       <ToolNoticeBar variant="amber">
         <template #icon>
           <Crown class="h-5 w-5" />
@@ -283,7 +283,7 @@ const closeResultModal = () => {
       </ToolAccessPanel>
 
       <div v-if="canUseOCR" class="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+        <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-6">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-purple-500">
@@ -322,7 +322,7 @@ const closeResultModal = () => {
                 @remove="clearAll"
               />
 
-              <div class="rounded-[24px] border border-purple-100 bg-purple-50/70 p-4 text-sm leading-6 text-purple-900 dark:border-purple-900/40 dark:bg-purple-950/20 dark:text-purple-100">
+              <div class="rounded-md border border-purple-100 bg-purple-50/70 p-4 text-sm leading-6 text-purple-900 dark:border-purple-900/40 dark:bg-purple-950/20 dark:text-purple-100">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <span class="font-semibold">{{ t('tools.ocr.workspaceLanguage') }}</span>
                   <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-purple-700 shadow-sm dark:bg-slate-900 dark:text-purple-200">
@@ -353,7 +353,7 @@ const closeResultModal = () => {
 
               <div
                 v-if="extractedText"
-                class="rounded-[24px] border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                class="rounded-md border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20"
               >
                 <p class="text-sm font-semibold text-emerald-800 dark:text-emerald-100">
                   {{ t('tools.ocr.resultTitle') }}
@@ -379,7 +379,7 @@ const closeResultModal = () => {
           </div>
         </Card>
 
-        <Card class="rounded-[28px] border border-white/70 bg-white/90 shadow-xl shadow-purple-100/60 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+        <Card class="rounded-lg border border-white/70 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
           <div class="space-y-6">
             <div class="space-y-5">
               <div>
@@ -391,7 +391,7 @@ const closeResultModal = () => {
                 </p>
               </div>
 
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
+              <div class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <div class="flex items-center gap-2">
                   <Languages class="h-5 w-5 text-purple-500" />
                   <label class="text-sm font-semibold text-slate-900 dark:text-white">
@@ -404,7 +404,7 @@ const closeResultModal = () => {
                     v-for="lang in languageOptions"
                     :key="lang.value"
                     :class="[
-                      'rounded-2xl border px-4 py-4 text-left transition-all',
+                      'rounded-md border px-4 py-4 text-left transition-all',
                       selectedLanguage === lang.value
                         ? 'border-purple-300 bg-purple-50 shadow-sm dark:border-purple-700 dark:bg-purple-950/30'
                         : 'border-slate-200 bg-white hover:border-purple-200 dark:border-slate-700 dark:bg-slate-900',
@@ -425,24 +425,24 @@ const closeResultModal = () => {
                 </div>
               </div>
 
-              <div class="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
+              <div class="rounded-md border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
                   {{ t('tools.ocr.flowTitle') }}
                 </p>
                 <div class="mt-4 space-y-3">
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500 text-sm font-semibold text-white">1</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.ocr.flowStep1') }}
                     </p>
                   </div>
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-fuchsia-500 text-sm font-semibold text-white">2</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.ocr.flowStep2') }}
                     </p>
                   </div>
-                  <div class="flex items-start gap-3 rounded-2xl bg-white px-4 py-4 dark:bg-slate-900">
+                  <div class="flex items-start gap-3 rounded-md bg-white px-4 py-4 dark:bg-slate-900">
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500 text-sm font-semibold text-white">3</span>
                     <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {{ t('tools.ocr.flowStep3') }}
@@ -461,7 +461,7 @@ const closeResultModal = () => {
         size="lg"
       >
         <div class="space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-4 dark:bg-slate-800">
+          <div class="flex flex-wrap items-center justify-between gap-3 rounded-md bg-slate-50 px-4 py-4 dark:bg-slate-800">
             <div class="text-sm text-slate-600 dark:text-slate-300">
               <span v-if="ocrResult?.page_count">{{ t('tools.ocr.pages') }}: {{ ocrResult.page_count }}</span>
               <span
@@ -494,12 +494,12 @@ const closeResultModal = () => {
 
           <div
             v-if="copyMessage"
-            class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-200"
+            class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-200"
           >
             {{ copyMessage }}
           </div>
 
-          <div class="max-h-96 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+          <div class="max-h-96 overflow-y-auto rounded-md border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
             <pre class="whitespace-pre-wrap text-sm leading-6 text-slate-800 dark:text-slate-200">{{ extractedText }}</pre>
           </div>
 
@@ -520,6 +520,5 @@ const closeResultModal = () => {
           </div>
         </div>
       </Modal>
-    </section>
-  </div>
+  </ToolPageShell>
 </template>

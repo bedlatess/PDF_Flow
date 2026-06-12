@@ -12,7 +12,7 @@ describe('Button Component', () => {
 
     expect(wrapper.text()).toBe('Click me')
     expect(wrapper.classes()).toContain('bg-primary')
-    expect(wrapper.classes()).toContain('rounded-lg')
+    expect(wrapper.classes()).toContain('rounded-md')
   })
 
   it('renders different variants', () => {

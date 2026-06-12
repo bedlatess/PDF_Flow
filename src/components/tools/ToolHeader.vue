@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import ProBadge from '@/components/common/ProBadge.vue'
 
-type Accent = 'purple' | 'blue' | 'amber' | 'cyan' | 'emerald' | 'pink'
+type Accent = 'red' | 'purple' | 'blue' | 'amber' | 'cyan' | 'emerald' | 'pink' | 'slate'
 
 const props = withDefaults(defineProps<{
   title: string
@@ -12,40 +12,50 @@ const props = withDefaults(defineProps<{
   accent?: Accent
 }>(), {
   pro: false,
-  accent: 'purple',
+  accent: 'red',
 })
 
 const accentClasses = computed(() => {
-  const map: Record<Accent, { bg: string; pill: string; glow: string }> = {
+  const map: Record<Accent, { rail: string; pill: string; icon: string }> = {
+    red: {
+      rail: 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200',
+      pill: 'bg-red-600 text-white',
+      icon: 'text-red-600 dark:text-red-300',
+    },
     purple: {
-      bg: 'from-purple-50 via-white to-indigo-50 dark:from-purple-950/30 dark:via-slate-950 dark:to-indigo-950/20',
-      pill: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
-      glow: 'bg-purple-200/50 dark:bg-purple-500/20',
+      rail: 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-200',
+      pill: 'bg-purple-600 text-white',
+      icon: 'text-purple-600 dark:text-purple-300',
     },
     blue: {
-      bg: 'from-blue-50 via-white to-cyan-50 dark:from-blue-950/30 dark:via-slate-950 dark:to-cyan-950/20',
-      pill: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white',
-      glow: 'bg-blue-200/50 dark:bg-blue-500/20',
+      rail: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200',
+      pill: 'bg-blue-600 text-white',
+      icon: 'text-blue-600 dark:text-blue-300',
     },
     amber: {
-      bg: 'from-amber-50 via-white to-orange-50 dark:from-amber-950/30 dark:via-slate-950 dark:to-orange-950/20',
-      pill: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white',
-      glow: 'bg-amber-200/50 dark:bg-amber-500/20',
+      rail: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200',
+      pill: 'bg-amber-600 text-white',
+      icon: 'text-amber-600 dark:text-amber-300',
     },
     cyan: {
-      bg: 'from-cyan-50 via-white to-sky-50 dark:from-cyan-950/30 dark:via-slate-950 dark:to-sky-950/20',
-      pill: 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white',
-      glow: 'bg-cyan-200/50 dark:bg-cyan-500/20',
+      rail: 'border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-200',
+      pill: 'bg-cyan-600 text-white',
+      icon: 'text-cyan-600 dark:text-cyan-300',
     },
     emerald: {
-      bg: 'from-emerald-50 via-white to-teal-50 dark:from-emerald-950/30 dark:via-slate-950 dark:to-teal-950/20',
-      pill: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white',
-      glow: 'bg-emerald-200/50 dark:bg-emerald-500/20',
+      rail: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200',
+      pill: 'bg-emerald-600 text-white',
+      icon: 'text-emerald-600 dark:text-emerald-300',
     },
     pink: {
-      bg: 'from-pink-50 via-white to-fuchsia-50 dark:from-pink-950/30 dark:via-slate-950 dark:to-fuchsia-950/20',
-      pill: 'bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white',
-      glow: 'bg-pink-200/50 dark:bg-pink-500/20',
+      rail: 'border-pink-200 bg-pink-50 text-pink-800 dark:border-pink-500/20 dark:bg-pink-500/10 dark:text-pink-200',
+      pill: 'bg-pink-600 text-white',
+      icon: 'text-pink-600 dark:text-pink-300',
+    },
+    slate: {
+      rail: 'border-slate-200 bg-slate-100 text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200',
+      pill: 'bg-slate-900 text-white dark:bg-white dark:text-slate-950',
+      icon: 'text-slate-700 dark:text-slate-200',
     },
   }
 
@@ -54,40 +64,42 @@ const accentClasses = computed(() => {
 </script>
 
 <template>
-  <section :class="['relative overflow-hidden py-16 sm:py-20', `bg-gradient-to-br ${accentClasses.bg}`]">
-    <div
-      :class="[
-        'absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl',
-        accentClasses.glow,
-      ]"
-    />
+  <section class="border-b border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900">
+    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div class="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div>
+          <div :class="['inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em]', accentClasses.rail]">
+            <span :class="accentClasses.icon">
+              <slot name="badgeIcon">
+                *
+              </slot>
+            </span>
+            <span>{{ badge }}</span>
+          </div>
 
-    <div class="relative mx-auto max-w-4xl px-4 text-center">
-      <h1 class="text-4xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-        {{ title }}
-      </h1>
-      <p class="mx-auto mt-4 max-w-2xl text-base text-slate-600 dark:text-slate-300 sm:text-lg">
-        {{ subtitle }}
-      </p>
+          <h1 class="mt-5 text-3xl font-semibold leading-tight text-slate-950 dark:text-white sm:text-4xl">
+            {{ title }}
+          </h1>
+          <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
+            {{ subtitle }}
+          </p>
+        </div>
 
-      <ProBadge
-        v-if="pro"
-        class="mt-6"
-        :label="badge"
-        variant="seal"
-      />
+        <ProBadge
+          v-if="pro"
+          :label="badge"
+          variant="seal"
+        />
 
-      <div
-        v-else
-        :class="[
-          'mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-sm',
-          accentClasses.pill,
-        ]"
-      >
-        <slot name="badgeIcon">
-          *
-        </slot>
-        <span>{{ badge }}</span>
+        <div
+          v-else
+          :class="[
+            'hidden rounded-md px-3 py-2 text-sm font-semibold shadow-sm lg:inline-flex',
+            accentClasses.pill,
+          ]"
+        >
+          {{ badge }}
+        </div>
       </div>
 
       <div class="mt-6">

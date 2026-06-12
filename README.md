@@ -1,376 +1,140 @@
-# 📄 PDF-Flow
+# PDF-Flow
 
-> 🔒 隐私优先的在线 PDF 工具集 | Privacy-First PDF Tools
+Privacy-first PDF workspace with a Vue frontend, FastAPI backend, admin Control Room, account/enterprise surfaces, and provider-neutral payment architecture.
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
-[![Vue](https://img.shields.io/badge/Vue-3.4.21-green.svg)](https://vuejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4.2-blue.svg)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/tests-108%20passed-success.svg)]()
+This repository is under an active rewrite. Treat [docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md) as the single source of truth for product direction, current status, backlog, verification history, and cleanup rules.
 
-**PDF-Flow** 是一个现代化的在线 PDF 工具集，所有处理完全在浏览器本地进行，确保您的文件隐私和安全。
+## What This Project Contains
 
-[🚀 在线演示](https://pdf-flow.vercel.app) | [📖 文档](./docs) | [🐛 问题反馈](https://github.com/bedlatess/PDF_Flow/issues)
+- Public PDF workspace inspired by iLovePDF, Smallpdf, and LightPDF patterns.
+- Local-first PDF tools for common organize, convert, optimize, extract, and security workflows.
+- Cloud/API-backed paths for OCR, Office conversion, AI analysis, enterprise features, and large-file operations.
+- Admin Control Room for site settings, feature flags, content, users, jobs, feedback, diagnostics, maintenance, audit logs, and payment operations.
+- Payment framework for Stripe, PayPal, 易支付, 支付宝, 微信支付, TokenPay, BEPUSDT, EPUSDT, and OKPay.
+- Backend-owned payment trust boundary: frontend may create/select checkout, but only verified backend payment events grant entitlements.
 
----
+## Documentation Rules
 
-## ✨ 功能特性
+- Status, roadmap, architecture decisions, and progress updates live in [docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md).
+- Supporting setup documents may exist, but they must not become parallel status trackers.
+- After meaningful work, update [docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md).
 
-### 🛠️ 核心工具
+Allowed supporting docs:
 
-| 工具 | 功能描述 | 状态 |
-|------|---------|------|
-| **合并 PDF** | 将多个 PDF 合并为一个，支持拖拽排序 | ✅ |
-| **拆分 PDF** | 从 PDF 中提取指定页面，支持可视化选择 | ✅ |
-| **旋转 PDF** | 旋转 PDF 页面（90°/180°/270°） | ✅ |
-| **压缩 PDF** | 减小 PDF 文件大小，三种质量级别 | ✅ |
-| **图片转 PDF** | 将多张图片转换为 PDF | ✅ |
-| **PDF 转图片** | 将 PDF 页面导出为图片（PNG/JPEG） | ✅ |
-| **OCR 文字识别** | 从 PDF/图片中提取文字，支持10种语言 | ✅ |
-| **Office 转 PDF** | Word/Excel/PowerPoint 转 PDF | ✅ |
-| **添加水印** | 为 PDF 添加文字水印（本地/云端） | ✅ |
-| **填写表单** | 自动填写 PDF 表单字段 | ✅ |
-| **PDF 注释** | 添加文本注释和高亮标记 | ✅ |
+- [docs/OAUTH_SETUP.md](./docs/OAUTH_SETUP.md)
+- [docs/STAGING_DEPLOY_GUIDE.md](./docs/STAGING_DEPLOY_GUIDE.md)
+- [backend/docs/EMAIL_SERVICE.md](./backend/docs/EMAIL_SERVICE.md)
+- [开发文档/](./开发文档/) historical requirement PDFs
+- [backend/README.md](./backend/README.md) backend runbook
 
-### 🔒 隐私保护
+## Quick Start
 
-- ✅ **100% 本地处理** - 文件不上传到服务器
-- ✅ **无数据收集** - 不追踪用户行为
-- ✅ **自动清理** - 处理完成后自动释放内存
-- ✅ **GDPR 合规** - 符合隐私保护要求
-
-### ⚡ 性能优化
-
-- ✅ **Web Workers** - 后台多线程处理，UI 不阻塞
-- ✅ **懒加载** - 按需加载 PDF 处理库
-- ✅ **代码分割** - 路由级别代码分割
-- ✅ **内存管理** - 自动释放 Blob URLs，防止内存泄漏
-
-### 🎨 用户体验
-
-- ✅ **拖拽上传** - 直观的文件操作
-- ✅ **实时预览** - 内置 PDF 查看器
-- ✅ **进度显示** - 实时处理进度反馈
-- ✅ **响应式设计** - 完美适配移动端和桌面端
-- ✅ **多语言** - 支持英语、中文、西班牙语
-
----
-
-## 🚀 快速开始
-
-### 安装依赖
+Install frontend dependencies:
 
 ```bash
 npm install
 ```
 
-### 开发模式
+Run the frontend dev server:
 
 ```bash
 npm run dev
 ```
 
-访问 http://localhost:5173
-
-### 生产构建
+Run the backend locally:
 
 ```bash
-npm run build
-npm run preview
+cd backend
+pip install -r requirements.txt
+copy .env.example .env
+alembic upgrade head
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 运行测试
+For Docker-based local services, use the root `docker-compose.yml` or the backend runbook.
+
+## Common Verification
+
+Frontend:
 
 ```bash
-# 单元测试
-npm run test:unit
-
-# E2E 测试
-npm run test:e2e
-
-# 代码检查
-npm run lint
-npm run format
+npm.cmd run type-check
+npm.cmd run build
+npm.cmd run test:e2e:core
 ```
 
----
+Backend:
 
-## 📦 技术栈
-
-### 核心框架
-- **Vue 3.4.21** - 渐进式 JavaScript 框架
-- **TypeScript 5.4.2** - 类型安全
-- **Vite 5.1.6** - 现代化构建工具
-
-### PDF 处理
-- **pdf-lib** - PDF 创建和修改
-- **pdfjs-dist** - PDF 解析和渲染
-- **jspdf** - PDF 生成
-
-### UI 框架
-- **TailwindCSS** - 原子化 CSS
-- **Radix Vue** - 无样式 UI 组件
-- **Lucide Icons** - 图标库
-
-### 状态管理
-- **Pinia** - 状态管理
-- **Vue Router** - 路由管理
-- **Vue I18n** - 国际化
-
----
-
-## 📁 项目结构
-
+```bash
+cd backend
+pytest tests -q
 ```
+
+Targeted backend examples:
+
+```bash
+cd backend
+pytest tests/test_admin.py -q
+pytest tests/test_payment_domain.py -q
+```
+
+## Project Layout
+
+```text
 PDF_Flow/
-├── src/
-│   ├── components/          # Vue 组件
-│   │   ├── common/          # 通用组件
-│   │   ├── layout/          # 布局组件
-│   │   └── pdf/             # PDF 专用组件
-│   ├── views/               # 页面视图
-│   │   ├── Home.vue         # 首页
-│   │   └── tools/           # 工具页面
-│   ├── utils/               # 工具函数
-│   │   └── pdf/             # PDF 处理核心
-│   ├── composables/         # 组合式函数
-│   ├── stores/              # Pinia stores
-│   ├── locales/             # 国际化文件
-│   ├── workers/             # Web Workers
-│   └── router/              # 路由配置
-├── tests/
-│   ├── unit/                # 单元测试
-│   ├── e2e-playwright/      # E2E 测试
-│   └── helpers/             # 测试辅助函数
-└── docs/                    # 文档
+├── src/                    Frontend Vue application
+│   ├── components/         Shared, layout, PDF, enterprise, admin components
+│   ├── views/              Public, auth, payment, enterprise, admin, and tool pages
+│   ├── services/           API clients
+│   ├── stores/             Pinia stores
+│   ├── utils/pdf/          Client-side PDF utilities
+│   ├── locales/            Locale base files and overrides
+│   └── router/             Route definitions and guards
+├── backend/                FastAPI backend, Alembic migrations, domain services, tests
+├── tests/e2e-playwright/   Frontend Playwright regression specs
+├── scripts/                Staging, smoke, rollback, and Playwright helper scripts
+├── docs/                   Master manual and supporting setup docs
+└── 开发文档/               Historical PDF requirements, read-only reference
 ```
 
----
+## Payment Setup Boundary
 
-## 🧪 测试
+The codebase has a provider-neutral payment framework and admin readiness views. Real production acceptance still requires merchant credentials, callback/webhook URL registration in each provider dashboard, and sandbox or low-value live smoke tests.
 
-### 单元测试覆盖
+Do not put provider secrets in frontend code. Use backend environment variables and the admin payment checklist to configure callbacks.
 
-✅ **108/108 测试通过**
+## Deployment
 
-- Button, Card, Modal 等通用组件
-- DragDropZone, FilePreview 等 PDF 组件
-- 文件验证、内存管理等工具函数
-- PDF 处理核心功能
+The current recommended real-test workflow is single-server `staging`, then merge to `main` after validation. See [docs/STAGING_DEPLOY_GUIDE.md](./docs/STAGING_DEPLOY_GUIDE.md).
 
-### E2E 测试
-
-- 首页加载和导航
-- 工具页面功能测试
-- 文件上传和处理流程
-- 响应式设计验证
-
----
-
-## 📖 文档
-
-> 本项目只有**一份**开发文档，所有状态、计划、规范、指南都在其中。
-
-- **[docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md)** — 📘 唯一开发主文档（Single Source of Truth）
-- **[docs/STAGING_DEPLOY_GUIDE.md](./docs/STAGING_DEPLOY_GUIDE.md)** — 🚢 单服务器 staging 部署与回滚手册
-- **[开发文档/](./开发文档/)** — 📋 原始需求规格 v1.0–v4.0（只读源材料）
-- **[backend/README.md](./backend/README.md)** — ⚙️ 后端运行说明
-
-> ⚠️ 开发完成后只更新 `PROJECT_MASTER.md`，不要新建报告类文档。
-
----
-
-## 🌐 部署
-
-### 推荐平台
-
-#### Vercel（推荐）
-```bash
-npm i -g vercel
-vercel
-```
-
-#### Netlify
-```bash
-npm run build
-netlify deploy --prod --dir=dist
-```
-
-#### Cloudflare Pages
-连接 Git 仓库，设置：
-- 构建命令: `npm run build`
-- 输出目录: `dist`
-
-### 单服务器真实测试流程
-
-推荐使用：
-
-- `staging`：服务器真实测试分支
-- `main`：正式稳定分支
-
-服务器只部署 `staging`，测试通过后再合并到 `main`。
-
-#### 首次准备
-
-1. 在服务器克隆仓库
-2. 在服务器本地创建并维护：
-   - 根目录 `.env`（如需要）
-   - `backend/.env`
-3. 确认服务器安装：
-   - `git`
-   - `docker`
-   - `docker compose` 或 `docker-compose`
-   - `curl`
-4. 给脚本执行权限：
+Useful scripts:
 
 ```bash
-chmod +x scripts/deploy-staging.sh scripts/rollback-staging.sh scripts/smoke-test.sh
-```
-
-#### 部署 `staging`
-
-```bash
-git fetch origin
-git checkout staging
-git pull --ff-only origin staging
 bash scripts/deploy-staging.sh
-```
-
-脚本会自动执行：
-
-- 备份当前代码状态和本地 `.env`
-- 拉取并切换到 `staging`
-- `docker compose up -d --build`
-- 运行 `alembic upgrade head`
-- 检查 `/health` 和 `/api/docs`
-
-#### 回滚
-
-```bash
+bash scripts/smoke-test.sh
 bash scripts/rollback-staging.sh
 ```
 
-#### 可选数据库备份钩子
-
-如果你想在部署前自动执行数据库备份，可以在服务器上这样运行：
+New-repository rollout helpers:
 
 ```bash
-DEPLOY_BACKUP_COMMAND='docker compose exec -T postgres pg_dump -U pdfflow_user pdfflow > "$BACKUP_PATH/postgres.sql"' \
-bash scripts/deploy-staging.sh
+NEW_REPO_URL=git@github.com:owner/pdf-flow-v2.git bash scripts/prepare-new-repo-push.sh
+RECLONE_REPO_URL=git@github.com:owner/pdf-flow-v2.git RECLONE_TARGET_DIR=/opt/pdf-flow bash scripts/server-clean-reclone.sh
 ```
 
-> 注意：数据库回滚策略需要你自己确认兼容性；当前脚本默认提供的是“代码与容器版本回滚”。
+Both helpers default to dry-run mode. Set `NEW_REPO_DRY_RUN=0` or `RECLONE_DRY_RUN=0` only after reviewing the printed plan.
 
----
+## Current Status
 
-## 🤝 贡献
+Do not infer status from this README. Read [docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md), especially:
 
-欢迎贡献代码、报告问题或提出建议！
+- Working rules
+- Target architecture
+- Payment architecture
+- Verification commands
+- Progress log
+- Active backlog
 
-### 开发流程
+## License
 
-1. Fork 本仓库
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
-### 代码规范
-
-```bash
-# 代码检查
-npm run lint
-
-# 代码格式化
-npm run format
-
-# 运行测试
-npm run test:unit
-```
-
----
-
-## 📊 项目状态
-
-### ✅ 已完成
-- [x] 8 大核心工具（6个基础工具 + OCR + Office转换）
-- [x] 3 个高级工具（水印 + 表单填写 + 注释）
-- [x] 20+ 个 UI 组件
-- [x] 108 个单元测试
-- [x] 3 种语言支持（英语/中文/西班牙语）
-- [x] Web Workers 集成
-- [x] 响应式设计
-- [x] 生产构建优化
-- [x] 用户认证系统（JWT + OAuth）
-- [x] 云端处理集成
-- [x] WebSocket 实时进度
-- [x] Pricing 定价页面
-- [x] AI PDF 分析器（Gemini）
-- [x] 企业控制台（API Keys/统计/Webhooks/计费）
-
-### 🚧 进行中
-- [ ] E2E 测试优化
-- [ ] 性能持续优化
-- [ ] OAuth/Office 真实环境测试
-
-### 📋 计划中
-- [ ] Stripe 支付真实测试
-- [ ] OAuth 真实凭据测试
-- [ ] 云端 OCR 真实环境验证
-- [ ] 邮件系统真实测试
-- [ ] 后端 Docker 环境联调
-- [ ] 生产环境部署
-
----
-
-## 📝 许可证
-
-MIT License - 详见 [LICENSE](./LICENSE) 文件
-
----
-
-## 🙏 致谢
-
-### 核心依赖
-
-- [Vue.js](https://vuejs.org/) - 渐进式 JavaScript 框架
-- [pdf-lib](https://pdf-lib.js.org/) - PDF 操作库
-- [PDF.js](https://mozilla.github.io/pdf.js/) - PDF 渲染引擎
-- [TailwindCSS](https://tailwindcss.com/) - CSS 框架
-
-### 灵感来源
-
-- [iLovePDF](https://www.ilovepdf.com/)
-- [Smallpdf](https://smallpdf.com/)
-- [PDF24](https://tools.pdf24.org/)
-
----
-
-## 📞 联系方式
-
-- **项目主页**: [GitHub Repository](https://github.com/bedlatess/PDF_Flow)
-- **问题反馈**: [Issues](https://github.com/bedlatess/PDF_Flow/issues)
-- **功能建议**: [Discussions](https://github.com/bedlatess/PDF_Flow/discussions)
-
----
-
-## 🌟 Star History
-
-如果这个项目对您有帮助，请给我们一个 ⭐️！
-
----
-
-## 📈 统计数据
-
-![GitHub stars](https://img.shields.io/github/stars/bedlatess/PDF_Flow?style=social)
-![GitHub forks](https://img.shields.io/github/forks/bedlatess/PDF_Flow?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/bedlatess/PDF_Flow?style=social)
-
----
-
-<div align="center">
-
-**使用 ❤️ 和 Vue 3 构建**
-
-[⬆ 回到顶部](#-pdf-flow)
-
-</div>
+MIT License. See [LICENSE](./LICENSE).

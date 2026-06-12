@@ -25,7 +25,7 @@ export async function cropPDF(file: File, margins: CropMargins): Promise<Blob> {
     const width = cropBox.width - left - right
     const height = cropBox.height - top - bottom
 
-    if (width <= cropBox.width * 0.1 || height <= cropBox.height * 0.1) {
+    if (width < cropBox.width * 0.1 || height < cropBox.height * 0.1) {
       throw new Error('Crop area is too small')
     }
 

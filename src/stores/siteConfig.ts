@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { siteConfigAPI, type PublicFeatureFlag, type PublicSiteConfig } from '@/services/api'
+import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
 
 type PublicContentBlock = PublicSiteConfig['content_blocks'][string]
 
@@ -17,30 +18,41 @@ export const useSiteConfigStore = defineStore('site-config', () => {
   const config = ref<PublicSiteConfig | null>(null)
   const loading = ref(false)
   const loaded = ref(false)
-  const error = ref<string | null>(null)
+  const error = ref<FormattedUserError | null>(null)
+  let pendingRequest: Promise<PublicSiteConfig | null> | null = null
 
   const featureFlags = computed(() => config.value?.feature_flags ?? {})
   const settings = computed(() => config.value?.settings ?? {})
   const contentBlocks = computed(() => config.value?.content_blocks ?? {})
 
   const fetchPublicConfig = async (force = false) => {
-    if (loading.value) return config.value
+    if (pendingRequest) return pendingRequest
     if (loaded.value && !force) return config.value
 
     loading.value = true
     error.value = null
 
-    try {
-      config.value = await siteConfigAPI.getPublicConfig()
-      loaded.value = true
-      return config.value
-    } catch {
-      error.value = '无法读取站点配置，已使用默认可用状态。'
-      loaded.value = false
-      return config.value
-    } finally {
-      loading.value = false
-    }
+    pendingRequest = siteConfigAPI.getPublicConfig()
+      .then((publicConfig) => {
+        config.value = publicConfig
+        loaded.value = true
+        return config.value
+      })
+      .catch((err) => {
+        error.value = formatUserFacingError(err, {
+          area: 'GENERAL',
+          fallbackTitle: 'Site settings could not be loaded',
+          fallbackMessage: 'PDF-Flow is running with default public settings until the configuration service responds.',
+        })
+        loaded.value = false
+        return config.value
+      })
+      .finally(() => {
+        loading.value = false
+        pendingRequest = null
+      })
+
+    return pendingRequest
   }
 
   const getFeatureFlag = (key: string, fallbackLabel = key) =>

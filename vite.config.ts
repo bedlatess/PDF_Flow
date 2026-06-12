@@ -2,6 +2,31 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
+const isPackage = (id: string, packageName: string) =>
+  id.includes(`/node_modules/${packageName}/`) || id.includes(`\\node_modules\\${packageName}\\`)
+
+const manualChunks = (id: string) => {
+  if (id.includes('vite/preload-helper')) {
+    return 'preload-helper'
+  }
+
+  if (isPackage(id, 'vue') || isPackage(id, 'vue-router') || isPackage(id, 'pinia') || isPackage(id, 'vue-i18n')) {
+    return 'vue-vendor'
+  }
+
+  if (isPackage(id, 'pdf-lib')) {
+    return 'pdf-lib-vendor'
+  }
+
+  if (isPackage(id, 'pdfjs-dist')) {
+    return 'pdfjs-vendor'
+  }
+
+  if (isPackage(id, 'jspdf')) {
+    return 'jspdf-vendor'
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
@@ -14,29 +39,24 @@ export default defineConfig({
     'import.meta.env': 'import.meta.env',
   },
   optimizeDeps: {
-    exclude: ['pdf-lib'], // WASM 懒加载优化
+    exclude: ['pdf-lib'],
   },
   build: {
     target: 'esnext',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'pdf-vendor': ['pdf-lib', 'pdfjs-dist', 'jspdf'], // PDF 库单独打包
-          'vue-vendor': ['vue', 'vue-router', 'pinia', 'vue-i18n'], // Vue 生态
-        },
+        manualChunks,
       },
     },
-    // 分块大小警告阈值
     chunkSizeWarningLimit: 1000,
   },
   worker: {
-    format: 'es', // 使用 ES 模块格式
+    format: 'es',
     plugins: () => [],
   },
   server: {
     port: 3000,
     open: true,
-    // 优化开发服务器
     hmr: {
       overlay: true,
     },

@@ -1,23 +1,12 @@
-/**
- * 文件头魔术数字校验
- * 根据 STRIDE 威胁模型 - 防止文件类型欺骗
- */
-
 const MAGIC_NUMBERS = {
-  PDF: [0x25, 0x50, 0x44, 0x46], // %PDF
-  PNG: [0x89, 0x50, 0x4e, 0x47], // PNG
-  JPEG: [0xff, 0xd8, 0xff], // JPEG
-  GIF: [0x47, 0x49, 0x46], // GIF
+  PDF: [0x25, 0x50, 0x44, 0x46],
+  PNG: [0x89, 0x50, 0x4e, 0x47],
+  JPEG: [0xff, 0xd8, 0xff],
+  GIF: [0x47, 0x49, 0x46],
 } as const
 
 export type FileType = keyof typeof MAGIC_NUMBERS
 
-/**
- * 验证文件类型是否匹配魔术数字
- * @param file 文件对象
- * @param expectedType 期望的文件类型
- * @returns Promise<boolean>
- */
 export async function validateFileType(
   file: File,
   expectedType: FileType
@@ -29,14 +18,10 @@ export async function validateFileType(
 
     return magicNumbers.every((byte, index) => bytes[index] === byte)
   } catch (error) {
-    console.error('File validation error:', error)
     return false
   }
 }
 
-/**
- * 验证 PDF 文件
- */
 export async function validatePDF(file: File): Promise<boolean> {
   if (!file.type.includes('pdf') && !file.name.endsWith('.pdf')) {
     return false
@@ -44,9 +29,6 @@ export async function validatePDF(file: File): Promise<boolean> {
   return validateFileType(file, 'PDF')
 }
 
-/**
- * 验证图片文件
- */
 export async function validateImage(file: File): Promise<boolean> {
   const imageTypes: FileType[] = ['PNG', 'JPEG', 'GIF']
 
@@ -59,9 +41,6 @@ export async function validateImage(file: File): Promise<boolean> {
   return false
 }
 
-/**
- * 格式化文件大小
- */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes'
 

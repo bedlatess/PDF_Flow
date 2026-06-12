@@ -24,7 +24,7 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const slots = useSlots()
 
 const isDragging = ref(false)
@@ -64,21 +64,11 @@ const helperText = computed(() => {
   const extensionTokens = acceptTokens.value
     .filter((token) => token.startsWith('.'))
     .map((token) => token.slice(1).toUpperCase())
-  const language = locale.value.toLowerCase()
-  const isZh = language.startsWith('zh')
-  const isEs = language.startsWith('es')
 
-  const formatList = (text: string) => {
-    if (isZh) {
-      return `${text}，最大 ${props.maxSize}MB`
-    }
-
-    if (isEs) {
-      return `${text} hasta ${props.maxSize}MB`
-    }
-
-    return `${text} up to ${props.maxSize}MB`
-  }
+  const formatList = (types: string) => t('common.dragDropZone.helper.format', {
+    types,
+    size: props.maxSize,
+  })
 
   if (props.accept === 'pdf') {
     return formatList('PDF')
@@ -89,34 +79,15 @@ const helperText = computed(() => {
   }
 
   if (props.accept === 'all') {
-    return isZh
-      ? `PDF 和图片文件，最大 ${props.maxSize}MB`
-      : isEs
-        ? `Archivos PDF e imagen hasta ${props.maxSize}MB`
-        : `PDF and image files up to ${props.maxSize}MB`
+    return t('common.dragDropZone.helper.pdfAndImages', { size: props.maxSize })
   }
 
   if (extensionTokens.length > 0) {
     return formatList(extensionTokens.join(', '))
   }
 
-  return isZh
-    ? `文件最大 ${props.maxSize}MB`
-    : isEs
-      ? `Archivos hasta ${props.maxSize}MB`
-      : `Files up to ${props.maxSize}MB`
+  return t('common.dragDropZone.helper.files', { size: props.maxSize })
 })
-
-const getLocalizedMessage = (messages: { zh: string; en: string; es: string }) => {
-  const language = locale.value.toLowerCase()
-  if (language.startsWith('zh')) {
-    return messages.zh
-  }
-  if (language.startsWith('es')) {
-    return messages.es
-  }
-  return messages.en
-}
 
 const matchesAccept = (file: File) => {
   if (acceptTokens.value.length === 0) {
@@ -198,11 +169,7 @@ const processFiles = async (files: File[]) => {
   }
 
   if (files.length > props.maxFiles) {
-    emit('error', getLocalizedMessage({
-      zh: `单次最多可上传 ${props.maxFiles} 个文件。`,
-      en: `You can upload up to ${props.maxFiles} files at a time.`,
-      es: `Puedes subir hasta ${props.maxFiles} archivos a la vez.`,
-    }))
+    emit('error', t('common.dragDropZone.errors.maxFiles', { count: props.maxFiles }))
     return
   }
 
@@ -211,21 +178,16 @@ const processFiles = async (files: File[]) => {
   for (const file of files) {
     const fileSizeMB = file.size / (1024 * 1024)
     if (fileSizeMB > props.maxSize) {
-      emit('error', getLocalizedMessage({
-        zh: `${file.name} 超过了 ${props.maxSize}MB 限制。`,
-        en: `${file.name} is larger than ${props.maxSize}MB.`,
-        es: `${file.name} supera el límite de ${props.maxSize}MB.`,
+      emit('error', t('common.dragDropZone.errors.fileTooLarge', {
+        file: file.name,
+        size: props.maxSize,
       }))
       continue
     }
 
     const isValid = await validateFile(file)
     if (!isValid) {
-      emit('error', getLocalizedMessage({
-        zh: `${file.name} 的文件类型暂不受支持。`,
-        en: `${file.name} is not a supported file type.`,
-        es: `${file.name} no es un tipo de archivo compatible.`,
-      }))
+      emit('error', t('common.dragDropZone.errors.unsupportedType', { file: file.name }))
       continue
     }
 

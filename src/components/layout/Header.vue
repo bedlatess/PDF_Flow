@@ -11,6 +11,7 @@ import {
   Moon,
   Sparkles,
   SunMedium,
+  Wrench,
   X,
 } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settings'
@@ -27,6 +28,8 @@ const siteConfigStore = useSiteConfigStore()
 
 const mobileMenuOpen = ref(false)
 const userMenuOpen = ref(false)
+const mobileMenuId = 'mobile-navigation-menu'
+const accountMenuId = 'account-navigation-menu'
 
 const localeOptions = [
   { value: 'zh', label: '\u7b80\u4f53\u4e2d\u6587' },
@@ -36,20 +39,22 @@ const localeOptions = [
 
 const publicLinks = computed(() => [
   {
+    key: 'tools',
+    label: t('nav.tools'),
+    route: '/tools',
+    icon: Wrench,
+  },
+  {
     key: 'features',
     label: t('nav.features'),
     route: '/features',
     icon: LayoutPanelTop,
-    accent: 'from-violet-500/16 to-fuchsia-500/12 text-violet-700 ring-violet-200/80 dark:text-violet-200 dark:ring-violet-500/20',
-    activeAccent: 'from-violet-600 to-fuchsia-500 text-white ring-violet-400/60 shadow-lg shadow-violet-500/25',
   },
   {
     key: 'pricing',
     label: t('nav.pricing'),
     route: '/pricing',
     icon: Crown,
-    accent: 'from-sky-500/15 to-cyan-500/12 text-sky-700 ring-sky-200/80 dark:text-sky-200 dark:ring-sky-500/20',
-    activeAccent: 'from-sky-500 to-cyan-500 text-white ring-sky-400/60 shadow-lg shadow-sky-500/25',
   },
 ])
 
@@ -59,8 +64,14 @@ const userInitial = computed(() => {
 })
 
 const brandName = computed(() => siteConfigStore.getSettingValue('site_name', 'PDF-Flow'))
+const mobileMenuLabel = computed(() =>
+  mobileMenuOpen.value ? t('nav.closeMenu') : t('nav.openMenu')
+)
 
-const isRouteActive = (target: string) => route.path === target
+const isRouteActive = (target: string) =>
+  target === '/tools'
+    ? route.path === target || route.path.startsWith('/tools/')
+    : route.path === target
 
 const navigateHome = () => {
   router.push('/')
@@ -70,6 +81,11 @@ const navigateHome = () => {
 const navigateTo = (target: string) => {
   router.push(target)
   mobileMenuOpen.value = false
+}
+
+const closeMenus = () => {
+  mobileMenuOpen.value = false
+  userMenuOpen.value = false
 }
 
 const goToLogin = () => {
@@ -113,14 +129,18 @@ onMounted(() => {
 
 <template>
   <header class="sticky top-0 z-50 border-b border-white/60 bg-white/78 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/72">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div
+      class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+      @keydown.esc="closeMenus"
+    >
       <div class="flex h-20 items-center justify-between gap-4">
         <button
-          class="group flex items-center gap-3 rounded-full border border-violet-200/80 bg-white/88 px-3.5 py-2 shadow-sm shadow-violet-100/70 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg hover:shadow-violet-200/60 dark:border-violet-500/20 dark:bg-slate-900/80 dark:shadow-none dark:hover:border-violet-400/40"
+          class="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-2 shadow-sm transition hover:border-sky-200 hover:text-sky-700 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-sky-500/40 dark:hover:text-sky-300"
+          :aria-label="brandName"
           @click="navigateHome"
         >
-          <div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[18px] bg-[linear-gradient(155deg,#240046_0%,#5b21b6_52%,#a855f7_100%)] text-white shadow-lg shadow-violet-500/30">
-            <div class="absolute inset-[6px] rounded-[13px] border border-white/14 bg-[radial-gradient(circle_at_28%_22%,rgba(255,255,255,0.34),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0))]" />
+          <div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg bg-slate-950 text-white dark:bg-sky-500">
+            <div class="absolute inset-[6px] rounded-md border border-white/14 bg-white/5" />
             <div class="absolute inset-y-[8px] left-[11px] w-[2.5px] rounded-full bg-white/92 shadow-[0_0_10px_rgba(255,255,255,0.18)]" />
             <svg
               class="relative h-7 w-7"
@@ -147,7 +167,6 @@ onMounted(() => {
                 stroke-width="1.75"
               />
             </svg>
-            <span class="absolute right-[8px] top-[8px] h-1.5 w-1.5 rounded-full bg-fuchsia-100/90 shadow-[0_0_10px_rgba(255,255,255,0.7)]" />
           </div>
 
           <div class="text-left">
@@ -157,12 +176,15 @@ onMounted(() => {
           </div>
         </button>
 
-        <div class="hidden items-center gap-3 md:flex">
+        <nav
+          class="hidden items-center gap-3 md:flex"
+          :aria-label="t('nav.primaryNavigation')"
+        >
           <button
-            class="group inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-violet-200 hover:text-slate-950 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-200 dark:hover:border-violet-400/30 dark:hover:text-white"
+            class="group inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-sky-200 hover:text-sky-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-sky-500/40 dark:hover:text-sky-300"
             @click="navigateHome"
           >
-            <Sparkles class="h-4 w-4 text-violet-500 transition group-hover:rotate-6" />
+            <Sparkles class="h-4 w-4 text-sky-600 dark:text-sky-300" />
             {{ t('nav.home') }}
           </button>
 
@@ -170,10 +192,10 @@ onMounted(() => {
             v-for="link in publicLinks"
             :key="link.key"
             :class="[
-              'group inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ring-1 transition-all',
+              'group inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold ring-1 transition-all',
               isRouteActive(link.route)
-                ? ['bg-gradient-to-r', link.activeAccent]
-                : ['bg-gradient-to-r shadow-sm hover:-translate-y-0.5 hover:shadow-md', link.accent],
+                ? 'bg-slate-950 text-white ring-slate-950 dark:bg-sky-500 dark:ring-sky-500'
+                : 'bg-white text-slate-700 shadow-sm ring-slate-200 hover:border-sky-200 hover:text-sky-700 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800 dark:hover:text-sky-300',
             ]"
             @click="navigateTo(link.route)"
           >
@@ -181,12 +203,13 @@ onMounted(() => {
             <span>{{ link.label }}</span>
             <ChevronRight class="h-4 w-4 opacity-70 transition group-hover:translate-x-0.5" />
           </button>
-        </div>
+        </nav>
 
         <div class="hidden items-center gap-3 md:flex">
           <select
             :value="locale"
-            class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-700 outline-none transition hover:border-violet-200 focus:border-violet-400 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-100 dark:hover:border-violet-400/30"
+            class="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 outline-none transition hover:border-sky-200 focus:border-sky-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-sky-500/40"
+            :aria-label="t('nav.language')"
             @change="changeLocale(($event.target as HTMLSelectElement).value as 'en' | 'zh' | 'es')"
           >
             <option
@@ -199,7 +222,8 @@ onMounted(() => {
           </select>
 
           <button
-            class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-sm transition hover:border-violet-200 hover:text-slate-950 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-300 dark:hover:border-violet-400/30 dark:hover:text-white"
+            class="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-sky-200 hover:text-sky-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-sky-500/40 dark:hover:text-sky-300"
+            :aria-label="settingsStore.theme === 'light' ? t('nav.themeToDark') : t('nav.themeToLight')"
             @click="toggleTheme"
           >
             <Moon
@@ -217,39 +241,48 @@ onMounted(() => {
             class="relative"
           >
             <button
-              class="flex h-11 w-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,#2e1065_0%,#7c3aed_68%,#d8b4fe_100%)] text-sm font-bold text-white shadow-lg shadow-violet-500/20 transition hover:-translate-y-0.5"
+              class="flex h-11 w-11 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400"
+              :aria-label="t('account.myAccount')"
+              :aria-controls="accountMenuId"
+              :aria-expanded="userMenuOpen"
+              aria-haspopup="menu"
               @click="userMenuOpen = !userMenuOpen"
             >
               {{ userInitial }}
             </button>
             <div
               v-if="userMenuOpen"
-              class="absolute right-0 mt-3 w-60 rounded-[24px] border border-slate-200/80 bg-white/92 p-2 shadow-2xl shadow-slate-200/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/92 dark:shadow-none"
+              :id="accountMenuId"
+              role="menu"
+              class="absolute right-0 mt-3 w-60 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-800 dark:bg-slate-900"
             >
-              <div class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-950/60">
+              <div class="rounded-md bg-slate-50 px-4 py-3 dark:bg-slate-950/60">
                 <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">
                   {{ userStore.user?.full_name || userStore.user?.email }}
                 </p>
               </div>
               <button
-                class="mt-2 flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80"
+                role="menuitem"
+                class="mt-2 flex w-full items-center justify-between rounded-md px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80"
                 @click="goToProfile"
               >
                 <span>{{ t('account.myAccount') }}</span>
                 <ChevronRight class="h-4 w-4" />
               </button>
               <button
-                class="mt-1 flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80"
+                role="menuitem"
+                class="mt-1 flex w-full items-center justify-between rounded-md px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80"
                 @click="goToHistory"
               >
                 <span class="inline-flex items-center gap-2">
-                  <Clock3 class="h-4 w-4 text-violet-500" />
-                  处理记录
+                  <Clock3 class="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                  {{ t('history.title') }}
                 </span>
                 <ChevronRight class="h-4 w-4" />
               </button>
               <button
-                class="mt-1 flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-500/10"
+                role="menuitem"
+                class="mt-1 flex w-full items-center justify-between rounded-md px-4 py-3 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-500/10"
                 @click="handleLogout"
               >
                 <span>{{ t('auth.logout') }}</span>
@@ -262,7 +295,7 @@ onMounted(() => {
             v-else
             variant="primary"
             size="sm"
-            class="rounded-full px-5 py-2.5"
+            class="rounded-md px-5 py-2.5"
             @click="goToLogin"
           >
             {{ t('auth.login') }}
@@ -270,7 +303,10 @@ onMounted(() => {
         </div>
 
         <button
-          class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-700 shadow-sm transition hover:border-violet-200 hover:text-slate-950 dark:border-slate-800 dark:bg-slate-900/75 dark:text-slate-200 dark:hover:border-violet-400/30 dark:hover:text-white md:hidden"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-sky-200 hover:text-sky-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-sky-500/40 dark:hover:text-sky-300 md:hidden"
+          :aria-label="mobileMenuLabel"
+          :aria-controls="mobileMenuId"
+          :aria-expanded="mobileMenuOpen"
           @click="mobileMenuOpen = !mobileMenuOpen"
         >
           <Menu
@@ -286,16 +322,17 @@ onMounted(() => {
 
       <div
         v-if="mobileMenuOpen"
+        :id="mobileMenuId"
         class="border-t border-slate-200/80 py-4 dark:border-slate-800 md:hidden"
       >
         <div class="space-y-3">
           <div class="grid gap-3">
             <button
-              class="flex items-center justify-between rounded-[24px] border border-slate-200 bg-white/85 px-4 py-3 text-left shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
+              class="flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3 text-left shadow-sm dark:border-slate-800 dark:bg-slate-900"
               @click="navigateHome"
             >
               <span class="flex items-center gap-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                <Sparkles class="h-4 w-4 text-violet-500" />
+                <Sparkles class="h-4 w-4 text-sky-600 dark:text-sky-300" />
                 {{ t('nav.home') }}
               </span>
               <ChevronRight class="h-4 w-4 text-slate-400" />
@@ -305,10 +342,10 @@ onMounted(() => {
               v-for="link in publicLinks"
               :key="`${link.key}-mobile`"
               :class="[
-                'flex items-center justify-between rounded-[24px] px-4 py-3 text-left shadow-sm ring-1 transition',
+                'flex items-center justify-between rounded-md px-4 py-3 text-left shadow-sm ring-1 transition',
                 isRouteActive(link.route)
-                  ? ['bg-gradient-to-r', link.activeAccent]
-                  : ['bg-white/85 dark:bg-slate-900/75', link.accent],
+                  ? 'bg-slate-950 text-white ring-slate-950 dark:bg-sky-500 dark:ring-sky-500'
+                  : 'bg-white text-slate-700 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800',
               ]"
               @click="navigateTo(link.route)"
             >
@@ -320,10 +357,11 @@ onMounted(() => {
             </button>
           </div>
 
-          <div class="grid gap-3 rounded-[28px] border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/72">
+          <div class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <select
               :value="locale"
-              class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+              class="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+              :aria-label="t('nav.language')"
               @change="changeLocale(($event.target as HTMLSelectElement).value as 'en' | 'zh' | 'es')"
             >
               <option
@@ -336,7 +374,7 @@ onMounted(() => {
             </select>
 
             <button
-              class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-violet-200 dark:border-slate-800 dark:text-slate-200 dark:hover:border-violet-400/30"
+              class="flex items-center justify-between rounded-md border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-sky-200 dark:border-slate-800 dark:text-slate-200 dark:hover:border-sky-500/40"
               @click="toggleTheme"
             >
               <span>{{ settingsStore.theme === 'light' ? t('nav.themeToDark') : t('nav.themeToLight') }}</span>
@@ -352,24 +390,24 @@ onMounted(() => {
 
             <template v-if="userStore.isAuthenticated">
               <button
-                class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-violet-200 dark:border-slate-800 dark:text-slate-200 dark:hover:border-violet-400/30"
+                class="flex items-center justify-between rounded-md border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-sky-200 dark:border-slate-800 dark:text-slate-200 dark:hover:border-sky-500/40"
                 @click="goToProfile"
               >
                 <span>{{ t('account.myAccount') }}</span>
                 <ChevronRight class="h-4 w-4" />
               </button>
               <button
-                class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-violet-200 dark:border-slate-800 dark:text-slate-200 dark:hover:border-violet-400/30"
+                class="flex items-center justify-between rounded-md border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-sky-200 dark:border-slate-800 dark:text-slate-200 dark:hover:border-sky-500/40"
                 @click="goToHistory"
               >
                 <span class="inline-flex items-center gap-2">
-                  <Clock3 class="h-4 w-4 text-violet-500" />
-                  处理记录
+                  <Clock3 class="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                  {{ t('history.title') }}
                 </span>
                 <ChevronRight class="h-4 w-4" />
               </button>
               <button
-                class="flex items-center justify-between rounded-2xl border border-rose-200 bg-rose-50/70 px-4 py-3 text-sm font-medium text-rose-600 transition hover:border-rose-300 dark:border-rose-500/20 dark:bg-rose-500/10"
+                class="flex items-center justify-between rounded-md border border-rose-200 bg-rose-50/70 px-4 py-3 text-sm font-medium text-rose-600 transition hover:border-rose-300 dark:border-rose-500/20 dark:bg-rose-500/10"
                 @click="handleLogout"
               >
                 <span>{{ t('auth.logout') }}</span>
@@ -381,7 +419,7 @@ onMounted(() => {
               variant="primary"
               size="sm"
               full-width
-              class="rounded-2xl py-3"
+              class="rounded-md py-3"
               @click="goToLogin"
             >
               {{ t('auth.login') }}

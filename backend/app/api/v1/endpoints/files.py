@@ -23,7 +23,7 @@ from app.services.file_service import file_processing_service
 from app.core.database import get_db
 from app.core.rate_limiter import rate_limit_middleware
 from app.api.v1.endpoints.auth import get_current_user_optional
-from app.models.user import User
+from app.models.user import ProcessingJob, User
 from app.services.feature_gate import require_feature_access
 from sqlalchemy.orm import Session
 import logging
@@ -357,18 +357,24 @@ async def get_job_status(
 @router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def cancel_job(
     job_id: str,
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
 ):
     """
     取消处理任务
 
     - **job_id**: 任务 ID
     """
-    # TODO: 实现任务取消逻辑
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Job cancellation not yet implemented"
-    )
+    file_processing_service.cancel_job(job_id)
+
+    db_job = db.query(ProcessingJob).filter(ProcessingJob.job_id == job_id).first()
+    if db_job and db_job.status not in ("completed", "failed", "cancelled"):
+        from datetime import datetime
+
+        db_job.status = "cancelled"
+        db_job.error_message = "Job cancelled by user"
+        db_job.completed_at = datetime.utcnow()
+        db.commit()
 
 
 @router.post("/office-to-pdf", response_model=ProcessingJobResponse)
