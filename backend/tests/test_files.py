@@ -135,6 +135,72 @@ class TestJobCancellation:
         assert status_response.json()["status"] == "cancelled"
 
 
+class TestFileDomain:
+    def test_upload_tier_maps_admin_to_enterprise_and_anonymous_to_free(self, client):
+        from app.domains.files.service import user_upload_tier
+        from app.models.user import User, UserRole
+
+        assert user_upload_tier(None) == "free"
+        assert user_upload_tier(User(email="free@example.com", role=UserRole.FREE)) == "free"
+        assert user_upload_tier(User(email="admin@example.com", role=UserRole.ADMIN)) == "enterprise"
+
+    def test_validate_office_upload_accepts_known_extensions_and_rejects_unknown(self):
+        from app.domains.files.service import validate_office_upload
+
+        docx = UploadFile(filename="report.DOCX", file=BytesIO(b"docx"))
+        assert validate_office_upload(docx) == ".docx"
+
+        exe = UploadFile(filename="report.exe", file=BytesIO(b"exe"))
+        with pytest.raises(HTTPException) as exc:
+            validate_office_upload(exe)
+        assert exc.value.status_code == 400
+        assert ".docx" in exc.value.detail
+
+    def test_require_job_status_raises_route_compatible_404(self):
+        from app.domains.files.service import require_job_status
+
+        with pytest.raises(HTTPException) as exc:
+            require_job_status("job_missing", None)
+
+        assert exc.value.status_code == 404
+        assert exc.value.detail == "Job not found: job_missing"
+
+    def test_sync_cancelled_processing_job_updates_non_terminal_db_job(self, client):
+        from app.core.database import get_db
+        from app.domains.files.service import sync_cancelled_processing_job
+        from app.models.user import ProcessingJob, User
+
+        db = next(client.app.dependency_overrides[get_db]())
+        try:
+            user = User(
+                email="file-domain@example.com",
+                hashed_password="hash",
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+            job = ProcessingJob(
+                job_id="job_db_cancel",
+                user_id=user.id,
+                job_type="ocr",
+                status="processing",
+                input_file_name="input.pdf",
+                input_file_size=100,
+            )
+            db.add(job)
+            db.commit()
+
+            synced = sync_cancelled_processing_job(db, "job_db_cancel")
+
+            assert synced.status == "cancelled"
+            assert synced.error_message == "Job cancelled by user"
+            assert synced.completed_at is not None
+        finally:
+            db.close()
+
+
 class TestFileValidator:
     """魔术数字 / 大小限制逻辑（MAX_FILE_SIZE 分级）"""
 

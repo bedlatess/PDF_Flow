@@ -1,92 +1,72 @@
-"""
-File Processing Endpoints
-文件处理相关的 API 端点
-"""
-import os
-from typing import List, Optional
-from fastapi import APIRouter, UploadFile, File, Request, Depends, HTTPException, status, Query
-from fastapi.responses import FileResponse
+"""File processing API route wrappers."""
 
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, Request, UploadFile, status
+from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
+
+from app.api.v1.endpoints.auth import get_current_user_optional
+from app.core.database import get_db
+from app.core.rate_limiter import rate_limit_middleware
+from app.domains.files.service import (
+    require_file_feature,
+    require_job_status,
+    run_file_operation,
+    sync_cancelled_processing_job,
+    user_upload_tier,
+    validate_office_upload,
+)
+from app.models.user import User
 from app.schemas.file import (
     FileUploadResponse,
-    PDFMergeRequest,
-    PDFSplitRequest,
-    PDFCompressRequest,
-    PDFRotateRequest,
     ImageToPDFRequest,
-    PDFToImageRequest,
     OCRRequest,
+    PDFCompressRequest,
+    PDFMergeRequest,
+    PDFRotateRequest,
+    PDFSplitRequest,
+    PDFToImageRequest,
     ProcessingJobResponse,
     ProcessingJobStatusResponse,
 )
 from app.services.file_service import file_processing_service
-from app.core.database import get_db
-from app.core.rate_limiter import rate_limit_middleware
-from app.api.v1.endpoints.auth import get_current_user_optional
-from app.models.user import ProcessingJob, User
-from app.services.feature_gate import require_feature_access
-from sqlalchemy.orm import Session
-import logging
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/files", tags=["files"])
 
 
 async def apply_upload_rate_limit(request: Request):
-    """上传端点的限流"""
+    """Rate limit upload endpoints."""
     await rate_limit_middleware.apply_rate_limit(
         request=request,
-        max_requests=10,  # 10 次上传
-        window_seconds=60,  # 每分钟
-        key_suffix="upload"
+        max_requests=10,
+        window_seconds=60,
+        key_suffix="upload",
     )
 
 
 async def apply_processing_rate_limit(request: Request):
-    """处理端点的限流"""
+    """Rate limit processing endpoints."""
     await rate_limit_middleware.apply_rate_limit(
         request=request,
-        max_requests=20,  # 20 次处理
-        window_seconds=60,  # 每分钟
-        key_suffix="processing"
+        max_requests=20,
+        window_seconds=60,
+        key_suffix="processing",
     )
 
 
 @router.post("/upload", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_file(
     request: Request,
-    file: UploadFile = File(..., description="要上传的文件"),
+    file: UploadFile = File(..., description="File to upload"),
     current_user: Optional[User] = Depends(get_current_user_optional),
-    _rate_limit: None = Depends(apply_upload_rate_limit)
+    _rate_limit: None = Depends(apply_upload_rate_limit),
 ):
-    """
-    上传文件
-
-    - **file**: 要上传的文件（PDF、图片等）
-    - 支持的格式: PDF, JPEG, PNG, WEBP, GIF, TIFF, DOCX, XLSX
-    - 文件大小限制:
-        - Free: 20MB
-        - Pro: 500MB
-        - Enterprise: 2GB
-    """
-    # 确定用户等级（基于 role；admin 视为 enterprise 级配额）
-    user_tier = "free"
-    if current_user:
-        role_value = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
-        user_tier = "enterprise" if role_value == "admin" else role_value
-
-    try:
-        result = await file_processing_service.upload_file(file, user_tier)
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Upload failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload file"
-        )
+    return await run_file_operation(
+        lambda: file_processing_service.upload_file(file, user_upload_tier(current_user)),
+        error_detail="Failed to upload file",
+        log_message="Upload failed",
+    )
 
 
 @router.post("/merge", response_model=ProcessingJobResponse)
@@ -95,29 +75,17 @@ async def merge_pdfs(
     payload: PDFMergeRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-    _rate_limit: None = Depends(apply_processing_rate_limit)
+    _rate_limit: None = Depends(apply_processing_rate_limit),
 ):
-    """
-    合并多个 PDF 文件
-
-    - **file_ids**: 要合并的文件 ID 列表（至少 2 个）
-    - **output_filename**: 输出文件名（可选）
-    """
-    require_feature_access(db, "merge_pdf", current_user)
-    try:
-        result = await file_processing_service.merge_pdfs(
+    require_file_feature(db, "merge_pdf", current_user)
+    return await run_file_operation(
+        lambda: file_processing_service.merge_pdfs(
             file_ids=payload.file_ids,
-            output_filename=payload.output_filename
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Merge failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to merge PDFs"
-        )
+            output_filename=payload.output_filename,
+        ),
+        error_detail="Failed to merge PDFs",
+        log_message="Merge failed",
+    )
 
 
 @router.post("/split", response_model=ProcessingJobResponse)
@@ -126,29 +94,17 @@ async def split_pdf(
     payload: PDFSplitRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-    _rate_limit: None = Depends(apply_processing_rate_limit)
+    _rate_limit: None = Depends(apply_processing_rate_limit),
 ):
-    """
-    拆分 PDF 文件
-
-    - **file_id**: PDF 文件 ID
-    - **page_ranges**: 页面范围列表，例如 [[1,3], [5,7]]
-    """
-    require_feature_access(db, "split_pdf", current_user)
-    try:
-        result = await file_processing_service.split_pdf(
+    require_file_feature(db, "split_pdf", current_user)
+    return await run_file_operation(
+        lambda: file_processing_service.split_pdf(
             file_id=payload.file_id,
-            page_ranges=payload.page_ranges
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Split failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to split PDF"
-        )
+            page_ranges=payload.page_ranges,
+        ),
+        error_detail="Failed to split PDF",
+        log_message="Split failed",
+    )
 
 
 @router.post("/compress", response_model=ProcessingJobResponse)
@@ -157,29 +113,17 @@ async def compress_pdf(
     payload: PDFCompressRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-    _rate_limit: None = Depends(apply_processing_rate_limit)
+    _rate_limit: None = Depends(apply_processing_rate_limit),
 ):
-    """
-    压缩 PDF 文件
-
-    - **file_id**: PDF 文件 ID
-    - **quality**: 压缩质量（low, medium, high）
-    """
-    require_feature_access(db, "compress_pdf", current_user)
-    try:
-        result = await file_processing_service.compress_pdf(
+    require_file_feature(db, "compress_pdf", current_user)
+    return await run_file_operation(
+        lambda: file_processing_service.compress_pdf(
             file_id=payload.file_id,
-            quality=payload.quality.value
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Compress failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to compress PDF"
-        )
+            quality=payload.quality.value,
+        ),
+        error_detail="Failed to compress PDF",
+        log_message="Compress failed",
+    )
 
 
 @router.post("/rotate", response_model=ProcessingJobResponse)
@@ -188,30 +132,17 @@ async def rotate_pdf(
     payload: PDFRotateRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-    _rate_limit: None = Depends(apply_processing_rate_limit)
+    _rate_limit: None = Depends(apply_processing_rate_limit),
 ):
-    """
-    旋转 PDF 页面
-
-    - **file_id**: PDF 文件 ID
-    - **rotation**: 旋转角度（90, 180, 270）
-    - **pages**: 要旋转的页面（可选，默认所有页面）
-    """
-    require_feature_access(db, "rotate_pdf", current_user)
-    try:
-        result = await file_processing_service.rotate_pdf(
+    require_file_feature(db, "rotate_pdf", current_user)
+    return await run_file_operation(
+        lambda: file_processing_service.rotate_pdf(
             file_id=payload.file_id,
-            rotation=payload.rotation
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Rotate failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to rotate PDF"
-        )
+            rotation=payload.rotation,
+        ),
+        error_detail="Failed to rotate PDF",
+        log_message="Rotate failed",
+    )
 
 
 @router.post("/images-to-pdf", response_model=ProcessingJobResponse)
@@ -220,29 +151,17 @@ async def images_to_pdf(
     payload: ImageToPDFRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-    _rate_limit: None = Depends(apply_processing_rate_limit)
+    _rate_limit: None = Depends(apply_processing_rate_limit),
 ):
-    """
-    将图片转换为 PDF
-
-    - **file_ids**: 图片文件 ID 列表
-    - **output_filename**: 输出文件名（可选）
-    """
-    require_feature_access(db, "image_to_pdf", current_user)
-    try:
-        result = await file_processing_service.images_to_pdf(
+    require_file_feature(db, "image_to_pdf", current_user)
+    return await run_file_operation(
+        lambda: file_processing_service.images_to_pdf(
             file_ids=payload.file_ids,
-            output_filename=payload.output_filename
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Images to PDF failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to convert images to PDF"
-        )
+            output_filename=payload.output_filename,
+        ),
+        error_detail="Failed to convert images to PDF",
+        log_message="Images to PDF failed",
+    )
 
 
 @router.post("/pdf-to-images", response_model=ProcessingJobResponse)
@@ -251,31 +170,17 @@ async def pdf_to_images(
     payload: PDFToImageRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-    _rate_limit: None = Depends(apply_processing_rate_limit)
+    _rate_limit: None = Depends(apply_processing_rate_limit),
 ):
-    """
-    将 PDF 转换为图片
-
-    - **file_id**: PDF 文件 ID
-    - **format**: 输出格式（png, jpeg）
-    - **pages**: 要转换的页面（可选，默认所有页面）
-    - **dpi**: 输出 DPI（72-600）
-    """
-    require_feature_access(db, "pdf_to_image", current_user)
-    try:
-        result = await file_processing_service.pdf_to_images(
+    require_file_feature(db, "pdf_to_image", current_user)
+    return await run_file_operation(
+        lambda: file_processing_service.pdf_to_images(
             file_id=payload.file_id,
-            format=payload.format.value
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"PDF to images failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to convert PDF to images"
-        )
+            format=payload.format.value,
+        ),
+        error_detail="Failed to convert PDF to images",
+        log_message="PDF to images failed",
+    )
 
 
 @router.post("/ocr", response_model=ProcessingJobResponse)
@@ -284,137 +189,62 @@ async def extract_text_ocr(
     payload: OCRRequest,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-    _rate_limit: None = Depends(apply_processing_rate_limit)
+    _rate_limit: None = Depends(apply_processing_rate_limit),
 ):
-    """
-    OCR 文本提取
-
-    - **file_id**: 文件 ID（PDF 或图片）
-    - **language**: OCR 语言（eng, chi_sim, chi_tra 等）
-    - **pages**: 要识别的页面（可选，默认所有页面）
-
-    **注意**: OCR 功能为 Pro 和 Enterprise 用户专属
-    """
-    require_feature_access(db, "ocr_pdf", current_user)
-
-    try:
-        result = await file_processing_service.extract_text_ocr(
+    require_file_feature(db, "ocr_pdf", current_user)
+    return await run_file_operation(
+        lambda: file_processing_service.extract_text_ocr(
             file_id=payload.file_id,
-            language=payload.language
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"OCR failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to extract text"
-        )
+            language=payload.language,
+        ),
+        error_detail="Failed to extract text",
+        log_message="OCR failed",
+    )
 
 
 @router.get("/download/{job_id}")
 async def download_result(
     job_id: str,
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
-    """
-    下载已完成任务的处理结果
-
-    - **job_id**: 任务 ID
-    - 单文件结果直接下载；多文件结果打包为 zip；OCR 返回 .txt
-    - 任务未完成返回 425，失败返回 422
-    """
     download_path = file_processing_service.get_download_path(job_id)
     return FileResponse(
         path=str(download_path),
         filename=download_path.name,
-        media_type="application/octet-stream"
+        media_type="application/octet-stream",
     )
 
 
 @router.get("/jobs/{job_id}", response_model=ProcessingJobStatusResponse)
 async def get_job_status(
     job_id: str,
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
-    """
-    查询处理任务状态
-
-    - **job_id**: 任务 ID
-    """
-    status_data = file_processing_service.get_job_status(job_id)
-
-    if not status_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job not found: {job_id}"
-        )
-
-    return status_data
+    return require_job_status(job_id, file_processing_service.get_job_status(job_id))
 
 
 @router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def cancel_job(
     job_id: str,
     current_user: Optional[User] = Depends(get_current_user_optional),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """
-    取消处理任务
-
-    - **job_id**: 任务 ID
-    """
     file_processing_service.cancel_job(job_id)
-
-    db_job = db.query(ProcessingJob).filter(ProcessingJob.job_id == job_id).first()
-    if db_job and db_job.status not in ("completed", "failed", "cancelled"):
-        from datetime import datetime
-
-        db_job.status = "cancelled"
-        db_job.error_message = "Job cancelled by user"
-        db_job.completed_at = datetime.utcnow()
-        db.commit()
+    sync_cancelled_processing_job(db, job_id)
 
 
 @router.post("/office-to-pdf", response_model=ProcessingJobResponse)
 async def office_to_pdf(
     request: Request,
-    file: UploadFile = File(..., description="Office文件（DOCX/XLSX/PPTX）"),
+    file: UploadFile = File(..., description="Office file"),
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-    _rate_limit: None = Depends(apply_processing_rate_limit)
+    _rate_limit: None = Depends(apply_processing_rate_limit),
 ):
-    """
-    Office 文件转 PDF
-
-    支持的格式：
-    - Word: .docx, .doc
-    - Excel: .xlsx, .xls
-    - PowerPoint: .pptx, .ppt
-
-    注意：需要系统安装 LibreOffice
-    """
-    require_feature_access(db, "office_to_pdf", current_user)
-    try:
-        # 验证文件类型
-        allowed_extensions = ['.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt']
-        file_ext = os.path.splitext(file.filename)[1].lower()
-
-        if file_ext not in allowed_extensions:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}"
-            )
-
-        result = await file_processing_service.office_to_pdf(file)
-        return result
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Office to PDF conversion failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to convert Office file: {str(e)}"
-        )
+    require_file_feature(db, "office_to_pdf", current_user)
+    validate_office_upload(file)
+    return await run_file_operation(
+        lambda: file_processing_service.office_to_pdf(file),
+        error_detail="Failed to convert Office file",
+        log_message="Office to PDF conversion failed",
+    )
