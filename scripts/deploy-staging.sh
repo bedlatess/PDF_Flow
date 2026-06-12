@@ -23,6 +23,7 @@ touch "$DEPLOY_LOG"
 exec > >(tee -a "$DEPLOY_LOG") 2>&1
 
 declare -a COMPOSE_CMD
+declare -a COMPOSE_ENV_ARGS
 
 log() {
   printf '[%s] %s\n' "$(date '+%F %T')" "$*"
@@ -36,10 +37,25 @@ require_cmd() {
 }
 
 detect_compose() {
+  local compose_env_file="${COMPOSE_ENV_FILE:-}"
+
+  if [[ -z "$compose_env_file" && -f "$ROOT_DIR/backend/.env" ]]; then
+    compose_env_file="$ROOT_DIR/backend/.env"
+  fi
+
+  if [[ -n "$compose_env_file" ]]; then
+    if [[ ! -f "$compose_env_file" ]]; then
+      log "Compose env file not found: $compose_env_file"
+      exit 1
+    fi
+    COMPOSE_ENV_ARGS=(--env-file "$compose_env_file")
+    log "Using Docker Compose env file: $compose_env_file"
+  fi
+
   if docker compose version >/dev/null 2>&1; then
-    COMPOSE_CMD=(docker compose -f "$COMPOSE_FILE_PATH")
+    COMPOSE_CMD=(docker compose "${COMPOSE_ENV_ARGS[@]}" -f "$COMPOSE_FILE_PATH")
   elif command -v docker-compose >/dev/null 2>&1; then
-    COMPOSE_CMD=(docker-compose -f "$COMPOSE_FILE_PATH")
+    COMPOSE_CMD=(docker-compose "${COMPOSE_ENV_ARGS[@]}" -f "$COMPOSE_FILE_PATH")
   else
     log "Neither 'docker compose' nor 'docker-compose' is available"
     exit 1

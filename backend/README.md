@@ -54,8 +54,10 @@ docker compose up -d postgres redis
 For the full local stack:
 
 ```bash
-docker compose up -d --build
+docker compose --env-file backend/.env up -d --build
 ```
+
+The deploy and rollback scripts automatically pass `backend/.env` to Docker Compose when that file exists. To use a different env file, set `COMPOSE_ENV_FILE=/path/to/file`.
 
 ## Test Commands
 
@@ -113,6 +115,8 @@ Use `.env.example` as the template. Important groups:
 - Payments: provider credentials, signing secrets, webhook ids, and hosted gateway configs
 - Monitoring: Sentry/PostHog keys
 
+For Docker Compose, the bundled Postgres service is used by default. If you want an external database in Compose, set `COMPOSE_DATABASE_URL` or provide a `docker-compose.override.yml`.
+
 Never commit real credentials.
 
 ## Migrations
@@ -130,4 +134,4 @@ alembic current
 - [OAuth setup](../docs/OAUTH_SETUP.md)
 - [Staging deploy guide](../docs/STAGING_DEPLOY_GUIDE.md)
 - [Email service](./docs/EMAIL_SERVICE.md)
-- [Historical requirements](../开发文档)
+- Historical requirements are kept under `../开发文档/`
