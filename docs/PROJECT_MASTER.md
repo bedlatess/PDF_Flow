@@ -20,6 +20,22 @@ git pull --ff-only origin main
 bash scripts/deploy-main.sh
 ```
 
+## Admin Bootstrap
+
+Create or promote the first admin from the trusted server shell:
+
+```bash
+cd /root/data/docker_data/PDF/pdf-flow
+PDF_FLOW_ADMIN_EMAIL=owner@example.com \
+PDF_FLOW_ADMIN_PASSWORD='change-this-strong-password' \
+PDF_FLOW_ADMIN_NAME='PDF-Flow Owner' \
+bash scripts/init-admin.sh
+```
+
+- Existing accounts are promoted to `admin`, reactivated, and verified.
+- Existing passwords are kept unless `UPDATE_ADMIN_PASSWORD=1` is set.
+- No public admin-initialization API is exposed.
+
 ## Verification Gates
 
 Local frontend:
@@ -67,6 +83,7 @@ curl http://localhost:8000/health
 - Pro presentation: Pro badge styling is smaller and quieter, with Pro used as the main visual differentiator instead of repeated upgrade copy.
 - Pricing/payment: Pro checkout now opens a payment-method modal. Users click upgrade, choose a provider, and continue; unavailable provider states remain user-facing and backend payment confirmation is still the source of truth.
 - Account recovery: frontend routes for `/auth/forgot-password` and `/auth/reset-password` are connected to the existing backend reset endpoints. Email delivery remains configurable for production; when mail is not configured, the UI gives a manual recovery fallback instead of pretending the email definitely arrived.
+- Admin bootstrap: trusted CLI initializer added for first-admin creation or promotion, including audit logging and repeat-safe behavior.
 
 ## Cleanup Rules
 

@@ -70,9 +70,31 @@ Common targeted checks:
 ```bash
 pytest tests/test_auth.py -q
 pytest tests/test_admin.py -q
+pytest tests/test_admin_bootstrap.py -q
 pytest tests/test_files.py -q
 pytest tests/test_payment_domain.py -q
 ```
+
+## Admin Bootstrap
+
+The first admin is created from a trusted shell, not from a public web route.
+
+Docker deployment:
+
+```bash
+PDF_FLOW_ADMIN_EMAIL=owner@example.com \
+PDF_FLOW_ADMIN_PASSWORD='change-this-strong-password' \
+PDF_FLOW_ADMIN_NAME='PDF-Flow Owner' \
+bash scripts/init-admin.sh
+```
+
+Backend container or local backend working directory:
+
+```bash
+python -m app.cli.init_admin --email owner@example.com --password 'change-this-strong-password'
+```
+
+If the email already exists, the command promotes the account to `admin`, activates and verifies it, and keeps the existing password. Add `UPDATE_ADMIN_PASSWORD=1` for the script or `--update-password` for the Python command when you intentionally want to rotate the password.
 
 ## Main API Areas
 
