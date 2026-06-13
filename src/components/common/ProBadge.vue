@@ -17,8 +17,8 @@ const props = withDefaults(defineProps<{
 const classes = computed(() => {
   if (props.variant === 'corner') {
     return [
-      'absolute right-4 top-4 z-10 inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ring-1 ring-inset',
-      'bg-[#fff7df] text-[#6f5200] ring-[#ead28a] dark:bg-[#fff7df] dark:text-[#6f5200] dark:ring-[#ead28a]',
+      'absolute right-4 top-4 z-10 inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset',
+      'bg-white text-slate-800 ring-amber-300 dark:bg-slate-950 dark:text-amber-100 dark:ring-amber-300/45',
     ]
   }
 
@@ -30,18 +30,18 @@ const classes = computed(() => {
   }
 
   const size = props.compact
-    ? 'px-2.5 py-1 text-[11px]'
-    : 'px-3.5 py-1.5 text-xs'
+    ? 'px-2 py-0.5 text-[11px]'
+    : 'px-2.5 py-1 text-xs'
 
   const toneClasses = {
-    gold: 'bg-[#fff4cf] text-[#6f5200] ring-[#e6c86d]',
+    gold: 'bg-white text-slate-800 ring-amber-300 dark:bg-slate-950 dark:text-amber-100 dark:ring-amber-300/45',
     dark: 'bg-slate-950 text-amber-100 ring-amber-300/30 dark:bg-slate-950 dark:text-amber-100',
-    soft: 'bg-[#fff9e8] text-[#7a5c00] ring-[#edd88f] dark:bg-[#fff9e8] dark:text-[#7a5c00] dark:ring-[#edd88f]',
-    ivory: 'bg-[#fff7df] text-[#6f5200] ring-[#ead28a] dark:bg-[#fff7df] dark:text-[#6f5200] dark:ring-[#ead28a]',
+    soft: 'bg-white text-slate-700 ring-slate-200 dark:bg-slate-950 dark:text-slate-200 dark:ring-slate-700',
+    ivory: 'bg-white text-slate-800 ring-amber-300 dark:bg-slate-950 dark:text-amber-100 dark:ring-amber-300/45',
   }[props.tone]
 
   return [
-    'inline-flex items-center rounded-full font-semibold ring-1 ring-inset',
+    'inline-flex items-center rounded-md font-semibold ring-1 ring-inset',
     size,
     toneClasses,
   ]

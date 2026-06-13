@@ -17,6 +17,7 @@ import {
 } from 'lucide-vue-next'
 import Button from '@/components/common/Button.vue'
 import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
+import Modal from '@/components/common/Modal.vue'
 import ProBadge from '@/components/common/ProBadge.vue'
 import { useUserStore } from '@/stores/user'
 import { formatUserFacingError, type FormattedUserError } from '@/utils/error-messages'
@@ -87,6 +88,10 @@ interface PricingPageCopy {
   paymentFailedHint: string
   paymentMethodTitle: string
   paymentMethodSubtitle: string
+  paymentModalTitle: string
+  paymentModalSubtitle: string
+  paymentModalConfirm: string
+  paymentModalChange: string
   paymentProvidersLoading: string
   paymentProvidersRetry: string
   paymentProvidersFailedTitle: string
@@ -121,6 +126,7 @@ const userStore = useUserStore()
 const { tm } = useI18n()
 const checkoutLoadingPlan = ref<PlanId | null>(null)
 const checkoutError = ref<FormattedUserError | null>(null)
+const paymentModalOpen = ref(false)
 const paymentProviders = ref<PaymentProviderOption[]>([])
 const paymentProvidersLoading = ref(false)
 const paymentProvidersError = ref<FormattedUserError | null>(null)
@@ -213,8 +219,6 @@ const paymentActionDisabled = computed(() =>
   paymentProvidersLoading.value || !selectedPaymentProvider.value || enabledPaymentProviders.value.length === 0,
 )
 
-const shouldShowPaymentMethods = computed(() => userStore.isAuthenticated)
-
 const providerBadge = (provider: PaymentProviderOption) => {
   if (QR_PAYMENT_PROVIDERS.has(provider.key)) {
     return copy.value.paymentQrBadge
@@ -291,8 +295,18 @@ const handleCTA = async (plan: Plan) => {
     return
   }
 
+  paymentModalOpen.value = true
+  if (paymentProviders.value.length === 0) {
+    await loadPaymentProviders()
+  }
+}
+
+const startProCheckout = async () => {
+  checkoutError.value = null
+  paymentCodeCopyState.value = 'idle'
+
   try {
-    checkoutLoadingPlan.value = plan.id
+    checkoutLoadingPlan.value = 'pro'
     qrCheckoutResult.value = null
 
     if (!selectedPaymentProvider.value) {
@@ -490,107 +504,12 @@ watch(
             {{ copy.currentPlan }}
           </div>
 
-          <div
-            v-if="plan.id === 'pro' && !plan.current && shouldShowPaymentMethods"
-            class="mt-5 rounded-md border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/45"
-          >
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div class="flex items-center gap-2">
-                  <CreditCard class="h-4 w-4 text-amber-600 dark:text-amber-300" />
-                  <h3 class="text-sm font-semibold text-slate-950 dark:text-white">
-                    {{ copy.paymentMethodTitle }}
-                  </h3>
-                </div>
-                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                  {{ copy.paymentMethodSubtitle }}
-                </p>
-              </div>
-              <button
-                type="button"
-                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                :aria-label="copy.paymentProvidersRetry"
-                :disabled="paymentProvidersLoading"
-                @click="loadPaymentProviders"
-              >
-                <RefreshCw :class="['h-4 w-4', paymentProvidersLoading ? 'animate-spin' : '']" />
-              </button>
-            </div>
-
-            <DiagnosticAlert
-              v-if="paymentProvidersError"
-              class="mt-4"
-              :title="paymentProvidersError.title"
-              :message="paymentProvidersError.message"
-              :diagnostic-code="paymentProvidersError.diagnosticCode"
-              :support-hint="copy.paymentProvidersFailedHint"
-              tone="warning"
-            />
-
-            <div
-              v-else-if="paymentProvidersLoading"
-              class="mt-4 rounded-md border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
-            >
-              {{ copy.paymentProvidersLoading }}
-            </div>
-
-            <div
-              v-else-if="enabledPaymentProviders.length === 0"
-              class="mt-4 rounded-md border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
-            >
-              {{ copy.paymentNoProviders }}
-            </div>
-
-            <div
-              v-else
-              role="radiogroup"
-              :aria-label="copy.paymentMethodTitle"
-              class="mt-4 grid gap-2"
-            >
-              <button
-                v-for="provider in paymentProviders"
-                :key="provider.key"
-                type="button"
-                role="radio"
-                :aria-checked="selectedPaymentProvider === provider.key"
-                :disabled="!provider.enabled"
-                :class="[
-                  'flex min-h-[64px] w-full items-center justify-between gap-3 rounded-md border px-3 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500',
-                  selectedPaymentProvider === provider.key
-                    ? 'border-amber-300 bg-amber-50 text-slate-950 dark:border-amber-300/50 dark:bg-amber-400/10 dark:text-white'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-800',
-                  !provider.enabled ? 'cursor-not-allowed opacity-50' : '',
-                ]"
-                @click="selectPaymentProvider(provider)"
-              >
-                <span class="flex min-w-0 items-center gap-3">
-                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white dark:bg-white dark:text-slate-950">
-                    <QrCode v-if="QR_PAYMENT_PROVIDERS.has(provider.key)" class="h-4 w-4" />
-                    <CreditCard v-else class="h-4 w-4" />
-                  </span>
-                  <span class="min-w-0">
-                    <span class="block truncate text-sm font-semibold">
-                      {{ provider.display_name }}
-                    </span>
-                    <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                      {{ provider.enabled ? providerSettlementLabel(provider) : copy.paymentProviderUnavailable }}
-                    </span>
-                  </span>
-                </span>
-                <span class="shrink-0 rounded-md border border-current/15 px-2.5 py-1 text-xs font-semibold">
-                  {{ providerBadge(provider) }}
-                </span>
-              </button>
-            </div>
-          </div>
-
           <Button
             :variant="plan.variant"
             size="lg"
             full-width
             class="mt-5 rounded-md"
             :loading="checkoutLoadingPlan === plan.id"
-            :disabled="plan.id === 'pro' && !plan.current && userStore.isAuthenticated && paymentActionDisabled"
             @click="handleCTA(plan)"
           >
             {{ plan.cta }}
@@ -605,62 +524,6 @@ watch(
             :support-hint="copy.paymentFailedHint"
             tone="warning"
           />
-
-          <div
-            v-if="plan.id === 'pro' && qrCheckoutResult"
-            class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"
-          >
-            <div class="flex items-start gap-3">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-emerald-700 shadow-sm dark:bg-slate-950 dark:text-emerald-300">
-                <QrCode class="h-5 w-5" />
-              </div>
-              <div class="min-w-0">
-                <p class="text-sm font-semibold">
-                  {{ copy.paymentQrTitle }}
-                </p>
-                <p class="mt-1 text-sm leading-6 opacity-85">
-                  {{ copy.paymentQrMessage }}
-                </p>
-              </div>
-            </div>
-
-            <div class="mt-4 rounded-md border border-emerald-200/80 bg-white p-3 dark:border-emerald-400/20 dark:bg-slate-950/70">
-              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
-                {{ copy.paymentQrCodeLabel }} · {{ qrCheckoutResult.displayName }}
-              </p>
-              <p class="mt-2 break-all font-mono text-xs leading-5 text-slate-700 dark:text-slate-200">
-                {{ qrCheckoutResult.qrCodeUrl }}
-              </p>
-            </div>
-
-            <div class="mt-4 flex flex-wrap gap-2">
-              <Button
-                v-if="qrCheckoutResult.checkoutUrl"
-                variant="outline"
-                size="sm"
-                class="rounded-md border-emerald-700 text-emerald-800 hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200"
-                @click="openQrCheckout"
-              >
-                {{ copy.paymentQrOpen }}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                class="rounded-md border border-emerald-700/20 bg-white/70 text-emerald-800 hover:bg-white dark:bg-slate-950/40 dark:text-emerald-200"
-                @click="copyPaymentCode"
-              >
-                <Copy class="mr-2 h-4 w-4" />
-                {{ paymentCodeCopyState === 'copied' ? copy.paymentQrCopied : copy.paymentQrCopy }}
-              </Button>
-            </div>
-
-            <p
-              v-if="paymentCodeCopyState === 'failed'"
-              class="mt-3 text-xs font-semibold text-amber-700 dark:text-amber-200"
-            >
-              {{ copy.paymentQrCopyFailed }}
-            </p>
-          </div>
 
           <div class="mt-7">
             <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -769,5 +632,191 @@ watch(
         </div>
       </section>
     </div>
+
+    <Modal v-model="paymentModalOpen" size="lg" :title="copy.paymentModalTitle">
+      <div class="space-y-5">
+        <div class="rounded-md border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-300/20 dark:bg-amber-500/10">
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-amber-700 shadow-sm dark:bg-slate-950 dark:text-amber-200">
+              <CreditCard class="h-5 w-5" />
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-slate-950 dark:text-white">
+                {{ copy.paymentMethodTitle }}
+              </p>
+              <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {{ copy.paymentModalSubtitle }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-sm font-semibold text-slate-950 dark:text-white">
+            {{ copy.paymentMethodTitle }}
+          </p>
+          <button
+            type="button"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+            :aria-label="copy.paymentProvidersRetry"
+            :disabled="paymentProvidersLoading"
+            @click="loadPaymentProviders"
+          >
+            <RefreshCw :class="['h-4 w-4', paymentProvidersLoading ? 'animate-spin' : '']" />
+          </button>
+        </div>
+
+        <DiagnosticAlert
+          v-if="paymentProvidersError"
+          :title="paymentProvidersError.title"
+          :message="paymentProvidersError.message"
+          :diagnostic-code="paymentProvidersError.diagnosticCode"
+          :support-hint="copy.paymentProvidersFailedHint"
+          tone="warning"
+        />
+
+        <div
+          v-else-if="paymentProvidersLoading"
+          class="rounded-md border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+        >
+          {{ copy.paymentProvidersLoading }}
+        </div>
+
+        <div
+          v-else-if="enabledPaymentProviders.length === 0"
+          class="rounded-md border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+        >
+          {{ copy.paymentNoProviders }}
+        </div>
+
+        <div
+          v-else
+          role="radiogroup"
+          :aria-label="copy.paymentMethodTitle"
+          class="grid gap-2 sm:grid-cols-2"
+        >
+          <button
+            v-for="provider in paymentProviders"
+            :key="provider.key"
+            type="button"
+            role="radio"
+            :aria-checked="selectedPaymentProvider === provider.key"
+            :disabled="!provider.enabled"
+            :class="[
+              'flex min-h-[72px] w-full items-center justify-between gap-3 rounded-md border px-3 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500',
+              selectedPaymentProvider === provider.key
+                ? 'border-amber-300 bg-amber-50 text-slate-950 dark:border-amber-300/50 dark:bg-amber-400/10 dark:text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-800',
+              !provider.enabled ? 'cursor-not-allowed opacity-50' : '',
+            ]"
+            @click="selectPaymentProvider(provider)"
+          >
+            <span class="flex min-w-0 items-center gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+                <QrCode v-if="QR_PAYMENT_PROVIDERS.has(provider.key)" class="h-4 w-4" />
+                <CreditCard v-else class="h-4 w-4" />
+              </span>
+              <span class="min-w-0">
+                <span class="block truncate text-sm font-semibold">
+                  {{ provider.display_name }}
+                </span>
+                <span class="mt-1 block truncate text-xs text-slate-500 dark:text-slate-400">
+                  {{ provider.enabled ? providerSettlementLabel(provider) : copy.paymentProviderUnavailable }}
+                </span>
+              </span>
+            </span>
+            <span class="shrink-0 rounded-md border border-current/15 px-2 py-1 text-[11px] font-semibold">
+              {{ providerBadge(provider) }}
+            </span>
+          </button>
+        </div>
+
+        <DiagnosticAlert
+          v-if="checkoutError"
+          :title="checkoutError.title"
+          :message="checkoutError.message"
+          :diagnostic-code="checkoutError.diagnosticCode"
+          :support-hint="copy.paymentFailedHint"
+          tone="warning"
+        />
+
+        <div
+          v-if="qrCheckoutResult"
+          class="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"
+        >
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-emerald-700 shadow-sm dark:bg-slate-950 dark:text-emerald-300">
+              <QrCode class="h-5 w-5" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold">
+                {{ copy.paymentQrTitle }}
+              </p>
+              <p class="mt-1 text-sm leading-6 opacity-85">
+                {{ copy.paymentQrMessage }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-4 rounded-md border border-emerald-200/80 bg-white p-3 dark:border-emerald-400/20 dark:bg-slate-950/70">
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
+              {{ copy.paymentQrCodeLabel }} · {{ qrCheckoutResult.displayName }}
+            </p>
+            <p class="mt-2 break-all font-mono text-xs leading-5 text-slate-700 dark:text-slate-200">
+              {{ qrCheckoutResult.qrCodeUrl }}
+            </p>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <Button
+              v-if="qrCheckoutResult.checkoutUrl"
+              variant="outline"
+              size="sm"
+              class="rounded-md border-emerald-700 text-emerald-800 hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200"
+              @click="openQrCheckout"
+            >
+              {{ copy.paymentQrOpen }}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="rounded-md border border-emerald-700/20 bg-white/70 text-emerald-800 hover:bg-white dark:bg-slate-950/40 dark:text-emerald-200"
+              @click="copyPaymentCode"
+            >
+              <Copy class="mr-2 h-4 w-4" />
+              {{ paymentCodeCopyState === 'copied' ? copy.paymentQrCopied : copy.paymentQrCopy }}
+            </Button>
+          </div>
+
+          <p
+            v-if="paymentCodeCopyState === 'failed'"
+            class="mt-3 text-xs font-semibold text-amber-700 dark:text-amber-200"
+          >
+            {{ copy.paymentQrCopyFailed }}
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <Button
+            variant="outline"
+            class="rounded-md"
+            @click="paymentModalOpen = false"
+          >
+            {{ copy.paymentModalChange }}
+          </Button>
+          <Button
+            variant="primary"
+            class="rounded-md"
+            :loading="checkoutLoadingPlan === 'pro'"
+            :disabled="paymentActionDisabled"
+            @click="startProCheckout"
+          >
+            {{ copy.paymentModalConfirm }}
+          </Button>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>

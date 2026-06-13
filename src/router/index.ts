@@ -60,6 +60,20 @@ const router = createRouter({
           meta: { titleKey: 'auth.register' }
         },
         {
+          path: 'forgot-password',
+          name: 'forgot-password',
+          component: () => import('@/views/auth/ForgotPassword.vue'),
+          beforeEnter: guestGuard,
+          meta: { titleKey: 'auth.passwordRecoveryTitle' }
+        },
+        {
+          path: 'reset-password',
+          name: 'reset-password',
+          component: () => import('@/views/auth/ResetPassword.vue'),
+          beforeEnter: guestGuard,
+          meta: { titleKey: 'auth.resetPasswordTitle' }
+        },
+        {
           path: 'oauth-callback',
           name: 'oauth-callback',
           component: () => import('@/views/auth/OAuthCallback.vue'),

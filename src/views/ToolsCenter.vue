@@ -157,17 +157,17 @@ onMounted(() => {
 <template>
   <main class="min-h-screen bg-[#f7f8fb] text-slate-950 dark:bg-slate-950 dark:text-white">
     <section class="border-b border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900">
-      <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
         <div class="grid gap-6 lg:grid-cols-[1fr_420px] lg:items-end">
           <div>
             <div class="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-red-700 dark:border-red-400/20 dark:bg-red-500/10 dark:text-red-200">
               <Layers3 class="h-4 w-4" />
               {{ copy.eyebrow }}
             </div>
-            <h1 class="mt-5 text-4xl font-semibold leading-tight text-slate-950 dark:text-white sm:text-5xl">
+            <h1 class="mt-4 text-3xl font-semibold leading-tight text-slate-950 dark:text-white sm:text-4xl">
               {{ copy.title }}
             </h1>
-            <p class="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
+            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
               {{ copy.description }}
             </p>
           </div>
@@ -236,7 +236,7 @@ onMounted(() => {
 
       <div
         v-if="groupedTools.length"
-        class="mt-6 space-y-8"
+        class="mt-5 space-y-6"
       >
         <section
           v-for="group in groupedTools"
@@ -251,17 +251,17 @@ onMounted(() => {
             </span>
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <article
               v-for="tool in group.tools"
               :key="tool.id"
-              class="group flex min-h-[188px] cursor-pointer flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md dark:border-white/10 dark:bg-slate-900 dark:hover:border-red-300/30"
+              class="group flex min-h-[144px] cursor-pointer flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md dark:border-white/10 dark:bg-slate-900 dark:hover:border-red-300/30"
               @click="openTool(tool)"
             >
               <div class="flex items-start justify-between gap-3">
                 <span
                   :class="[
-                    'flex h-12 w-12 items-center justify-center rounded-md ring-1 ring-inset',
+                    'flex h-10 w-10 items-center justify-center rounded-md ring-1 ring-inset',
                     getAccentClass(tool),
                   ]"
                 >
@@ -274,14 +274,14 @@ onMounted(() => {
                 />
               </div>
 
-              <h3 class="mt-4 text-lg font-semibold text-slate-950 dark:text-white">
+              <h3 class="mt-3 text-base font-semibold text-slate-950 dark:text-white">
                 {{ t(tool.titleKey) }}
               </h3>
               <p class="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {{ t(tool.descriptionKey) }}
               </p>
 
-              <div class="mt-5 flex items-center justify-between border-t border-slate-200 pt-4 dark:border-white/10">
+              <div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-3 dark:border-white/10">
                 <span
                   :class="[
                     'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
@@ -314,7 +314,7 @@ onMounted(() => {
       </div>
     </section>
 
-    <section class="mx-auto grid max-w-7xl gap-4 px-4 pb-14 sm:px-6 lg:grid-cols-3 lg:px-8">
+    <section class="mx-auto grid max-w-7xl gap-3 px-4 pb-10 sm:px-6 lg:grid-cols-3 lg:px-8">
       <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
         <ShieldCheck class="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
         <h3 class="mt-4 font-semibold text-slate-950 dark:text-white">

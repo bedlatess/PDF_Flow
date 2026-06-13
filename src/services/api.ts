@@ -81,6 +81,19 @@ export interface LoginData {
   remember?: boolean
 }
 
+export interface PasswordResetRequestData {
+  email: string
+}
+
+export interface PasswordResetConfirmData {
+  token: string
+  new_password: string
+}
+
+export interface MessageResponse {
+  message: string
+}
+
 export interface AuthResponse {
   access_token: string
   refresh_token: string
@@ -146,6 +159,16 @@ export const authAPI = {
    */
   async logout(): Promise<void> {
     await apiClient.post('/api/v1/auth/logout')
+  },
+
+  async forgotPassword(data: PasswordResetRequestData): Promise<MessageResponse> {
+    const response = await apiClient.post<MessageResponse>('/api/v1/auth/forgot-password', data)
+    return response.data
+  },
+
+  async resetPassword(data: PasswordResetConfirmData): Promise<MessageResponse> {
+    const response = await apiClient.post<MessageResponse>('/api/v1/auth/reset-password', data)
+    return response.data
   }
 }
 

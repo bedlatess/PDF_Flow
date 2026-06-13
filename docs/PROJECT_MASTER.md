@@ -53,6 +53,21 @@ curl http://localhost:8000/health
 4. Keep production secrets out of Git.
 5. Prefer small, verified changes over broad rewrites.
 
+## Current Stage
+
+- Stage: pre-P0 acceptance hardening.
+- Focus: public UI quality, account recovery, payment entry, and production deploy stability.
+- P0 resumes after the public shell, account recovery, pricing/payment entry, admin access, and deploy smoke checks are stable on the v2 server.
+- Independent backend split should wait until the single-repo deployment is stable in production. The current backend has the domain boundaries needed for a later split; separating it too early would add deployment risk before P0 closes.
+
+## Latest Progress
+
+- Public tools: tightened Home and Tools Center spacing so free tool cards use less empty vertical space.
+- Copy cleanup: public tool and pricing pages now avoid internal phrases such as local-first/cloud-processing in ordinary user flows. Legal and admin diagnostics keep precise processing terms where needed.
+- Pro presentation: Pro badge styling is smaller and quieter, with Pro used as the main visual differentiator instead of repeated upgrade copy.
+- Pricing/payment: Pro checkout now opens a payment-method modal. Users click upgrade, choose a provider, and continue; unavailable provider states remain user-facing and backend payment confirmation is still the source of truth.
+- Account recovery: frontend routes for `/auth/forgot-password` and `/auth/reset-password` are connected to the existing backend reset endpoints. Email delivery remains configurable for production; when mail is not configured, the UI gives a manual recovery fallback instead of pretending the email definitely arrived.
+
 ## Cleanup Rules
 
 - Do not commit `dist/`, `node_modules/`, `.tmp/`, `.env`, `.deploy_state/`, `.deploy_backups/`, or SSH credentials.

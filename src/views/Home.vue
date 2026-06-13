@@ -117,7 +117,7 @@ onMounted(() => {
 <template>
   <div class="min-h-screen bg-[#f6f8fb] text-slate-950 dark:bg-slate-950 dark:text-white">
     <section class="border-b border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900">
-      <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div class="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.7fr)] lg:items-end">
           <div>
             <div class="inline-flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 dark:border-red-400/20 dark:bg-red-500/10 dark:text-red-200">
@@ -165,7 +165,7 @@ onMounted(() => {
                 v-for="tool in featuredTools"
                 :key="tool.id"
                 type="button"
-                class="group flex min-h-[64px] items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-left transition hover:border-red-200 hover:bg-red-50/50 dark:border-white/10 dark:bg-slate-900 dark:hover:border-red-300/30 dark:hover:bg-red-500/10"
+                class="group flex min-h-[56px] items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-left transition hover:border-red-200 hover:bg-red-50/50 dark:border-white/10 dark:bg-slate-900 dark:hover:border-red-300/30 dark:hover:bg-red-500/10"
                 @click="navigateToTool(tool)"
               >
                 <span :class="['flex h-9 w-9 shrink-0 items-center justify-center rounded-md ring-1 ring-inset', getAccentClass(tool)]">
@@ -220,7 +220,7 @@ onMounted(() => {
           v-for="tool in filteredTools"
           :key="tool.id"
           data-testid="tool-card"
-          class="group flex min-h-[154px] cursor-pointer flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md dark:border-white/10 dark:bg-slate-900 dark:hover:border-red-300/30"
+          class="group flex min-h-[126px] cursor-pointer flex-col rounded-lg border border-slate-200 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md dark:border-white/10 dark:bg-slate-900 dark:hover:border-red-300/30"
           @click="navigateToTool(tool)"
         >
           <div class="flex items-start justify-between gap-3">
@@ -228,13 +228,13 @@ onMounted(() => {
               <component :is="tool.icon" class="h-5 w-5" />
             </span>
           </div>
-          <h3 class="mt-4 text-base font-semibold text-slate-950 dark:text-white">
+          <h3 class="mt-3 text-base font-semibold text-slate-950 dark:text-white">
             {{ t(tool.titleKey) }}
           </h3>
           <p class="mt-1 line-clamp-2 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
             {{ t(tool.descriptionKey) }}
           </p>
-          <div class="mt-4 flex items-center justify-between">
+          <div class="mt-3 flex items-center justify-between">
             <span :class="['inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset', modeClassMap[tool.mode]]">
               {{ workspaceCopy.modeLabels[tool.mode] }}
             </span>
@@ -257,15 +257,15 @@ onMounted(() => {
       </div>
     </section>
 
-    <section class="mx-auto grid max-w-7xl gap-4 px-4 pb-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-      <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
+    <section class="mx-auto grid max-w-7xl gap-4 px-4 pb-10 sm:px-6 lg:grid-cols-[0.82fr_1.18fr] lg:px-8">
+      <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900">
         <div class="grid gap-3 sm:grid-cols-3">
           <article
             v-for="[value, label] in workspaceCopy.stats"
             :key="label"
-            class="rounded-md bg-slate-50 p-4 dark:bg-slate-950/55"
+            class="rounded-md bg-slate-50 p-3 dark:bg-slate-950/55"
           >
-            <p class="text-2xl font-semibold text-slate-950 dark:text-white">{{ value }}</p>
+            <p class="text-xl font-semibold text-slate-950 dark:text-white">{{ value }}</p>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ label }}</p>
           </article>
         </div>
@@ -273,7 +273,7 @@ onMounted(() => {
           <article
             v-for="item in workspaceCopy.trust"
             :key="item[0]"
-            class="rounded-md border border-slate-200 p-4 dark:border-white/10"
+            class="rounded-md border border-slate-200 p-3 dark:border-white/10"
           >
             <ShieldCheck v-if="item[0] === workspaceCopy.trust[0][0]" class="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
             <Cloud v-else-if="item[0] === workspaceCopy.trust[1][0]" class="h-5 w-5 text-sky-600 dark:text-sky-300" />
