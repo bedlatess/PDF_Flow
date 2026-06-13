@@ -1,31 +1,13 @@
 # PDF-Flow
 
-Privacy-first PDF workspace with a Vue frontend, FastAPI backend, admin Control Room, account/enterprise surfaces, and provider-neutral payment architecture.
+PDF-Flow is a Vue and FastAPI PDF workspace with free browser tools, Pro document workflows, account management, admin operations, and payment infrastructure.
 
-This repository is under an active rewrite. Treat [docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md) as the single source of truth for product direction, current status, backlog, verification history, and cleanup rules.
+## What Is Included
 
-## What This Project Contains
-
-- Public PDF workspace inspired by iLovePDF, Smallpdf, and LightPDF patterns.
-- Local-first PDF tools for common organize, convert, optimize, extract, and security workflows.
-- Cloud/API-backed paths for OCR, Office conversion, AI analysis, enterprise features, and large-file operations.
-- Admin Control Room for site settings, feature flags, content, users, jobs, feedback, diagnostics, maintenance, audit logs, and payment operations.
-- Payment framework for Stripe, PayPal, 易支付, 支付宝, 微信支付, TokenPay, BEPUSDT, EPUSDT, and OKPay.
-- Backend-owned payment trust boundary: frontend may create/select checkout, but only verified backend payment events grant entitlements.
-
-## Documentation Rules
-
-- Status, roadmap, architecture decisions, and progress updates live in [docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md).
-- Supporting setup documents may exist, but they must not become parallel status trackers.
-- After meaningful work, update [docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md).
-
-Allowed supporting docs:
-
-- [docs/OAUTH_SETUP.md](./docs/OAUTH_SETUP.md)
-- [docs/STAGING_DEPLOY_GUIDE.md](./docs/STAGING_DEPLOY_GUIDE.md)
-- [backend/docs/EMAIL_SERVICE.md](./backend/docs/EMAIL_SERVICE.md)
-- [开发文档/](./开发文档/) historical requirement PDFs
-- [backend/README.md](./backend/README.md) backend runbook
+- Vue 3 frontend with public pages, PDF tools, account pages, pricing, enterprise dashboard, and admin Control Room.
+- FastAPI backend with authentication, file APIs, advanced PDF jobs, AI/OCR/Office workflows, payments, feedback, admin diagnostics, and Alembic migrations.
+- Docker Compose production path for the current single-server deployment.
+- Playwright, Vitest, and backend pytest coverage for the main product surfaces.
 
 ## Quick Start
 
@@ -51,16 +33,14 @@ alembic upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-For Docker-based local services, use the root `docker-compose.yml` or the backend runbook.
-
-## Common Verification
+## Verification
 
 Frontend:
 
 ```bash
-npm.cmd run type-check
-npm.cmd run build
-npm.cmd run test:e2e:core
+npm run type-check
+npm run build
+npm run test:e2e:core
 ```
 
 Backend:
@@ -70,70 +50,54 @@ cd backend
 pytest tests -q
 ```
 
-Targeted backend examples:
+Useful server smoke checks:
 
 ```bash
-cd backend
-pytest tests/test_admin.py -q
-pytest tests/test_payment_domain.py -q
+bash scripts/smoke-test.sh
+bash scripts/main-smoke-suite.sh
 ```
 
 ## Project Layout
 
 ```text
-PDF_Flow/
-├── src/                    Frontend Vue application
-│   ├── components/         Shared, layout, PDF, enterprise, admin components
-│   ├── views/              Public, auth, payment, enterprise, admin, and tool pages
-│   ├── services/           API clients
-│   ├── stores/             Pinia stores
-│   ├── utils/pdf/          Client-side PDF utilities
-│   ├── locales/            Locale base files and overrides
-│   └── router/             Route definitions and guards
-├── backend/                FastAPI backend, Alembic migrations, domain services, tests
-├── tests/e2e-playwright/   Frontend Playwright regression specs
-├── scripts/                Staging, smoke, rollback, and Playwright helper scripts
-├── docs/                   Master manual and supporting setup docs
-└── 开发文档/               Historical PDF requirements, read-only reference
+src/                    Vue frontend application
+backend/                FastAPI backend, migrations, services, tests
+tests/e2e-playwright/   Browser regression specs
+scripts/                Deploy, rollback, smoke, and test helpers
+docs/                   Operations and setup notes
+public/                 Static manifest, service worker, and icons
 ```
-
-## Payment Setup Boundary
-
-The codebase has a provider-neutral payment framework and admin readiness views. Real production acceptance still requires merchant credentials, callback/webhook URL registration in each provider dashboard, and sandbox or low-value live smoke tests.
-
-Do not put provider secrets in frontend code. Use backend environment variables and the admin payment checklist to configure callbacks.
 
 ## Deployment
 
-The current recommended real-test workflow is single-server `staging`, then merge to `main` after validation. See [docs/STAGING_DEPLOY_GUIDE.md](./docs/STAGING_DEPLOY_GUIDE.md).
-
-Useful scripts:
+The current server deployment uses the `main` branch from `PDF_Flow_v2`.
 
 ```bash
-bash scripts/deploy-staging.sh
-bash scripts/smoke-test.sh
-bash scripts/rollback-staging.sh
+ssh root@155.248.195.94
+cd /root/data/docker_data/PDF/pdf-flow
+git pull --ff-only origin main
+bash scripts/deploy-main.sh
 ```
 
-New-repository rollout helpers:
+Check the result:
 
 ```bash
-NEW_REPO_URL=git@github.com:owner/pdf-flow-v2.git bash scripts/prepare-new-repo-push.sh
-RECLONE_REPO_URL=git@github.com:owner/pdf-flow-v2.git RECLONE_TARGET_DIR=/opt/pdf-flow bash scripts/server-clean-reclone.sh
+docker compose --env-file backend/.env -f docker-compose.yml ps
+curl http://localhost:8000/health
 ```
 
-Both helpers default to dry-run mode. Set `NEW_REPO_DRY_RUN=0` or `RECLONE_DRY_RUN=0` only after reviewing the printed plan.
+See [docs/STAGING_DEPLOY_GUIDE.md](./docs/STAGING_DEPLOY_GUIDE.md) for the full runbook.
 
-## Current Status
+## Configuration
 
-Do not infer status from this README. Read [docs/PROJECT_MASTER.md](./docs/PROJECT_MASTER.md), especially:
+Never commit real credentials. Use local `.env` files and server-side `backend/.env`.
 
-- Working rules
-- Target architecture
-- Payment architecture
-- Verification commands
-- Progress log
-- Active backlog
+Useful setup docs:
+
+- [docs/STAGING_DEPLOY_GUIDE.md](./docs/STAGING_DEPLOY_GUIDE.md)
+- [docs/OAUTH_SETUP.md](./docs/OAUTH_SETUP.md)
+- [backend/README.md](./backend/README.md)
+- [backend/docs/EMAIL_SERVICE.md](./backend/docs/EMAIL_SERVICE.md)
 
 ## License
 

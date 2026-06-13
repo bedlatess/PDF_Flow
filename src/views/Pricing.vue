@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
@@ -213,6 +213,8 @@ const paymentActionDisabled = computed(() =>
   paymentProvidersLoading.value || !selectedPaymentProvider.value || enabledPaymentProviders.value.length === 0,
 )
 
+const shouldShowPaymentMethods = computed(() => userStore.isAuthenticated)
+
 const providerBadge = (provider: PaymentProviderOption) => {
   if (QR_PAYMENT_PROVIDERS.has(provider.key)) {
     return copy.value.paymentQrBadge
@@ -359,9 +361,20 @@ const copyPaymentCode = async () => {
   }
 }
 
-onMounted(() => {
-  void loadPaymentProviders()
-})
+watch(
+  () => userStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (!isAuthenticated) {
+      paymentProviders.value = []
+      selectedPaymentProvider.value = null
+      paymentProvidersError.value = null
+      return
+    }
+
+    void loadPaymentProviders()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -478,7 +491,7 @@ onMounted(() => {
           </div>
 
           <div
-            v-if="plan.id === 'pro' && !plan.current"
+            v-if="plan.id === 'pro' && !plan.current && shouldShowPaymentMethods"
             class="mt-5 rounded-md border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/45"
           >
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

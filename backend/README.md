@@ -134,4 +134,3 @@ alembic current
 - [OAuth setup](../docs/OAUTH_SETUP.md)
 - [Staging deploy guide](../docs/STAGING_DEPLOY_GUIDE.md)
 - [Email service](./docs/EMAIL_SERVICE.md)
-- Historical requirements are kept under `../开发文档/`

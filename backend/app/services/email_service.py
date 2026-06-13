@@ -109,21 +109,21 @@ class EmailService:
             <div class="container">
                 <div class="header">
                     <h1>Welcome to PDF-Flow!</h1>
-                    <p>Your privacy-first PDF toolkit</p>
+                    <p>Your PDF workspace for everyday and Pro workflows</p>
                 </div>
 
                 <div class="content">
                     <p>Hi {username},</p>
 
-                    <p>Thank you for joining PDF-Flow! We're excited to help you work with PDFs while keeping your data secure and private.</p>
+                    <p>Thank you for joining PDF-Flow! We're excited to help you handle everyday PDF work and advanced document workflows in one place.</p>
 
                     <div class="features">
                         <h3>What you can do with PDF-Flow:</h3>
                         <div class="feature-item">Merge, split, rotate, and compress PDFs</div>
                         <div class="feature-item">Convert images to PDF and vice versa</div>
-                        <div class="feature-item">100% local processing for basic tools (no upload needed)</div>
-                        <div class="feature-item">Cloud-powered OCR and Office conversion (Pro users)</div>
-                        <div class="feature-item">AI-powered PDF analysis with Gemini (Pro users)</div>
+                        <div class="feature-item">Free tools for common PDF tasks</div>
+                        <div class="feature-item">Pro OCR and Office conversion</div>
+                        <div class="feature-item">Pro AI-powered PDF analysis</div>
                     </div>
 
                     <p style="text-align: center;">
@@ -132,12 +132,12 @@ class EmailService:
 
                     <p><strong>Free Tier Includes:</strong></p>
                     <ul>
-                        <li>Unlimited local PDF processing</li>
-                        <li>3 cloud operations per day</li>
+                        <li>Everyday PDF tools</li>
+                        <li>Starter access to advanced workflows</li>
                         <li>20MB file size limit</li>
                     </ul>
 
-                    <p>Need more? <a href="{settings.FRONTEND_URL}/pricing">Upgrade to Pro</a> for unlimited cloud features, larger files, and AI capabilities.</p>
+                    <p>Need more? <a href="{settings.FRONTEND_URL}/pricing">Upgrade to Pro</a> for OCR, Office conversion, larger files, and AI capabilities.</p>
 
                     <p>If you have any questions, feel free to reach out to our support team.</p>
 
@@ -145,7 +145,7 @@ class EmailService:
                 </div>
 
                 <div class="footer">
-                    <p>PDF-Flow - Privacy-First PDF Tools</p>
+                    <p>PDF-Flow - PDF tools and Pro workflows</p>
                     <p><a href="{settings.FRONTEND_URL}">Visit Website</a> | <a href="{settings.FRONTEND_URL}/pricing">Pricing</a> | <a href="{settings.FRONTEND_URL}/support">Support</a></p>
                 </div>
             </div>
@@ -158,18 +158,18 @@ class EmailService:
 
         Hi {username},
 
-        Thank you for joining PDF-Flow! We're excited to help you work with PDFs while keeping your data secure and private.
+        Thank you for joining PDF-Flow! We're excited to help you handle everyday PDF work and advanced document workflows in one place.
 
         What you can do with PDF-Flow:
         - Merge, split, rotate, and compress PDFs
         - Convert images to PDF and vice versa
-        - 100% local processing for basic tools (no upload needed)
-        - Cloud-powered OCR and Office conversion (Pro users)
-        - AI-powered PDF analysis with Gemini (Pro users)
+        - Free tools for common PDF tasks
+        - Pro OCR and Office conversion
+        - Pro AI-powered PDF analysis
 
         Free Tier Includes:
-        - Unlimited local PDF processing
-        - 3 cloud operations per day
+        - Everyday PDF tools
+        - Starter access to advanced workflows
         - 20MB file size limit
 
         Start using PDF-Flow: {settings.FRONTEND_URL}/tools

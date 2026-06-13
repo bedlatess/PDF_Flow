@@ -1,11 +1,11 @@
 {
   "name": "PDF-Flow",
   "short_name": "PDF-Flow",
-  "description": "Privacy-first PDF tools with local processing",
+  "description": "PDF tools for everyday and Pro document workflows",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "theme_color": "#0f172a",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",

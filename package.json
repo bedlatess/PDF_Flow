@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Privacy-first PDF tools with hybrid architecture - A modern web application for PDF manipulation",
+  "description": "PDF tools and Pro document workflows in a modern web application",
   "author": "PDF-Flow Team",
   "keywords": [
     "pdf",
