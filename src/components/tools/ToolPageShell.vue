@@ -54,7 +54,7 @@ watch(() => route.fullPath, enforceFeatureAvailability)
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f7f8fb] text-slate-950 dark:bg-slate-950 dark:text-white">
+  <div class="min-h-screen bg-[#f7f8fb] text-slate-950 dark:bg-[#f7f8fb] dark:text-slate-950">
     <ToolHeader
       :title="title"
       :subtitle="subtitle"
@@ -70,7 +70,7 @@ watch(() => route.fullPath, enforceFeatureAvailability)
       </template>
     </ToolHeader>
 
-    <section :class="['mx-auto px-4 pb-16 pt-6 sm:px-6 lg:px-8', widthClasses[width]]">
+    <section :class="['mx-auto px-4 pb-14 pt-5 sm:px-6 lg:px-8', widthClasses[width]]">
       <slot />
     </section>
   </div>

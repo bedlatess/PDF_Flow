@@ -208,9 +208,9 @@ const openFileDialog = () => {
   <div
     data-testid="drag-drop-zone"
     :class="[
-      'group relative flex min-h-[320px] flex-col items-center justify-center overflow-hidden rounded-[28px] border border-dashed px-6 py-10 text-center transition-all duration-300',
-      'cursor-pointer border-slate-300 bg-white/80 shadow-sm backdrop-blur-sm hover:border-primary hover:shadow-lg hover:shadow-primary/10',
-      'dark:border-slate-700 dark:bg-slate-900/70',
+      'group relative flex min-h-[220px] flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed px-5 py-7 text-center transition-all duration-200',
+      'cursor-pointer border-slate-300 bg-white shadow-sm hover:border-primary hover:bg-primary/5',
+      'dark:border-slate-300 dark:bg-white',
       {
         'border-primary bg-primary/5 shadow-lg shadow-primary/10': isDragging,
       },
@@ -221,19 +221,17 @@ const openFileDialog = () => {
     @drop="handleDrop"
     @click="openFileDialog"
   >
-    <div class="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-slate-600/40" />
-
     <div
       :class="[
-        'mb-5 rounded-full p-4 transition-all duration-300',
+        'mb-4 rounded-md p-3 transition-all duration-200',
         isDragging
           ? 'scale-105 bg-primary/15 text-primary'
-          : 'bg-slate-100 text-slate-500 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-800 dark:text-slate-400',
+          : 'bg-slate-100 text-slate-500 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-100 dark:text-slate-500',
       ]"
     >
       <slot name="icon">
         <svg
-          class="h-12 w-12"
+          class="h-9 w-9"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -249,7 +247,7 @@ const openFileDialog = () => {
     </div>
 
     <div class="max-w-xl">
-      <p class="text-lg font-semibold text-slate-900 dark:text-white">
+      <p class="text-base font-semibold text-slate-900 dark:text-slate-900">
         <slot
           v-if="slots.title"
           name="title"
@@ -263,19 +261,19 @@ const openFileDialog = () => {
         </template>
       </p>
 
-      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-500">
         <slot name="subtitle">
           {{ t('common.or') }} {{ t('common.browse') }}
         </slot>
       </p>
 
-      <p class="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+      <p class="mt-2 text-xs font-medium text-slate-400 dark:text-slate-400">
         {{ helperText }}
       </p>
     </div>
 
-    <div class="mt-6">
-      <span class="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+    <div class="mt-4">
+      <span class="inline-flex items-center rounded-md bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
         {{ t('common.privacyBadge') }}
       </span>
     </div>
@@ -291,7 +289,7 @@ const openFileDialog = () => {
 
     <div
       v-if="$slots.default"
-      class="mt-6 w-full max-w-2xl"
+      class="mt-5 w-full max-w-2xl"
     >
       <slot />
     </div>

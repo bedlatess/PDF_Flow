@@ -6,7 +6,7 @@
 @layer base {
   body {
     @apply bg-background-light text-gray-900 font-sans antialiased;
-    @apply dark:bg-background-dark dark:text-gray-100;
+    @apply dark:bg-background-light dark:text-gray-900;
   }
 
   /* 平滑滚动 */

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Crown, Sparkles } from 'lucide-vue-next'
+import { Crown } from 'lucide-vue-next'
 
 const props = withDefaults(defineProps<{
   label?: string
@@ -17,16 +17,15 @@ const props = withDefaults(defineProps<{
 const classes = computed(() => {
   if (props.variant === 'corner') {
     return [
-      'absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] shadow-lg ring-1 ring-inset backdrop-blur',
-      'bg-white/88 text-amber-700 ring-amber-200/70 shadow-amber-100/70 dark:bg-slate-950/78 dark:text-amber-200 dark:ring-amber-300/20 dark:shadow-none',
+      'absolute right-4 top-4 z-10 inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ring-1 ring-inset',
+      'bg-[#fff7df] text-[#6f5200] ring-[#ead28a] dark:bg-[#fff7df] dark:text-[#6f5200] dark:ring-[#ead28a]',
     ]
   }
 
   if (props.variant === 'seal') {
     return [
-      'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-xl ring-1 ring-inset',
-      'bg-[linear-gradient(135deg,#111827_0%,#2f1f0b_46%,#f59e0b_100%)] text-amber-50 ring-amber-200/30',
-      'dark:bg-[linear-gradient(135deg,#fff7ed_0%,#fcd34d_48%,#f97316_100%)] dark:text-slate-950 dark:ring-amber-100/50',
+      'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset',
+      'bg-slate-950 text-amber-100 ring-amber-300/30 dark:bg-slate-950 dark:text-amber-100 dark:ring-amber-300/30',
     ]
   }
 
@@ -35,14 +34,14 @@ const classes = computed(() => {
     : 'px-3.5 py-1.5 text-xs'
 
   const toneClasses = {
-    gold: 'bg-[linear-gradient(135deg,#fef3c7_0%,#f59e0b_55%,#f97316_100%)] text-amber-950 ring-amber-200/70',
-    dark: 'bg-slate-950 text-amber-100 ring-amber-300/30 dark:bg-white dark:text-slate-950',
-    soft: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:ring-amber-300/20',
-    ivory: 'bg-white text-amber-700 ring-amber-200 shadow-amber-100/60 dark:bg-slate-950 dark:text-amber-200 dark:ring-amber-300/20',
+    gold: 'bg-[#fff4cf] text-[#6f5200] ring-[#e6c86d]',
+    dark: 'bg-slate-950 text-amber-100 ring-amber-300/30 dark:bg-slate-950 dark:text-amber-100',
+    soft: 'bg-[#fff9e8] text-[#7a5c00] ring-[#edd88f] dark:bg-[#fff9e8] dark:text-[#7a5c00] dark:ring-[#edd88f]',
+    ivory: 'bg-[#fff7df] text-[#6f5200] ring-[#ead28a] dark:bg-[#fff7df] dark:text-[#6f5200] dark:ring-[#ead28a]',
   }[props.tone]
 
   return [
-    'inline-flex items-center gap-1.5 rounded-full font-semibold shadow-sm ring-1 ring-inset',
+    'inline-flex items-center rounded-full font-semibold ring-1 ring-inset',
     size,
     toneClasses,
   ]
@@ -51,8 +50,7 @@ const classes = computed(() => {
 
 <template>
   <span :class="classes">
-    <Crown v-if="variant === 'seal' || (!compact && variant !== 'corner')" class="h-3.5 w-3.5" />
-    <Sparkles v-else class="h-3 w-3" />
+    <Crown v-if="variant === 'seal'" class="h-3.5 w-3.5" />
     {{ label }}
   </span>
 </template>

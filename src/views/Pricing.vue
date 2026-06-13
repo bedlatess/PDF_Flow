@@ -5,7 +5,6 @@ import { useRouter } from 'vue-router'
 import {
   Building2,
   CheckCircle2,
-  Cloud,
   Copy,
   CreditCard,
   Crown,
@@ -15,7 +14,6 @@ import {
   Receipt,
   RefreshCw,
   ShieldCheck,
-  Zap,
 } from 'lucide-vue-next'
 import Button from '@/components/common/Button.vue'
 import DiagnosticAlert from '@/components/common/DiagnosticAlert.vue'
@@ -197,7 +195,7 @@ const plans = computed<Plan[]>(() => [
   },
 ])
 
-const proofIcons = [Zap, Cloud, ShieldCheck]
+const proofIcons = [ShieldCheck, Crown, Building2]
 const proofCards = computed(() => copy.value.proofCards.map((card, index) => ({
   ...card,
   icon: proofIcons[index] || ShieldCheck,
@@ -367,26 +365,26 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 px-4 pb-20 pt-16 dark:bg-slate-950 sm:px-6 lg:px-8">
+  <div class="min-h-screen bg-[#f6f8fb] px-4 pb-16 pt-10 dark:bg-slate-950 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl">
-      <section class="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch">
-        <div class="rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:shadow-none sm:p-10">
-          <div class="inline-flex items-center gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200">
+      <section class="grid gap-6 lg:grid-cols-[minmax(0,0.96fr)_minmax(340px,0.58fr)] lg:items-end">
+        <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:shadow-none sm:p-8">
+          <div class="inline-flex items-center gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200">
             <Receipt class="h-4 w-4" />
             {{ copy.eyebrow }}
           </div>
-          <h1 class="mt-6 max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
+          <h1 class="mt-5 max-w-4xl text-3xl font-semibold leading-tight text-slate-950 dark:text-white sm:text-5xl">
             {{ copy.title }}
           </h1>
-          <p class="mt-5 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
+          <p class="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
             {{ copy.description }}
           </p>
 
-          <div class="mt-8 grid gap-3 sm:grid-cols-3">
+          <div class="mt-6 grid gap-3 sm:grid-cols-3">
             <article
               v-for="card in proofCards"
               :key="card.title"
-              class="rounded-md border border-slate-200/80 bg-slate-50/82 p-4 dark:border-slate-800 dark:bg-slate-950/45"
+              class="rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/45"
             >
               <div class="flex h-10 w-10 items-center justify-center rounded-md bg-white text-sky-700 shadow-sm dark:bg-slate-900 dark:text-sky-300">
                 <component :is="card.icon" class="h-5 w-5" />
@@ -401,36 +399,37 @@ onMounted(() => {
           </div>
         </div>
 
-        <aside class="rounded-lg bg-slate-950 p-8 text-white shadow-sm dark:bg-slate-900 sm:p-10">
-          <div class="flex h-14 w-14 items-center justify-center rounded-lg bg-white/12 text-amber-100">
+        <aside class="rounded-lg border border-amber-200 bg-amber-50/70 p-6 shadow-sm dark:border-amber-300/20 dark:bg-amber-500/10 sm:p-7">
+          <div class="flex h-12 w-12 items-center justify-center rounded-md bg-white text-amber-700 shadow-sm dark:bg-slate-900 dark:text-amber-200">
             <Crown class="h-6 w-6" />
           </div>
-          <h2 class="mt-6 text-3xl font-semibold">
+          <h2 class="mt-5 text-2xl font-semibold text-slate-950 dark:text-white">
             {{ copy.promiseTitle }}
           </h2>
-          <p class="mt-4 text-sm leading-7 text-white/78">
+          <p class="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-200">
             {{ copy.promiseBody }}
           </p>
-          <div class="mt-6 rounded-md border border-white/12 bg-white/10 p-5">
-            <div class="flex items-center gap-2">
-              <ProBadge tone="dark" />
-              <span class="text-sm font-semibold">{{ copy.proBestFor }}</span>
-            </div>
-            <p class="mt-3 text-sm leading-7 text-white/76">
-              {{ copy.cloudBody }}
-            </p>
-          </div>
+          <ul class="mt-5 space-y-3">
+            <li
+              v-for="note in copy.proNotes"
+              :key="note"
+              class="flex items-start gap-3 rounded-md border border-amber-200 bg-white px-4 py-3 text-sm leading-6 text-slate-700 dark:border-amber-300/20 dark:bg-slate-900 dark:text-slate-200"
+            >
+              <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300" />
+              <span>{{ note }}</span>
+            </li>
+          </ul>
         </aside>
       </section>
 
-      <section class="mt-10 grid gap-6 xl:grid-cols-3">
+      <section class="mt-8 grid gap-5 xl:grid-cols-3">
         <article
           v-for="plan in plans"
           :key="plan.id"
           :class="[
             'relative overflow-hidden rounded-lg border bg-white p-7 shadow-sm dark:bg-slate-900',
             plan.highlighted
-              ? 'border-amber-200 dark:border-amber-300/20 dark:shadow-none xl:-translate-y-3'
+              ? 'border-amber-300 ring-2 ring-amber-100 dark:border-amber-300/25 dark:ring-amber-300/10'
               : 'border-slate-200 dark:border-white/10 dark:shadow-none',
           ]"
         >
@@ -685,10 +684,10 @@ onMounted(() => {
         </article>
       </section>
 
-      <section class="mt-12 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <article class="rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:shadow-none sm:p-10">
-          <div class="flex h-12 w-12 items-center justify-center rounded-md bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
-            <Cloud class="h-5 w-5" />
+      <section class="mt-10 grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+        <article class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:shadow-none sm:p-8">
+          <div class="flex h-12 w-12 items-center justify-center rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <FileText class="h-5 w-5" />
           </div>
           <h2 class="mt-5 text-2xl font-semibold text-slate-950 dark:text-white">
             {{ copy.cloudTitle }}
@@ -698,7 +697,7 @@ onMounted(() => {
           </p>
         </article>
 
-        <article class="rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:shadow-none sm:p-10">
+        <article class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:shadow-none sm:p-8">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
@@ -731,25 +730,25 @@ onMounted(() => {
         </article>
       </section>
 
-      <section class="mt-12 rounded-lg bg-slate-950 p-8 text-white shadow-sm dark:bg-slate-900 sm:p-10">
+      <section class="mt-10 rounded-lg border border-red-200 bg-red-50/75 p-6 shadow-sm dark:border-red-500/20 dark:bg-red-500/10 sm:p-8">
         <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <div class="inline-flex items-center gap-2 rounded-md bg-white/12 px-4 py-2 text-sm font-semibold">
+            <div class="inline-flex items-center gap-2 rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-red-700 shadow-sm dark:bg-slate-900 dark:text-red-200">
               <Receipt class="h-4 w-4" />
               {{ copy.eyebrow }}
             </div>
-            <h2 class="mt-5 text-3xl font-semibold sm:text-4xl">
+            <h2 class="mt-5 text-2xl font-semibold text-slate-950 dark:text-white sm:text-3xl">
               {{ copy.ctaTitle }}
             </h2>
-            <p class="mt-4 max-w-3xl text-sm leading-7 text-white/82 sm:text-base">
+            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-700 dark:text-slate-200 sm:text-base">
               {{ copy.ctaBody }}
             </p>
           </div>
           <div class="flex flex-wrap gap-3 lg:justify-end">
-            <Button variant="outline" size="lg" class="rounded-md border-white text-white hover:bg-white hover:text-slate-950" @click="router.push('/')">
+            <Button variant="primary" size="lg" class="rounded-md" @click="router.push('/')">
               {{ copy.freeCta }}
             </Button>
-            <Button variant="ghost" size="lg" class="rounded-md border border-white/20 bg-white/10 text-white hover:bg-white/18" @click="router.push('/features')">
+            <Button variant="outline" size="lg" class="rounded-md bg-white" @click="router.push('/features')">
               <FileText class="mr-2 h-4 w-4" />
               {{ copy.viewFeatures }}
             </Button>

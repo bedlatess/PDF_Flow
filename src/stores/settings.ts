@@ -14,15 +14,6 @@ const getStoredLocale = () => {
   return stored === 'en' || stored === 'zh' || stored === 'es' ? stored : 'zh'
 }
 
-const getStoredTheme = () => {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  const stored = window.localStorage.getItem(themeStorageKey)
-  return stored === 'light' || stored === 'dark' ? stored : null
-}
-
 export const useSettingsStore = defineStore('settings', () => {
   const locale = ref<'en' | 'zh' | 'es'>(getStoredLocale())
   const theme = ref<'light' | 'dark'>('light')
@@ -51,14 +42,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   const initTheme = () => {
-    const storedTheme = getStoredTheme()
-    if (storedTheme) {
-      setTheme(storedTheme)
-      return
-    }
-
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    setTheme(prefersDark ? 'dark' : 'light')
+    setTheme('light')
   }
 
   const initLocale = () => {
