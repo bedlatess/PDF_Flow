@@ -479,7 +479,7 @@ const sharedEn = {
       advancedTitle: 'Advanced tools for Pro',
       advancedDescription: 'OCR, Office conversion, AI analysis, form filling, and annotation sit together as the upgrade path.',
       featuredTitle: 'Frequent tools',
-      toolsTitle: 'Choose a tool',
+      toolsTitle: 'Everyday PDF tools',
       disabledFallback: 'This feature is currently under maintenance.',
       stats: [
         ['23+', 'tools'],
@@ -505,7 +505,7 @@ const sharedEn = {
         ai: 'AI',
       },
     },
-    toolsTitle: 'Choose a tool to start',
+    toolsTitle: 'Everyday PDF tools',
     whyTitle: 'A clearer PDF workflow',
     highlights: {
       privacy: {
@@ -528,29 +528,49 @@ const sharedEn = {
   },
   features: {
     page: {
-      eyebrow: 'Features',
-      title: 'PDF tool directory',
-      description: 'Choose a tool, add files, and export the result. Everyday tools are free; OCR, Office, AI, and form tools are included with Pro.',
-      start: 'Open tools',
-      pricing: 'View pricing',
-      freeLabel: 'Free tools',
-      proLabel: 'Pro tools',
-      freeCountLabel: 'free tools',
-      proCountLabel: 'Pro tools',
-      freeTitle: 'Free tools',
-      freeDesc: 'Merge, split, compress, rotate, convert, watermark, number pages, and extract content for everyday PDF work.',
-      proTitle: 'Pro tools',
-      proDesc: 'OCR, Office conversion, AI analysis, form filling, and annotation for more frequent document work.',
-      allToolsTitle: 'Browse by task',
-      allToolsDesc: 'If you are not sure where to start, pick the closest task category.',
-      categories: {
-        organize: 'Organize PDFs',
-        convert: 'Convert formats',
-        optimize: 'Optimize files',
-        secure: 'Protect and sign',
-        extract: 'Extract content',
-        advanced: 'Pro tools',
-      },
+      heroEyebrow: 'Features',
+      heroTitle: 'PDF work that stays clear from upload to export',
+      heroDescription: 'PDF-Flow keeps everyday edits, heavier cloud jobs, and account history in one focused workspace, so each document task starts in the right place.',
+      primaryAction: 'Open tools',
+      secondaryAction: 'View pricing',
+      pillars: [
+        {
+          title: 'Everyday PDF actions',
+          body: 'Merge, split, compress, rotate, convert, watermark, number pages, and extract content without turning the page into a maze.',
+        },
+        {
+          title: 'Advanced work when needed',
+          body: 'OCR, Office conversion, AI analysis, forms, and annotation are available for jobs that need more processing power or a signed-in workspace.',
+        },
+        {
+          title: 'A workflow, not a directory',
+          body: 'Tool pages focus on the current task, while history, account state, plan access, and exports stay connected around the work.',
+        },
+      ],
+      workflowTitle: 'Built around the document flow',
+      workflowDescription: 'The product separates choosing a tool from doing the work. Features explain the system; the tools page is where files move.',
+      workflowSteps: [
+        'Choose the kind of work from the tools page or continue from recent activity.',
+        'Use focused controls for the current file instead of scanning a second catalog.',
+        'Export, download, or return to account history when the job is done.',
+      ],
+      trustTitle: 'Designed for practical document handling',
+      trustItems: [
+        {
+          title: 'Clear access states',
+          body: 'Free, Pro, account-required, and unavailable states are shown where they matter.',
+        },
+        {
+          title: 'Private by default where possible',
+          body: 'Local tools stay in the browser, while cloud tools explain when sign-in or upload is required.',
+        },
+        {
+          title: 'Room to grow',
+          body: 'The same structure can support larger files, team workflows, and advanced processing without cluttering the basics.',
+        },
+      ],
+      ctaTitle: 'Start with the tool you need',
+      ctaDescription: 'Go to the tools page for the full list of actions, or review pricing when advanced workflows become part of your routine.',
     },
   },
   pricing: {
@@ -2158,29 +2178,49 @@ const sharedZh = {
   },
   features: {
     page: {
-      eyebrow: '功能特性',
-      title: 'PDF 工具目录',
-      description: '选择工具、添加文件、导出结果。常用工具免费使用，OCR、Office、AI 和表单类工具归入 Pro。',
-      start: '打开工具中心',
-      pricing: '查看定价',
-      freeLabel: '免费工具',
-      proLabel: 'Pro 工具',
-      freeCountLabel: '个免费工具',
-      proCountLabel: '个 Pro 工具',
-      freeTitle: '免费工具',
-      freeDesc: '合并、拆分、压缩、旋转、转换、水印、页码和内容提取等日常 PDF 操作。',
-      proTitle: 'Pro 工具',
-      proDesc: 'OCR、Office 转换、AI 分析、表单填写和标注，适合更复杂或更高频的文档工作。',
-      allToolsTitle: '按类型浏览',
-      allToolsDesc: '不知道该选哪个时，从分类里找最接近的操作。',
-      categories: {
-        organize: '整理 PDF',
-        convert: '转换格式',
-        optimize: '优化文件',
-        secure: '安全与签署',
-        extract: '提取内容',
-        advanced: 'Pro 工具',
-      },
+      heroEyebrow: '功能特性',
+      heroTitle: '从上传到导出都保持清晰的 PDF 工作流',
+      heroDescription: 'PDF-Flow 把日常编辑、更重的云端任务和账号历史放在一个专注的工作区里，让每个文档任务都从合适的位置开始。',
+      primaryAction: '打开工具中心',
+      secondaryAction: '查看定价',
+      pillars: [
+        {
+          title: '日常 PDF 操作',
+          body: '合并、拆分、压缩、旋转、转换、水印、页码和内容提取等常用能力，不需要在复杂目录里反复寻找。',
+        },
+        {
+          title: '需要时再使用高级能力',
+          body: 'OCR、Office 转换、AI 分析、表单和标注适合需要更多处理能力，或需要登录工作区的任务。',
+        },
+        {
+          title: '这是工作流，不是第二个目录',
+          body: '工具页面专注当前任务，历史记录、账号状态、套餐权限和导出结果围绕实际工作保持连接。',
+        },
+      ],
+      workflowTitle: '围绕文档处理过程设计',
+      workflowDescription: '产品把“选择工具”和“处理文件”分开。功能页解释系统能力，工具页负责真正移动文件。',
+      workflowSteps: [
+        '从工具中心选择任务类型，或从最近活动继续工作。',
+        '在当前文件对应的页面使用专注控件，而不是再浏览一遍工具目录。',
+        '任务完成后导出、下载，或回到账号历史查看结果。',
+      ],
+      trustTitle: '面向真实文档处理的设计',
+      trustItems: [
+        {
+          title: '清晰的访问状态',
+          body: '免费、Pro、需要登录和暂不可用状态会出现在最相关的位置。',
+        },
+        {
+          title: '能本地处理时优先本地',
+          body: '本地工具在浏览器中完成；云端工具会说明何时需要登录或上传。',
+        },
+        {
+          title: '为后续扩展留空间',
+          body: '同一结构可以承载更大文件、团队工作流和高级处理，同时不打扰基础功能。',
+        },
+      ],
+      ctaTitle: '从你需要的工具开始',
+      ctaDescription: '前往工具中心查看完整操作列表；当高级工作流成为常用需求时，再查看定价。',
     },
   },
   pricing: {
@@ -4132,29 +4172,49 @@ export const localeOverrides = {
     },
     features: {
       page: {
-        eyebrow: 'Funciones',
-        title: 'Directorio de herramientas PDF',
-        description: 'Elige una herramienta, agrega archivos y exporta el resultado. Las herramientas comunes son gratis; OCR, Office, IA y formularios estan en Pro.',
-        start: 'Abrir herramientas',
-        pricing: 'Ver precios',
-        freeLabel: 'Gratis',
-        proLabel: 'Pro',
-        freeCountLabel: 'herramientas gratis',
-        proCountLabel: 'herramientas Pro',
-        freeTitle: 'Herramientas gratis',
-        freeDesc: 'Une, separa, comprime, rota, convierte, agrega marcas, numera paginas y extrae contenido.',
-        proTitle: 'Herramientas Pro',
-        proDesc: 'OCR, conversion de Office, IA, formularios y anotacion para trabajo documental frecuente.',
-        allToolsTitle: 'Explorar por tarea',
-        allToolsDesc: 'Si no sabes por donde empezar, elige la categoria mas cercana.',
-        categories: {
-          organize: 'Organizar PDF',
-          convert: 'Convertir formatos',
-          optimize: 'Optimizar archivos',
-          secure: 'Proteger y firmar',
-          extract: 'Extraer contenido',
-          advanced: 'Herramientas Pro',
-        },
+        heroEyebrow: 'Funciones',
+        heroTitle: 'Trabajo PDF claro desde la carga hasta la exportacion',
+        heroDescription: 'PDF-Flow mantiene ediciones diarias, tareas de nube y el historial de cuenta en un espacio enfocado, para que cada documento empiece en el lugar correcto.',
+        primaryAction: 'Abrir herramientas',
+        secondaryAction: 'Ver precios',
+        pillars: [
+          {
+            title: 'Acciones PDF diarias',
+            body: 'Une, separa, comprime, rota, convierte, agrega marcas, numera paginas y extrae contenido sin convertir la pagina en otro catalogo.',
+          },
+          {
+            title: 'Trabajo avanzado cuando hace falta',
+            body: 'OCR, conversion de Office, IA, formularios y anotacion estan disponibles para tareas que necesitan mas procesamiento o una cuenta.',
+          },
+          {
+            title: 'Un flujo, no un directorio',
+            body: 'Las paginas de herramientas se enfocan en la tarea actual, mientras historial, cuenta, plan y exportaciones siguen conectados.',
+          },
+        ],
+        workflowTitle: 'Disenado alrededor del flujo documental',
+        workflowDescription: 'El producto separa elegir una herramienta de procesar archivos. Funciones explica el sistema; herramientas es donde se mueven los archivos.',
+        workflowSteps: [
+          'Elige el tipo de trabajo desde herramientas o continua desde la actividad reciente.',
+          'Usa controles enfocados para el archivo actual en vez de revisar otro catalogo.',
+          'Exporta, descarga o vuelve al historial de cuenta cuando el trabajo termine.',
+        ],
+        trustTitle: 'Pensado para manejar documentos reales',
+        trustItems: [
+          {
+            title: 'Estados de acceso claros',
+            body: 'Gratis, Pro, requiere cuenta y no disponible se muestran donde importan.',
+          },
+          {
+            title: 'Local cuando es posible',
+            body: 'Las herramientas locales trabajan en el navegador; las de nube explican cuando se requiere inicio de sesion o carga.',
+          },
+          {
+            title: 'Espacio para crecer',
+            body: 'La misma estructura puede sostener archivos grandes, equipos y procesamiento avanzado sin saturar lo basico.',
+          },
+        ],
+        ctaTitle: 'Empieza con la herramienta que necesitas',
+        ctaDescription: 'Ve a herramientas para la lista completa de acciones, o revisa precios cuando los flujos avanzados sean parte de tu rutina.',
       },
     },
     pricing: {
