@@ -84,6 +84,7 @@ curl http://localhost:8000/health
 - Pricing/payment: Pro checkout now opens a payment-method modal. Users click upgrade, choose a provider, and continue; unavailable provider states remain user-facing and backend payment confirmation is still the source of truth.
 - Account recovery: frontend routes for `/auth/forgot-password` and `/auth/reset-password` are connected to the existing backend reset endpoints. Email delivery remains configurable for production; when mail is not configured, the UI gives a manual recovery fallback instead of pretending the email definitely arrived.
 - Admin bootstrap: trusted CLI initializer added for first-admin creation or promotion, including audit logging and repeat-safe behavior.
+- Completion audit: public tool copy was re-scanned and cleaned again so ordinary tool/pricing/account flows no longer lean on internal local/cloud/server wording. Legal policy and admin diagnostics keep precise processing terms where they are necessary.
 
 ## Cleanup Rules
 
